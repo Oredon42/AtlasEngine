@@ -1,0 +1,57 @@
+set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
+project(AtlasEngine)
+cmake_minimum_required(VERSION 2.8)
+set(SOURCE_DIR src)
+set(INCLUDE_DIR include)
+file(GLOB INCLUDE_LIST ${INCLUDE_DIR}/*.h)
+
+aux_source_directory(${SOURCE_DIR} SRC_LIST)
+include_directories(${INCLUDE_DIR})
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+if(APPLE)
+	set(CMAKE_CXX_FLAGS "-std=c++11 -g -ggdb -O0 -Wall -Wextra")
+	#OpenGL inclusion
+	find_package(OpenGL)
+	include_directories(${OPENGL_INCLUDE_DIR})
+
+	#Qt5 inclusion
+	find_package(Qt5Core)
+	find_package(Qt5Gui)
+	find_package(Qt5Widgets)
+	find_package(Qt5OpenGL)
+        include_directories(${Qt5Widgets_INCLUDE_DIRS})
+	add_definitions(${Qt5Widgets_DEFINITIONS})
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+
+        #ASSIMP inclusion
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
+        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
+
+        add_executable(${PROJECT_NAME} ${SRC_LIST} ${INCLUDE_LIST})
+
+	qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
+
+        target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES} libassimpd.dylib)
+elseif(UNIX)
+        set(CMAKE_CXX_FLAGS "-std=c++11 -g -ggdb -O0 -Wall -Wextra")
+        find_package(OpenGL REQUIRED)
+        find_package(Qt4 REQUIRED)
+        set(Qt4_LIBRARIES Qt4::QtGui Qt4::QtCore Qt4::QtOpenGL)
+        #ASSIMP inclusion
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
+        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
+
+        #OpenGL inclusion
+        include_directories(${OPENGL_INCLUDE_DIR})
+
+        include_directories(${Qt5Widgets_INCLUDE_DIRS})
+
+        add_executable(${PROJECT_NAME} ${SRC_LIST})
+
+        target_link_libraries(${PROJECT_NAME} ${Qt4_LIBRARIES} ${OPENGL_LIBRARIES} libassimp.so)
+endif()
