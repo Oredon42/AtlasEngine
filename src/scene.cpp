@@ -139,9 +139,9 @@ GLboolean Scene::importFile(const std::string &path)
                                                         aiProcess_ImproveCacheLocality |
                                                         aiProcess_RemoveRedundantMaterials |
                                                         aiProcess_OptimizeMeshes |
-                                                        aiProcess_OptimizeGraph |
                                                         aiProcess_FlipUVs |
                                                         aiProcess_CalcTangentSpace);
+
     if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
@@ -149,7 +149,9 @@ GLboolean Scene::importFile(const std::string &path)
     }
     new_path = new_path.substr(0, new_path.find_last_of('/'));
 
-    //  Import models
+    /****************
+     * Import models
+     * ************ */
     /*
      * All meshes in the file will be stored
      * into the scene mesh vector
@@ -228,6 +230,11 @@ GLboolean Scene::importFile(const std::string &path)
     else
         //  Create default camera
         m_cameras.push_back(new Camera());
+}
+
+void Scene::importAnimation(const std::string &animation_name, const std::string path)
+{
+
 }
 
 void Scene::buildKdTree()

@@ -48,11 +48,22 @@ void AtlasWidget::initializeGL()
 
     addScene();
 
-    //m_scenes[0].importFile("/obj/testbox/testbox.dae");
+    /*GLuint nb_boucles = 6;
+    for(GLuint i = 0; i < nb_boucles; ++i)
+        for(GLuint j = 0; j < nb_boucles; ++j)
+            for(GLuint k = 0; k < nb_boucles; ++k)
+            {
+                m_current_scene->importFile("/obj/cube2/cube2.obj");
+                m_current_scene->translate(glm::vec3(2*i,j,k),"Cube");
+            }*/
+
     //m_current_scene->importFile("/obj/cube2/cube2.obj");
     //m_current_scene->importFile("/obj/Astroboy/astroBoy_walk_Maya2.dae");
-    //m_current_scene->importFile("/obj/bras/bras.dae");
-    m_current_scene->importFile("/obj/dabrovic-sponza/sponza.obj");
+    //m_current_scene->importFile("/obj/bras/bras2.dae");
+    //m_current_scene->importFile("/obj/astro/astro.fbx");
+    //m_current_scene->importAnimation("default", "/obj/astro/astro_pose1.fbx");
+    //m_current_scene->importFile("/obj/dabrovic-sponza/sponza.obj");
+    m_current_scene->importFile("/obj/dragon/dragon.obj");
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
@@ -65,6 +76,7 @@ void AtlasWidget::initializeGL()
     m_renderer.init(m_path, m_window_width, m_window_height, m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT, GL_FILL);
 }
 
@@ -85,8 +97,8 @@ void AtlasWidget::paintGL()
     GLuint current_time = m_time.elapsed();
     m_render_time = current_time;
 
-    m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
-    //m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
+    //m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
+    m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
 
     m_last_frame = current_time;
 }

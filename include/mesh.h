@@ -29,7 +29,7 @@ public:
     Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, const GLboolean &has_normal_map);
     virtual ~Mesh();
 
-    inline void draw(){glBindVertexArray(m_VAO); glDrawElements(GL_TRIANGLES_ADJACENCY, m_indices.size(), GL_UNSIGNED_INT, 0);}
+    inline void draw(){glBindVertexArray(m_VAO); glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);}
     virtual void setupBuffers();
 
 protected:

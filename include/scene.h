@@ -30,6 +30,7 @@ public:
     void drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height);
 
     GLboolean importFile(const std::string &path);
+    void importAnimation(const std::string &animation_name, const std::string path);
 
     void buildKdTree();
 
@@ -57,6 +58,8 @@ public:
     inline void sendCameraDatas(const Shader &shader, const GLfloat &screen_width, const GLfloat &screen_height){m_cameras[m_current_camera]->sendDatas(shader, screen_width, screen_height);}
 
     inline void translate(const glm::vec3 &t, const std::string &node_name){m_roots[m_roots.size() - 1]->translate(t, node_name);}
+    inline void rotate(const glm::vec3 &r, const std::string &node_name){m_roots[m_roots.size() - 1]->rotate(r, node_name);}
+    inline void scale(const glm::vec3 &s, const std::string &node_name){m_roots[m_roots.size() - 1]->scale(s, node_name);}
 
 protected:
     std::string m_path;

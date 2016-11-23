@@ -351,10 +351,12 @@ void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod r
     }
     else
     {
-        f_main_block += "gPosition = FragPos;\n";
         /*
          * DEFFERED
          * */
+
+        f_main_block += "gPosition = FragPos;\n";
+
         if(shader_type.texture)
             f_main_block += "gAlbedoSpec.rgb = texture(material.texture_diffuse1, TexCoords).rgb;\n";
         else

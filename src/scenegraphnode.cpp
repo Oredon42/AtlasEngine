@@ -4,6 +4,7 @@
 #include "include/dirlight.h"
 #include "include/spotlight.h"
 #include "include/pointlight.h"
+#include "include/animation.h"
 
 #include <string>
 
@@ -36,6 +37,11 @@ SceneGraphNode::~SceneGraphNode()
     m_children.clear();
 }
 
+/*
+ * If name is this node name
+ * translate this node with t
+ * and spread to every child
+ * */
 void SceneGraphNode::translate(const glm::vec3 &t, const std::string &name)
 {
     if(m_name == name)
@@ -49,9 +55,52 @@ void SceneGraphNode::translate(const glm::vec3 &t, const std::string &name)
             m_children[i]->translate(t, name);
 }
 
+/*
+ * If name is this node name
+ * rotate this node with r
+ * and spread to every child
+ * */
+void SceneGraphNode::rotate(const glm::vec3 &r, const std::string &name)
+{
+    if(m_name == name)
+    {
+        m_rotation = glm::quat(r);
+        calculateTransform(glm::mat4());
+        spreadTransform(m_transform);
+    }
+    else
+        for(GLuint i = 0; i < m_children.size(); ++i)
+            m_children[i]->rotate(r, name);
+}
+
+/*
+ * If name is this node name
+ * scale this node with s
+ * and spread to every child
+ * */
+void SceneGraphNode::scale(const glm::vec3 &s, const std::string &name)
+{
+    if(m_name == name)
+    {
+        m_scale = s;
+        calculateTransform(glm::mat4());
+        spreadTransform(m_transform);
+    }
+    else
+        for(GLuint i = 0; i < m_children.size(); ++i)
+            m_children[i]->scale(s, name);
+}
+
+/*
+ * Calculate node transform matrix
+ * with saved transform,
+ * saved rotation, saved scale and saved translation
+ * And set every models of this node transforms
+ * */
 void SceneGraphNode::calculateTransform(const glm::mat4 &parent_transform)
 {
-    m_transform = glm::mat4_cast(m_rotation);
+    m_transform = m_node_transform;
+    m_transform *= glm::mat4_cast(m_rotation);
     m_transform = glm::translate(m_transform, m_position);
     m_transform = glm::scale(m_transform, m_scale);
 
@@ -74,13 +123,12 @@ void SceneGraphNode::calculateTransform(const glm::mat4 &parent_transform)
  * */
 void SceneGraphNode::processNode(SceneGraphNode *parent, glm::mat4 &global_inverse_transform, aiNode *ai_node, const aiScene *ai_scene, std::vector<Model *> (&models)[NB_SHADER_TYPES], std::vector<AnimatedModel *> *animated_models, GLfloat &render_time)
 {
-    //  Get current node transformation matrix
-    //m_global_inverse_transform = glm::inverse(assimpToGlmMat4(ai_node->mTransformation));
-
     //  Parent node
     m_parent = parent;
 
     m_name = ai_node->mName.C_Str();
+
+    m_node_transform = assimpToGlmMat4(ai_node->mTransformation);
 
     //  Loop on every aiMesh
     for(GLuint i = 0; i < ai_node->mNumMeshes; ++i)
@@ -270,7 +318,11 @@ std::vector<Texture> SceneGraphNode::loadMaterialTextures(const aiMaterial *mat,
 GLint SceneGraphNode::TextureFromFile(const GLchar *path)
 {
     //  Concat directory path to filename
-    std::string filename = m_directory + '/' + std::string(path);
+    std::string filename;
+    if(path[0] == '/')
+        filename = path;
+    else
+        filename = m_directory + '/' + std::string(path);
 
     GLuint texture_ID;
     glGenTextures(1, &texture_ID);
@@ -294,26 +346,6 @@ GLint SceneGraphNode::TextureFromFile(const GLchar *path)
 /************
  * ANIMATION *
  * **********/
-
-/*
- * Build model bone tree
- * from aiScene root node
- * */
-void SceneGraphNode::buildBoneTree(AnimatedModel *model, const aiNode *ai_node)
-{
-    if(model->hasBone(std::string(ai_node->mName.C_Str())))
-    {
-        for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
-        {
-            model->setBoneParent(std::string(ai_node->mName.C_Str()), std::string(ai_node->mChildren[i]->mName.C_Str()));
-
-            buildBoneTree(model, ai_node->mChildren[i]);
-        }
-    }
-    else
-        for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
-            buildBoneTree(model, ai_node->mChildren[i]);
-}
 
 /*
  * Process bones of a mesh
@@ -357,41 +389,137 @@ void SceneGraphNode::fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, 
     }
 }
 
+
+/*****************
+ * SCENEGRAPHROOT
+ * ************* */
+
+/*
+ * Scene graph root creation from aiScene
+ * */
+SceneGraphRoot::SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, const std::string &path, std::vector<Model *> (&models)[NB_SHADER_TYPES], GLfloat &render_time) :
+    SceneGraphNode(path, global_inverse_transform)
+{
+    m_directory = path;
+
+    //  Process root node
+    //  Fills the mesh vector
+    processNode(0, m_global_inverse_transform, ai_scene->mRootNode, ai_scene, models, &m_animated_models, render_time);
+
+    if(ai_scene->HasAnimations())
+    {
+        //  Build bone trees of models
+        for(GLuint i = 0; i < m_animated_models.size(); ++i)
+            m_animated_models[i]->buildBoneTree(ai_scene->mRootNode);
+
+        //  Load and store animations
+        loadAnimations(ai_scene, m_animated_models);
+    }
+}
+
+SceneGraphRoot::~SceneGraphRoot()
+{
+    //  Animations suppression
+    for(GLuint i = 0; i < m_animations.size(); ++i)
+        delete m_animations[i];
+
+    m_animations.clear();
+}
+
 /*
  * Load animations from an aiScene
- * fill informations of meshes inside the current SceneGraph
+ * fill informations of models inside the current SceneGraph
  * */
-void SceneGraphNode::loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models)
+void SceneGraphRoot::loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models)
 {
     /*
      * This loop will store animation pose
      * for each tick of every animation
      * So we don't have to traverse the aiScene tree at runtime
-     * (I've chosen to iterate over animation and traverse tree as it is more current to have 1 animation per file)
+     * (I've chosen to iterate over animation and traverse tree
+     * than traverse tree once and iterate over animations
+     * as it is more current to have 1 animation per file)
      * */
     for(GLuint animation_index = 0; animation_index < ai_scene->mNumAnimations; ++animation_index)
     {
-        buildBoneTree(animated_models[animation_index], ai_scene->mRootNode);
-
         //  Get animation parameters
         GLfloat animation_time = ai_scene->mAnimations[animation_index]->mDuration;
         GLfloat ticks_per_seconds = ai_scene->mAnimations[animation_index]->mTicksPerSecond != 1?ai_scene->mAnimations[0]->mTicksPerSecond : 24.0f;
         //  Total time of the animation in ticks
         GLuint time_in_ticks = animation_time * ticks_per_seconds;
+        GLfloat seconds_per_tick = 1.f / ticks_per_seconds;
 
         aiAnimation *ai_animation = ai_scene->mAnimations[animation_index];
 
         //  For each tick of the animation
         //  Retrieve animation pose
         for(GLuint current_tick = 0; current_tick < time_in_ticks; ++current_tick)
-            processAnimation(ai_animation, "default", ticks_per_seconds, current_tick, current_tick * time_in_ticks, time_in_ticks, ai_scene->mRootNode, animated_models);
+            processAnimation(ai_animation, "default", ticks_per_seconds, current_tick, current_tick * seconds_per_tick, time_in_ticks, ai_scene->mRootNode, animated_models);
     }
+}
+
+/*
+ *  Process aiNode - each node is a bone
+ *
+ *  for the current animation and the current time in ticks
+ *  create interpolated transformation matrix
+ *  store matrix into concerned animated meshes
+ * */
+void SceneGraphRoot::processAnimation(const aiAnimation *ai_animation, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLuint &time_in_ticks, const aiNode *ai_node, const std::vector<AnimatedModel *> &animated_models)
+{
+    std::string bone_name = ai_node->mName.data;
+
+    //  Try to find the bone inside animation
+    const aiNodeAnim *ai_node_anim = FindNodeAnim(ai_animation, bone_name);
+
+    glm::vec3 scale;
+    glm::quat rotation;
+    glm::vec3 position;
+    GLfloat time;
+
+    //  If bone found
+    if(ai_node_anim)
+    {
+        scale = glm::vec3(ai_node_anim->mScalingKeys[current_tick].mValue.x, ai_node_anim->mScalingKeys[current_tick].mValue.y, ai_node_anim->mScalingKeys[current_tick].mValue.z);
+        rotation = glm::quat(ai_node_anim->mRotationKeys[current_tick].mValue.w, ai_node_anim->mRotationKeys[current_tick].mValue.x, ai_node_anim->mRotationKeys[current_tick].mValue.y, ai_node_anim->mRotationKeys[current_tick].mValue.z);
+        position = glm::vec3(ai_node_anim->mPositionKeys[current_tick].mValue.x, ai_node_anim->mPositionKeys[current_tick].mValue.y, ai_node_anim->mPositionKeys[current_tick].mValue.z);
+        time = ai_node_anim->mPositionKeys[current_tick].mTime;
+    }
+    else
+    {
+        scale = glm::vec3(1.f);
+        rotation = glm::quat(0.f, 0.f, 0.f, 0.f);
+        position = glm::vec3(0.f);
+        time = 0.f;
+    }
+
+    Channel current_channel;
+    current_channel.position = position;
+    current_channel.rotation = rotation;
+    current_channel.scale = scale;
+    current_channel.time = time;
+
+    //  Loop over every animated model
+    for(GLuint i = 0; i < animated_models.size(); ++i)
+    {
+        //  If current model has the current bone
+        //  Send animation datas (anim info + channel)
+        if(animated_models[i]->hasBone(bone_name))
+        {
+            animated_models[i]->setAnimationInfo(animation_name, time_in_ticks, ticks_per_second);
+            animated_models[i]->setChannel(animation_name, bone_name, current_tick, current_channel);
+        }
+    }
+
+    //  Loop over children bones
+    for(GLuint i = 0 ; i < ai_node->mNumChildren ; ++i)
+       processAnimation(ai_animation, animation_name, ticks_per_second, current_tick, current_time, time_in_ticks, ai_node->mChildren[i], animated_models);
 }
 
 /*
  *  Return aiNodeAnim with the name node_name
  * */
-const aiNodeAnim* SceneGraphNode::FindNodeAnim(const aiAnimation *ai_animation, const std::string &node_name)
+const aiNodeAnim* SceneGraphRoot::FindNodeAnim(const aiAnimation *ai_animation, const std::string &node_name)
 {
     //  Loop over animation channels
     for(GLuint i = 0 ; i < ai_animation->mNumChannels ; ++i)
@@ -406,69 +534,6 @@ const aiNodeAnim* SceneGraphNode::FindNodeAnim(const aiAnimation *ai_animation, 
     return NULL;
 }
 
-/*
- *  Process aiNode - each node is a bone
- *
- *  for the current animation and the current time in ticks
- *  create interpolated transformation matrix
- *  store matrix into concerned animated meshes
- * */
-void SceneGraphNode::processAnimation(const aiAnimation *ai_animation, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLfloat &total_time, const aiNode *ai_node, const std::vector<AnimatedModel *> &animated_models)
-{
-    std::string bone_name = ai_node->mName.data;
-
-    //  Try to find the bone inside animation
-    const aiNodeAnim *ai_node_anim = FindNodeAnim(ai_animation, bone_name);
-
-    glm::vec3 scaling;
-    glm::quat rotation;
-    glm::vec3 position;
-
-    //  If bone found
-    if(ai_node_anim)
-    {
-        scaling = glm::vec3(ai_node_anim->mScalingKeys[current_tick].mValue.x, ai_node_anim->mScalingKeys[current_tick].mValue.y, ai_node_anim->mScalingKeys[current_tick].mValue.z);
-        rotation = glm::quat(ai_node_anim->mRotationKeys[current_tick].mValue.x, ai_node_anim->mRotationKeys[current_tick].mValue.y, ai_node_anim->mRotationKeys[current_tick].mValue.z, ai_node_anim->mRotationKeys[current_tick].mValue.w);
-        position = glm::vec3(ai_node_anim->mPositionKeys[current_tick].mValue.x, ai_node_anim->mPositionKeys[current_tick].mValue.y, ai_node_anim->mPositionKeys[current_tick].mValue.z);
-    }
-    else
-    {
-        scaling = glm::vec3(1);
-        rotation = glm::quat(0.f, 0.f, 0.f, 0.f);
-        position = glm::vec3(0);
-    }
-
-    //  Loop over every animated model
-    for(GLuint i = 0; i < animated_models.size(); ++i)
-    {
-        //  If current model has the current bone
-        //  Send animation datas
-        if(animated_models[i]->hasBone(bone_name))
-            animated_models[i]->setAnimationInfo(animation_name, ai_animation->mNumChannels, total_time, ticks_per_second, bone_name, current_tick, current_time, scaling, rotation, position);
-    }
-
-    //  Loop over children bones
-    for(GLuint i = 0 ; i < ai_node->mNumChildren ; ++i)
-       processAnimation(ai_animation, animation_name, ticks_per_second, current_tick, current_time, total_time, ai_node->mChildren[i], animated_models);
-}
-
-/*
- * Scene graph root creation from aiScene
- * */
-SceneGraphRoot::SceneGraphRoot(const aiScene *scene, glm::mat4 &global_inverse_transform, const std::string &path, std::vector<Model *> (&models)[NB_SHADER_TYPES], GLfloat &render_time) :
-    SceneGraphNode(path, global_inverse_transform)
-{
-    m_directory = path;
-
-    //  Process root node
-    //  Fills the mesh vector
-    processNode(0, m_global_inverse_transform, scene->mRootNode, scene, models, &m_animated_models, render_time);
-
-
-    //  Animation
-    if(scene->HasAnimations())
-        loadAnimations(scene, m_animated_models);
-}
 
 /*
  * Convert assimp format mat4 to glm format

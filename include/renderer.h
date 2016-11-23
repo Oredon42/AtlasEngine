@@ -33,6 +33,7 @@ public:
 
 private:
     GLuint m_gBuffer;
+    GLuint m_HDR_buffer;
     GLuint m_rbo_depth;
     GLuint m_quad_VAO, m_quad_VBO;
     GLfloat m_quad_vertices[20];

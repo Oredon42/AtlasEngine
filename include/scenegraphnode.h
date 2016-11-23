@@ -41,6 +41,7 @@ class Camera;
 class DirLight;
 class SpotLight;
 class PointLight;
+class Animation;
 
 struct Bone;
 struct VertexBoneData;
@@ -55,7 +56,7 @@ class SceneGraphNode
 public:
     SceneGraphNode();
     SceneGraphNode(const std::string &path, glm::mat4 &global_inverse_transform);
-    ~SceneGraphNode();
+    virtual ~SceneGraphNode();
 
     void processNode(SceneGraphNode *SceneGraphNode, glm::mat4 &global_inverse_transform, aiNode* ai_node, const aiScene* ai_scene, std::vector<Model *> (&models)[NB_SHADER_TYPES], std::vector<AnimatedModel *> *animated_models, GLfloat &render_time);
     Model *processMesh(const aiMesh *mesh, const aiScene* ai_scene, std::vector<AnimatedModel *> *animated_models, GLfloat &render_time);
@@ -64,20 +65,15 @@ public:
     GLint TextureFromFile(const GLchar *path);
 
     //  Animation
-    void buildBoneTree(AnimatedModel *model, const aiNode *ai_root_node);
     void fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, GLuint &num_bones, Bone *armature, VertexBoneData *&vertex_bone_data, const aiMesh *ai_mesh);
-    void loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models);
-    const aiNodeAnim *FindNodeAnim(const aiAnimation *ai_animation, const std::string &node_name);
-    GLuint FindPosition(const GLuint &animation_time, const aiNodeAnim *ai_node_anim);
-    GLuint FindRotation(const GLuint &animation_time, const aiNodeAnim *ai_node_anim);
-    GLuint FindScaling(const GLuint &animation_time, const aiNodeAnim *ai_node_anim);
-    void processAnimation(const aiAnimation *ai_animation, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLfloat &total_time, const aiNode *ai_node, const std::vector<AnimatedModel *> &animated_models);
 
     //  Getters
     inline GLuint numberOfMeshes() const{return m_number_of_models;}
 
     //  Setters
     void translate(const glm::vec3 &t, const std::string &name);
+    void rotate(const glm::vec3 &r, const std::string &name);
+    void scale(const glm::vec3 &s, const std::string &name);
     void calculateTransform(const glm::mat4 &parent_transform);
 
 protected:
@@ -97,6 +93,8 @@ protected:
 
     glm::mat4 &m_global_inverse_transform;
 
+    glm::mat4 m_node_transform;
+
     glm::mat4 m_transform;
     glm::vec3 m_position;
     glm::quat m_rotation;
@@ -111,10 +109,17 @@ protected:
 class SceneGraphRoot : public SceneGraphNode
 {
 public:
-    SceneGraphRoot(const aiScene *scene, glm::mat4 &global_inverse_transform, const std::string &path, std::vector<Model *> (&models)[NB_SHADER_TYPES], GLfloat &render_time);
+    SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, const std::string &path, std::vector<Model *> (&models)[NB_SHADER_TYPES], GLfloat &render_time);
+    virtual ~SceneGraphRoot();
+
+    void loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models);
+    const aiNodeAnim *FindNodeAnim(const aiAnimation *ai_animation, const std::string &node_name);
+    void processAnimation(const aiAnimation *ai_animation, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLuint &time_in_ticks, const aiNode *ai_node, const std::vector<AnimatedModel *> &animated_models);
+
 
 private:
     std::vector<AnimatedModel *> m_animated_models;
+    std::vector<Animation *> m_animations;
 };
 
 #endif // SCENEGRAPHNODE_H

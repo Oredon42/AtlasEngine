@@ -3,6 +3,7 @@
 #include "include/dirlight.h"
 #include "include/spotlight.h"
 #include "include/pointlight.h"
+#include "include/animation.h"
 
 Model::Model()
 {
@@ -111,8 +112,8 @@ void AnimatedModel::draw(const Shader &shader)
 {
     Animation &anim = m_animations[m_current_animation];
 
-    GLfloat tick = std::fmod(m_render_time * anim.ticks_per_second, anim.duration);
-    updateArmature(anim, m_armature[0], 0, glm::mat4(), tick);
+    GLfloat tick = std::fmod(m_render_time / anim.ticks_per_second, anim.duration);
+    updateArmature(anim, m_armature[0], 0, glm::mat4(1), tick);
 
     //  Send bones affected by animation to the shader
     for(GLuint i = 0 ; i < anim.num_bones; ++i)
@@ -136,22 +137,17 @@ void AnimatedModel::draw(const Shader &shader)
     Model::draw(shader);
 }
 
-void AnimatedModel::setAnimationInfo(const std::string &animation_name, const GLuint &num_bones, const GLuint &duration, const GLuint &ticks_per_sec, const std::string &bone_name, const GLuint &current_tick, const GLfloat &current_time, const glm::vec3 &scaling, const glm::quat &rotation, const glm::vec3 &position)
+void AnimatedModel::setAnimationInfo(const std::string &animation_name, const GLuint &duration, const GLuint &ticks_per_sec)
 {
-    m_animations[animation_name].setNumBones(m_num_bones/*num_bones*/);
+    m_animations[animation_name].setNumBones(m_num_bones);
     m_animations[animation_name].setDuration(duration);
     m_animations[animation_name].ticks_per_second = ticks_per_sec;
-    const GLuint &bone_index = m_bone_mapping[bone_name];
-    m_animations[animation_name].setTransforms(bone_index, current_tick, current_time, scaling, rotation, position);
 }
 
-void AnimatedModel::setBoneParent(const std::string &parent_name, const std::string &child_name)
+void AnimatedModel::setChannel(const std::string &animation_name, const std::string &bone_name, const GLuint &current_tick, const Channel &channel)
 {
-    GLuint  parent_index = m_bone_mapping.find(parent_name)->second,
-            child_index = m_bone_mapping.find(child_name)->second;
-
-    m_armature[child_index].parent = parent_index;
-    m_armature[parent_index].children.push_back(child_index);
+    const GLuint &bone_index = m_bone_mapping[bone_name];
+    m_animations[animation_name].setChannel(bone_index, current_tick, channel);
 }
 
 /*
@@ -172,6 +168,7 @@ void AnimatedModel::setAnimation(const std::string &current_animation)
 void AnimatedModel::updateArmature(const Animation &anim, Bone &current_bone, const GLuint &bone_index, const glm::mat4 &parent_transform, const GLfloat &render_time)
 {
     //  Get current transformation matrix in glm format
+    //glm::mat4 node_transform = glm::transpose(current_bone.bone_offset);
     glm::mat4 node_transform = current_bone.bone_offset;
     glm::mat4 local_transform;
 
@@ -183,28 +180,26 @@ void AnimatedModel::updateArmature(const Animation &anim, Bone &current_bone, co
     GLfloat delta_time = (GLfloat)(channel2.time - channel1.time);
     GLfloat factor = (anim.duration * anim.ticks_per_second - render_time) / delta_time;
 
-    //  Interpolate scaling and generate scaling transformation matrix
-    glm::vec3 scaling = CalcInterpolatedScaling(channel1, channel2, anim.duration, factor);
-
-    //  Interpolate rotation and generate rotation transformation matrix
+    //  Interpolations
+    glm::vec3 scale = CalcInterpolatedScaling(channel1, channel2, anim.duration, factor);
     glm::quat rotation = CalcInterpolatedRotation(channel1, channel2, anim.duration, factor);
+    glm::vec3 position = CalcInterpolatedPosition(channel1, channel2, anim.duration, factor);
 
-    //  Interpolate translation and generate translation transformation matrix
-    glm::vec3 translation = CalcInterpolatedPosition(channel1, channel2, anim.duration, factor);
+    glm::mat4 scale_matrix = glm::scale(glm::mat4(1), channel1.scale);
+    glm::mat4 rotation_matrix = glm::mat4_cast(channel1.rotation);
+    glm::mat4 position_matrix = glm::translate(glm::mat4(1), channel1.position);
 
-    //  Combine the above transformations
-    local_transform = glm::mat4_cast(rotation);
-    local_transform = glm::scale(local_transform, scaling);
-    local_transform = glm::translate(local_transform, translation);
+    //  Combine the above transformation
+    local_transform = position_matrix * rotation_matrix * scale_matrix;
 
     //  Combine parent transform and interpolated transform
-    glm::mat4 final_transform = parent_transform * node_transform * local_transform;
+    glm::mat4 global_transform = parent_transform * local_transform;
 
-    current_bone.final_transformation = m_global_inverse_transform * final_transform;
+    current_bone.final_transformation = global_transform * node_transform;
 
     //  Loop over children bones
     for(GLuint i = 0 ; i < current_bone.children.size() ; ++i)
-        updateArmature(anim, m_armature[current_bone.children[i]], current_bone.children[i], final_transform, render_time);
+        updateArmature(anim, m_armature[current_bone.children[i]], current_bone.children[i], global_transform, render_time);
 }
 
 
@@ -244,6 +239,38 @@ glm::vec3 AnimatedModel::CalcInterpolatedScaling(const Channel &channel1, const 
     if(animation_duration == 1)
         return channel1.scale;
 
-    glm::vec3 delta = channel2.position - channel1.position;
-    return channel1.position + factor * delta;
+    glm::vec3 delta = channel2.scale - channel1.scale;
+    return channel1.scale + factor * delta;
+}
+
+/*
+ * Build model bone tree
+ * from aiScene root node
+ * */
+void AnimatedModel::buildBoneTree(const aiNode *ai_node)
+{
+    std::string bone_name = ai_node->mName.C_Str();
+
+    //  If has bone
+    if(m_bone_mapping.find(ai_node->mName.C_Str()) != m_bone_mapping.end())
+    {
+        for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
+        {
+            std::string child_name = ai_node->mChildren[i]->mName.C_Str();
+
+            if(m_bone_mapping.find(child_name) != m_bone_mapping.end())
+            {
+                GLuint  parent_index = m_bone_mapping.find(bone_name)->second,
+                        child_index = m_bone_mapping.find(child_name)->second;
+
+                m_armature[child_index].parent = parent_index;
+                m_armature[parent_index].children.push_back(child_index);
+
+                buildBoneTree(ai_node->mChildren[i]);
+            }
+        }
+    }
+    else
+        for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
+            buildBoneTree(ai_node->mChildren[i]);
 }

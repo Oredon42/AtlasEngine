@@ -32,10 +32,13 @@ Renderer::Renderer() :
 
 void Renderer::init(const std::string &path, const GLuint &window_width, const GLuint &window_height, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
 {
+    /*
+     * G BUFFER
+     * */
     glGenFramebuffers(1, &m_gBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer);
 
-    // - Position color buffer
+    // Position
     glGenTextures(1, &m_gPosition);
     glBindTexture(GL_TEXTURE_2D, m_gPosition);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, window_width, window_height, 0, GL_RGB, GL_FLOAT, NULL);
@@ -43,7 +46,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_gPosition, 0);
 
-    // - Normal color buffer
+    // Normal
     glGenTextures(1, &m_gNormal);
     glBindTexture(GL_TEXTURE_2D, m_gNormal);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, window_width, window_height, 0, GL_RGB, GL_FLOAT, NULL);
@@ -51,7 +54,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_gNormal, 0);
 
-    // - Color + Specular color buffer
+    // Color + Specular
     glGenTextures(1, &m_gAlbedoSpec);
     glBindTexture(GL_TEXTURE_2D, m_gAlbedoSpec);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window_width, window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -59,19 +62,16 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, m_gAlbedoSpec, 0);
 
-    // - Tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
     GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, attachments);
 
-    // - Create and attach depth buffer (renderbuffer)
     glGenRenderbuffers(1, &m_rbo_depth);
     glBindRenderbuffer(GL_RENDERBUFFER, m_rbo_depth);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo_depth);
 
-    // - Finally check if framebuffer is complete
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Framebuffer not complete!" << std::endl;
+        std::cout << "gBuffer not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     m_quad_vertices[0] = -1.0f; m_quad_vertices[1] = 1.0f; m_quad_vertices[2] = 0.0f; m_quad_vertices[3] = 0.0f; m_quad_vertices[4] = 1.0f;
@@ -103,6 +103,8 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gNormal"), 1);
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gAlbedoSpec"), 2);
     glUseProgram(0);
+
+
 }
 
 /*

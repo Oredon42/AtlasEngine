@@ -18,6 +18,10 @@
 #include "lib/glm/gtc/quaternion.hpp"
 #include "lib/glm/gtc/matrix_transform.hpp"
 
+#include "lib/assimp/Importer.hpp"
+#include "lib/assimp/scene.h"
+#include "lib/assimp/postprocess.h"
+
 #include "shader.h"
 #include "mesh.h"
 
@@ -27,6 +31,9 @@ class Camera;
 class DirLight;
 class SpotLight;
 class PointLight;
+class Animation;
+
+struct Channel;
 
 struct Texture
 {
@@ -82,7 +89,6 @@ struct Bone
     std::string name;
     std::vector<GLuint> children;
 
-    glm::vec3 rotation;
     glm::mat4 bone_offset;
     glm::mat4 final_transformation;
 
@@ -97,84 +103,6 @@ struct Bone
     }
 };
 
-struct Channel
-{
-    glm::vec3 scale;
-    glm::quat rotation;
-    glm::vec3 position;
-
-    GLfloat time;
-
-    void setVectors(const glm::vec3 &s, const glm::quat &r, const glm::vec3 p, const GLfloat &t)
-    {
-        scale = s;
-        rotation = r;
-        position = p;
-        time = t;
-    }
-};
-
-struct Animation
-{
-    GLuint duration;
-    glm::mat4 **transforms;
-    GLuint num_bones;
-    GLuint ticks_per_second;
-
-    Channel **channels;
-
-    Animation() :
-        duration(0),
-        transforms(0),
-        num_bones(0),
-        ticks_per_second(0)
-    {
-
-    }
-
-    ~Animation()
-    {
-        if(transforms != 0)
-        {
-            for(GLuint i = 0; i < num_bones; ++i)
-            {
-                delete[] transforms[i];
-                delete[] channels[i];
-            }
-            delete[] transforms;
-            delete[] channels;
-        }
-    }
-
-    void setNumBones(const GLuint &n)
-    {
-        if(transforms == 0)
-        {
-            num_bones = n;
-            transforms = new glm::mat4*[num_bones];
-            channels = new Channel*[num_bones];
-        }
-    }
-
-    void setDuration(const GLuint &d)
-    {
-        if(duration == 0)
-        {
-            duration = d;
-            for(GLuint i = 0; i < num_bones; ++i)
-            {
-                transforms[i] = new glm::mat4[duration];
-                channels[i] = new Channel[duration];
-            }
-        }
-    }
-
-    void setTransforms(const GLuint &bone_index, const GLuint &time_index, const GLfloat &time, const glm::vec3 &scale, const glm::quat &rotation, const glm::vec3 &position)
-    {
-        channels[bone_index][time_index].setVectors(scale, rotation, position, time);
-    }
-};
-
 class AnimatedModel : public Model
 {
     static const GLuint MAX_BONES = 100;
@@ -183,12 +111,14 @@ public:
 
     virtual void draw(const Shader &shader);
 
+    void buildBoneTree(const aiNode *ai_node);
+
     //  Getters
     inline GLboolean hasBone(const std::string &bone_name){return m_bone_mapping.find(bone_name) != m_bone_mapping.end();}
 
     //  Setters
-    void setAnimationInfo(const std::string &animation_name, const GLuint &num_bones, const GLuint &duration, const GLuint &ticks_per_sec, const std::string &bone_name, const GLuint &current_tick, const GLfloat &current_time, const glm::vec3 &scaling, const glm::quat &rotation, const glm::vec3 &position);
-    void setBoneParent(const std::string &parent_name, const std::string &child_name);
+    void setAnimationInfo(const std::string &animation_name, const GLuint &duration, const GLuint &ticks_per_sec);
+    void setChannel(const std::string &animation_name, const std::string &bone_name, const GLuint &current_tick, const Channel &channel);
     void setAnimation(const std::string &current_animation);
 
 protected:
