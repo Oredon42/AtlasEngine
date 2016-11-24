@@ -15,6 +15,12 @@ Mesh::~Mesh()
 
 }
 
+void Mesh::draw()
+{
+    glBindVertexArray(m_VAO);
+    glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
 void Mesh::setupBuffers()
 {
     glGenVertexArrays(1, &m_VAO);

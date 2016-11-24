@@ -11,6 +11,8 @@ Renderer::Renderer() :
     m_gNormal(0),
     m_gAlbedoSpec(0)
 {
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &m_default_buffer_binding);
+
     m_shader_types[0].setValues(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, 0);
     m_shader_types[1].setValues(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE, 1);
     m_shader_types[2].setValues(GL_FALSE, GL_TRUE, GL_FALSE, GL_FALSE, 2);
@@ -104,7 +106,26 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gAlbedoSpec"), 2);
     glUseProgram(0);
 
+    /*
+     * HDR
+     * */
+    glGenFramebuffers(1, &m_HDR_buffer);
 
+    glGenTextures(1, &m_color_buffer);
+    glBindTexture(GL_TEXTURE_2D, m_color_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, window_width, window_height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glGenRenderbuffers(1, &rboDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_HDR_buffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_color_buffer, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /*
@@ -121,17 +142,16 @@ void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const 
 void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const GLfloat &window_width, const GLfloat &window_height, GLboolean (&keys)[1024])
 {
     GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR) {
-            std::cerr << "OpenGL error: " << err << std::endl;
-        }
+    while((err = glGetError()) != GL_NO_ERROR)
+        std::cerr << "OpenGL error: " << err << std::endl;
+
     // GEOMETRY PASS
     glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     scene.drawDeferred(m_shader_geometry_pass, keys, render_time, window_width, window_height);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 2);
-    //glGetIntegerv(GL_FRAMEBUFFER_BINDING, &result);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_default_buffer_binding);
 
     // LIGHTNING PASS
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

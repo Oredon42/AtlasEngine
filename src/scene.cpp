@@ -2,7 +2,7 @@
 #include "include/model.h"
 #include "include/skybox.h"
 
-Scene::Scene(const std::string &path, GLfloat &render_time) :
+Scene::Scene(std::string &path, GLfloat &render_time) :
     m_path(path),
     m_skybox(0),
     m_background_color(glm::vec3(0.f, 0.f, 0.f)),
@@ -137,7 +137,6 @@ GLboolean Scene::importFile(const std::string &path)
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(new_path,  aiProcess_Triangulate |
                                                         aiProcess_ImproveCacheLocality |
-                                                        aiProcess_RemoveRedundantMaterials |
                                                         aiProcess_OptimizeMeshes |
                                                         aiProcess_FlipUVs |
                                                         aiProcess_CalcTangentSpace);

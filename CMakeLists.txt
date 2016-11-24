@@ -1,6 +1,8 @@
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
+
 project(AtlasEngine)
+
 cmake_minimum_required(VERSION 2.8)
 set(SOURCE_DIR src)
 set(INCLUDE_DIR include)
@@ -42,6 +44,7 @@ elseif(UNIX)
         find_package(OpenGL REQUIRED)
         find_package(Qt4 REQUIRED)
         set(Qt4_LIBRARIES Qt4::QtGui Qt4::QtCore Qt4::QtOpenGL)
+
         #ASSIMP inclusion
         include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
         link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)

@@ -7,24 +7,13 @@
 
 Model::Model()
 {
-    m_material.diffuse = glm::vec3(1.0, 0.0, 1.0);
-    m_material.specular = glm::vec3(1.0, 1.0, 1.0);
-    m_material.shininess = 16.0;
-    m_material.texture = 0;
+
 }
 
-Model::Model(Mesh *mesh, const std::vector<Texture> &textures, const ShaderType &shader_type, const GLboolean &has_normal_map) :
-    m_has_normal_map(has_normal_map)
+Model::Model(Mesh *mesh, Material *material) :
+    m_material(material)
 {
     m_meshes.push_back(mesh);
-
-    m_textures = textures;
-
-    m_material.diffuse = glm::vec3(1.0, 0.0, 1.0);
-    m_material.specular = glm::vec3(1.0, 1.0, 1.0);
-    m_material.shininess = 16.0;
-    m_material.texture = 0;
-    m_shader_type = shader_type;
 }
 
 Model::~Model()
@@ -33,6 +22,8 @@ Model::~Model()
         delete m_meshes[i];
 
     m_meshes.clear();
+
+    delete m_material;
 }
 
 
@@ -41,41 +32,9 @@ Model::~Model()
  * */
 void Model::draw(const Shader &shader)
 {
-    //  Draw mesh
-    GLuint diffuseNr = 1;
-    GLuint specularNr = 1;
-    GLuint normalNr = 1;
-
     glUniformMatrix4fv(glGetUniformLocation(shader.getProgram(), "model"), 1, GL_FALSE, glm::value_ptr(m_transform));
 
-    if(m_textures.size() == 0)
-    {
-        //  No texture
-        glUniform3f(glGetUniformLocation(shader.getProgram(), "material.diffuse"), m_material.diffuse.x, m_material.diffuse.y, m_material.diffuse.z);
-        glUniform3f(glGetUniformLocation(shader.getProgram(), "material.specular"), m_material.specular.x, m_material.specular.y, m_material.specular.z);
-    }
-    else
-    {
-        for(GLuint i = 0; i < m_textures.size(); i++)
-        {
-            glActiveTexture(GL_TEXTURE0 + i);
-            std::stringstream ss;
-            std::string number;
-            std::string name = m_textures[i].type;
-            if(name == "texture_diffuse")
-                ss << diffuseNr++;
-            else if(name == "texture_specular")
-                ss << specularNr++;
-            else if(name == "texture_normal")
-                ss << normalNr++;
-
-            number = ss.str();
-            glUniform1i(glGetUniformLocation(shader.getProgram(), ("material." + name + number).c_str()), i);
-            glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
-        }
-    }
-
-    glUniform1f(glGetUniformLocation(shader.getProgram(), "material.shininess"), m_material.shininess);
+    m_material->sendDatas(shader);
 
     for(GLuint i = 0; i < m_meshes.size(); ++i)
         m_meshes[i]->draw();
@@ -92,9 +51,9 @@ void Model::draw(const Shader &shader)
  * ANIMATED MODEL
  **************** */
 
-AnimatedModel::AnimatedModel(AnimatedMesh *mesh, const std::vector<Texture> &textures, const ShaderType &shader_type, const std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *&armature, const GLboolean &has_normal_map, GLfloat &render_time) :
+AnimatedModel::AnimatedModel(AnimatedMesh *mesh, const std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *&armature, GLfloat &render_time, Material *material) :
     m_render_time(render_time),
-    Model(mesh, textures, shader_type, has_normal_map)
+    Model(mesh, material)
 {
     m_current_animation = "default";
     m_num_bones = num_bones;

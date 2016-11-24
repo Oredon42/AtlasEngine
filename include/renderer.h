@@ -32,15 +32,21 @@ public:
     void reloadShaders();
 
 private:
+    GLuint m_default_buffer_binding;
+
     GLuint m_gBuffer;
-    GLuint m_HDR_buffer;
     GLuint m_rbo_depth;
     GLuint m_quad_VAO, m_quad_VBO;
     GLfloat m_quad_vertices[20];
     Shader m_shader_lightning_pass;
     Shader m_shader_geometry_pass[NB_SHADER_TYPES];
+
     Shader m_shader_forward[NB_SHADER_TYPES];
     ShaderType m_shader_types[NB_SHADER_TYPES];
+
+    GLuint m_HDR_buffer;
+    GLuint m_color_buffer;
+
     GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
 };
 

@@ -20,7 +20,7 @@ class Skybox;
 class Scene
 {
 public:
-    Scene(const std::string &path, GLfloat &render_time);
+    Scene(std::__1::string &path, GLfloat &render_time);
     ~Scene();
 
     void init(const std::string &path);
@@ -62,7 +62,7 @@ public:
     inline void scale(const glm::vec3 &s, const std::string &node_name){m_roots[m_roots.size() - 1]->scale(s, node_name);}
 
 protected:
-    std::string m_path;
+    std::string &m_path;
     std::vector<PointLight> m_pointlights;
     std::vector<DirLight> m_dirlights;
     std::vector<SpotLight> m_spotlights;

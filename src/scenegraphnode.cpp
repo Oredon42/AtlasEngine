@@ -8,9 +8,9 @@
 
 #include <string>
 
-SceneGraphNode::SceneGraphNode(const std::string &path, glm::mat4 &global_inverse_transform) :
+SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform) :
     m_parent(0),
-    m_directory(path),
+    m_path(path),
     m_global_inverse_transform(global_inverse_transform),
     m_scale(1)
 {
@@ -28,6 +28,12 @@ SceneGraphNode::~SceneGraphNode()
     }
 
     m_models->clear();
+
+    //  Texture loaded suppression
+    for(GLuint i = 0; i < m_textures_loaded.size(); ++i)
+        delete m_textures_loaded[i];
+
+    m_textures_loaded.clear();
 
 
     //  Children array suppression
@@ -121,13 +127,10 @@ void SceneGraphNode::calculateTransform(const glm::mat4 &parent_transform)
  *  Loops over every mesh
  *  Loops over every node child
  * */
-void SceneGraphNode::processNode(SceneGraphNode *parent, glm::mat4 &global_inverse_transform, aiNode *ai_node, const aiScene *ai_scene, std::vector<Model *> (&models)[NB_SHADER_TYPES], std::vector<AnimatedModel *> *animated_models, GLfloat &render_time)
+void SceneGraphNode::processNode(SceneGraphNode *parent, glm::mat4 &global_inverse_transform, aiNode *ai_node, const aiScene *ai_scene, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], std::vector<AnimatedModel *> *animated_models, GLfloat &render_time)
 {
-    //  Parent node
     m_parent = parent;
-
     m_name = ai_node->mName.C_Str();
-
     m_node_transform = assimpToGlmMat4(ai_node->mTransformation);
 
     //  Loop on every aiMesh
@@ -136,10 +139,8 @@ void SceneGraphNode::processNode(SceneGraphNode *parent, glm::mat4 &global_inver
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
         Model *model = processMesh(ai_mesh, ai_scene, animated_models, render_time);
         GLuint insert_index = model->getShaderTypeIndex();
-        //  Add model to node list
         m_models[insert_index].push_back(model);
-        //  Add model to scene list
-        models[insert_index].push_back(model);
+        scene_models[insert_index].push_back(model);
     }
 
     //  Loop on every child
@@ -149,10 +150,12 @@ void SceneGraphNode::processNode(SceneGraphNode *parent, glm::mat4 &global_inver
         if(ai_node->mChildren[i]->mNumMeshes > 0)
         {
             //  Process child
-            SceneGraphNode *child = new SceneGraphNode(m_directory, global_inverse_transform);
-            child->processNode(this, global_inverse_transform, ai_node->mChildren[i], ai_scene, models, animated_models, render_time);
+            SceneGraphNode *child = new SceneGraphNode(m_path, global_inverse_transform);
+            child->processNode(this, global_inverse_transform, ai_node->mChildren[i], ai_scene, scene_models, animated_models, render_time);
             m_children.push_back(child);
         }
+
+        //  Put armature process here?
     }
 }
 
@@ -168,55 +171,7 @@ Model *SceneGraphNode::processMesh(const aiMesh *ai_mesh, const aiScene *ai_scen
      * */
     std::vector<Vertex> vertices;
     std::vector<GLuint> indices;
-    std::vector<Texture> textures;
-
-    //  Loop on every vertex
-    for(GLuint i = 0; i < ai_mesh->mNumVertices; i++)
-    {
-        Vertex vertex;
-        glm::vec3 vector;
-        // Positions
-        vector.x = ai_mesh->mVertices[i].x;
-        vector.y = ai_mesh->mVertices[i].y;
-        vector.z = ai_mesh->mVertices[i].z;
-        vertex.Position = vector;
-        // Normals
-        vector.x = ai_mesh->mNormals[i].x;
-        vector.y = ai_mesh->mNormals[i].y;
-        vector.z = ai_mesh->mNormals[i].z;
-        vertex.Normal = vector;
-        // Texture Coordinates
-        if(ai_mesh->mTextureCoords[0])
-        {
-            glm::vec2 vec;
-            vec.x = ai_mesh->mTextureCoords[0][i].x;
-            vec.y = ai_mesh->mTextureCoords[0][i].y;
-            vertex.TexCoords = vec;
-        }
-        else
-            vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-
-        //  Tangents
-        if(ai_mesh->HasTangentsAndBitangents())
-        {
-            vector.x = ai_mesh->mTangents[i].x;
-            vector.y = ai_mesh->mTangents[i].y;
-            vector.z = ai_mesh->mTangents[i].z;
-            vertex.Tangent = vector;
-
-            vector = glm::cross(vertex.Normal, vertex.Tangent);
-            vertex.Bitangent = vector;
-        }
-
-        vertices.push_back(vertex);
-    }
-    //  Indexes
-    for(GLuint i = 0; i < ai_mesh->mNumFaces; i++)
-    {
-        aiFace face = ai_mesh->mFaces[i];
-        for(GLuint j = 0; j < face.mNumIndices; j++)
-            indices.push_back(face.mIndices[j]);
-    }
+    processGeometry(ai_mesh, vertices, indices);
 
 
     /*
@@ -224,122 +179,72 @@ Model *SceneGraphNode::processMesh(const aiMesh *ai_mesh, const aiScene *ai_scen
      * */
     aiMaterial* ai_material = ai_scene->mMaterials[ai_mesh->mMaterialIndex];
 
-    //  Textures
-
-    // Diffuse maps
-    std::vector<Texture> diffuseMaps = loadMaterialTextures(ai_material, aiTextureType_DIFFUSE, "texture_diffuse");
-    textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    // Specular maps
-    std::vector<Texture> specularMaps = loadMaterialTextures(ai_material, aiTextureType_SPECULAR, "texture_specular");
-    textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    //  Normal maps
-    std::vector<Texture> normalMaps = loadMaterialTextures(ai_material, aiTextureType_NORMALS, "texture_normal");
-    textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-
-    //  Normal map check
-    GLboolean has_normal_map = false;
-    if(normalMaps.size() > 0)
-        has_normal_map = true;
-
     /*
      *  Bones
      * */
     if(ai_mesh->HasBones())
     {
         std::map<std::string, GLuint> bone_mapping;
-        GLuint num_bones = 0;
-        Bone *armature = new Bone[ai_mesh->mNumBones];
+        GLuint num_bones;
+        Bone *armature;
         VertexBoneData *vertex_bone_data;
-
         fillBoneInfos(bone_mapping, num_bones, armature, vertex_bone_data, ai_mesh);
 
-        ShaderType shader_type = getShaderType(GL_TRUE, diffuseMaps.size(), specularMaps.size(), normalMaps.size());
-        AnimatedMesh *mesh = new AnimatedMesh(vertices, indices, has_normal_map, vertex_bone_data);
+        //  Create AnimatedModel
+        Material *material = new Material(ai_material, GL_TRUE, m_path, m_textures_loaded);
+        AnimatedMesh *mesh = new AnimatedMesh(vertices, indices, material->hasNormalMap(), vertex_bone_data);
         mesh->setupBuffers();
-        AnimatedModel *model = new AnimatedModel(mesh, textures, shader_type, bone_mapping, num_bones, armature, has_normal_map, render_time);
+        AnimatedModel *animated_model = new AnimatedModel(mesh, bone_mapping, num_bones, armature, render_time, material);
 
         //  Adding the AnimatedMesh inside the AnimatedMesh list
-        animated_models->push_back(model);
-        return model;
+        animated_models->push_back(animated_model);
+        return animated_model;
     }
 
     //  No bone
-    ShaderType shader_type = getShaderType(GL_FALSE, diffuseMaps.size(), specularMaps.size(), normalMaps.size());
-    Mesh *mesh = new Mesh(vertices, indices, has_normal_map);
+    Material *material = new Material(ai_material, GL_FALSE, m_path, m_textures_loaded);
+    Mesh *mesh = new Mesh(vertices, indices, material->hasNormalMap());
     mesh->setupBuffers();
-    return new Model(mesh, textures, shader_type, has_normal_map);
+    return new Model(mesh, material);
 }
 
 /*
- *  Load textures from aiMaterial
+ * Fill vertices and indices vectors
+ * from aiMesh
  * */
-std::vector<Texture> SceneGraphNode::loadMaterialTextures(const aiMaterial *mat, const aiTextureType &type, const std::string &type_name)
+void SceneGraphNode::processGeometry(const aiMesh *ai_mesh, std::vector<Vertex> &vertices, std::vector<GLuint> &indices)
 {
-    std::vector<Texture> textures;
-
-    //  For each texture
-    for(GLuint i = 0; i < mat->GetTextureCount(type); i++)
+    /*
+     * Vertices
+     * */
+    for(GLuint i = 0; i < ai_mesh->mNumVertices; i++)
     {
-        aiString str;
-        mat->GetTexture(type, i, &str);
-        GLboolean skip = GL_FALSE;
+        Vertex vertex;
+        vertex.Position = glm::vec3(ai_mesh->mVertices[i].x, ai_mesh->mVertices[i].y, ai_mesh->mVertices[i].z);
+        vertex.Normal = glm::vec3(ai_mesh->mNormals[i].x, ai_mesh->mNormals[i].y, ai_mesh->mNormals[i].z);
 
-        //  Check if texture is not already loaded
-        for(GLuint j = 0; j < m_textures_loaded.size(); j++)
+        if(ai_mesh->mTextureCoords[0])
+            vertex.TexCoords = glm::vec2(ai_mesh->mTextureCoords[0][i].x, ai_mesh->mTextureCoords[0][i].y);
+        else
+            vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+
+        if(ai_mesh->HasTangentsAndBitangents())
         {
-            if(m_textures_loaded[j].path == str.C_Str())
-            {
-                //  If texture already loaded
-                //  Push it back
-                textures.push_back(m_textures_loaded[j]);
-                skip = GL_TRUE;
-                break;
-            }
+            vertex.Tangent = glm::vec3(ai_mesh->mTangents[i].x, ai_mesh->mTangents[i].y, ai_mesh->mTangents[i].z);
+            vertex.Bitangent = glm::cross(vertex.Normal, vertex.Tangent);
         }
-        if(!skip)
-        {
-            //  If not already loaded
-            //  Load it
-            Texture texture;
-            texture.id = TextureFromFile(str.C_Str());
-            texture.type = type_name;
-            texture.path = str.C_Str();
-            textures.push_back(texture);
-            m_textures_loaded.push_back(texture);
-        }
+        vertices.push_back(vertex);
     }
-    return textures;
-}
 
-/*
- *  Load texture from a file
- *  Returns the id of the texture
- * */
-GLint SceneGraphNode::TextureFromFile(const GLchar *path)
-{
-    //  Concat directory path to filename
-    std::string filename;
-    if(path[0] == '/')
-        filename = path;
-    else
-        filename = m_directory + '/' + std::string(path);
-
-    GLuint texture_ID;
-    glGenTextures(1, &texture_ID);
-
-    glBindTexture(GL_TEXTURE_2D, texture_ID);
-    QImage image_container(filename.c_str());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_container.width(), image_container.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image_container.bits());
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    // Parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return texture_ID;
+    /*
+     * Indexes
+     * */
+    for(GLuint i = 0; i < ai_mesh->mNumFaces; ++i)
+    {
+        aiFace face = ai_mesh->mFaces[i];
+        for(GLuint j = 0; j < face.mNumIndices; ++j)
+            indices.push_back(face.mIndices[j]);
+    }
 }
 
 
@@ -353,6 +258,8 @@ GLint SceneGraphNode::TextureFromFile(const GLchar *path)
  * */
 void SceneGraphNode::fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, GLuint &num_bones, Bone *armature, VertexBoneData *&vertex_bone_data, const aiMesh *ai_mesh)
 {
+    num_bones = 0;
+    armature = new Bone[ai_mesh->mNumBones];
     vertex_bone_data = new VertexBoneData[ai_mesh->mNumVertices];
 
     //  For each bone of the ai_mesh
@@ -397,14 +304,12 @@ void SceneGraphNode::fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, 
 /*
  * Scene graph root creation from aiScene
  * */
-SceneGraphRoot::SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, const std::string &path, std::vector<Model *> (&models)[NB_SHADER_TYPES], GLfloat &render_time) :
+SceneGraphRoot::SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time) :
     SceneGraphNode(path, global_inverse_transform)
 {
-    m_directory = path;
-
     //  Process root node
     //  Fills the mesh vector
-    processNode(0, m_global_inverse_transform, ai_scene->mRootNode, ai_scene, models, &m_animated_models, render_time);
+    processNode(0, m_global_inverse_transform, ai_scene->mRootNode, ai_scene, scene_models, &m_animated_models, render_time);
 
     if(ai_scene->HasAnimations())
     {

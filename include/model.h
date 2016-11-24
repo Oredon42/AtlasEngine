@@ -24,6 +24,7 @@
 
 #include "shader.h"
 #include "mesh.h"
+#include "material.h"
 
 #define NUM_BONES_PER_VERTEX 4
 
@@ -35,36 +36,21 @@ class Animation;
 
 struct Channel;
 
-struct Texture
-{
-    GLuint id;
-    std::string type;
-    std::string path;
-};
-
-struct Material
-{
-    glm::vec3 diffuse;
-    glm::vec3 specular;
-    float shininess;
-    Texture *texture;
-};
-
 class Model
 {
 public:
     Model();
-    Model(Mesh *mesh, const std::vector<Texture> &textures, const ShaderType &shader_type, const GLboolean &has_normal_map);
+    Model(Mesh *mesh, Material *material);
     ~Model();
 
     virtual void draw(const Shader &shader);
 
     //  Getters
-    inline GLuint getShaderTypeIndex() const{return m_shader_type.index;}
+    inline GLuint getShaderTypeIndex() const{return m_material->getShaderTypeIndex();}
 
     //  Setters
-    inline void setDiffuse(const glm::vec3 &diffuse){m_material.diffuse = diffuse;}
-    inline void setSpecular(const glm::vec3 &specular){m_material.specular = specular;}
+    //inline void setDiffuse(const glm::vec3 &diffuse){m_material.diffuse = diffuse;}
+    //inline void setSpecular(const glm::vec3 &specular){m_material.specular = specular;}
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}
 
 protected:
@@ -72,9 +58,8 @@ protected:
 
     std::vector<Texture> m_textures;
 
-    Material m_material;
+    Material *m_material;
     ShaderType m_shader_type;
-    GLboolean m_has_normal_map;
 
     glm::mat4 m_transform;
 };
@@ -107,7 +92,7 @@ class AnimatedModel : public Model
 {
     static const GLuint MAX_BONES = 100;
 public:
-    AnimatedModel(AnimatedMesh *mesh, const std::vector<Texture> &textures, const ShaderType &shader_type, const std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *&armature, const GLboolean &has_normal_map, GLfloat &render_time);
+    AnimatedModel(AnimatedMesh *mesh, const std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *&armature, GLfloat &render_time, Material *material);
 
     virtual void draw(const Shader &shader);
 

@@ -48,28 +48,23 @@ void AtlasWidget::initializeGL()
 
     addScene();
 
-    /*GLuint nb_boucles = 6;
-    for(GLuint i = 0; i < nb_boucles; ++i)
-        for(GLuint j = 0; j < nb_boucles; ++j)
-            for(GLuint k = 0; k < nb_boucles; ++k)
-            {
-                m_current_scene->importFile("/obj/cube2/cube2.obj");
-                m_current_scene->translate(glm::vec3(2*i,j,k),"Cube");
-            }*/
-
     //m_current_scene->importFile("/obj/cube2/cube2.obj");
     //m_current_scene->importFile("/obj/Astroboy/astroBoy_walk_Maya2.dae");
     //m_current_scene->importFile("/obj/bras/bras2.dae");
     //m_current_scene->importFile("/obj/astro/astro.fbx");
     //m_current_scene->importAnimation("default", "/obj/astro/astro_pose1.fbx");
     //m_current_scene->importFile("/obj/dabrovic-sponza/sponza.obj");
-    m_current_scene->importFile("/obj/dragon/dragon.obj");
+    //m_current_scene->importFile("/obj/dragon/dragon.obj");
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-
+    m_current_scene->importFile("/obj/test/test.dae");
 
     m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f);
+    m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(0.2f), glm::vec3(10.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f);
+    //m_current_scene->addPointLight(glm::vec3(-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f);
+    //m_current_scene->addDirLight(glm::normalize(glm::vec3(-1.f, -1.f, -1.f)),glm::vec3(0.2),glm::vec3(0.8),glm::vec3(1));
+    //m_current_scene->addSpotLight(glm::vec3(0,3,0),glm::vec3(0,0,-1),glm::cos(glm::radians(12.5f)),glm::cos(glm::radians(15.0f)),glm::vec3(0.1f),glm::vec3(0.5),glm::vec3(1.f),1.f,0.7f,1.8f);
 
     /*  END OF SCENES MODIFICATION */
 

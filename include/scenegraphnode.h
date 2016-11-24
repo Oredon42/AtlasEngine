@@ -34,6 +34,7 @@
 #include "lib/assimp/postprocess.h"
 
 #include "shader.h"
+#include "mesh.h"
 
 class Model;
 class AnimatedModel;
@@ -55,14 +56,12 @@ class SceneGraphNode
     friend class Scene;
 public:
     SceneGraphNode();
-    SceneGraphNode(const std::string &path, glm::mat4 &global_inverse_transform);
+    SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform);
     virtual ~SceneGraphNode();
 
-    void processNode(SceneGraphNode *SceneGraphNode, glm::mat4 &global_inverse_transform, aiNode* ai_node, const aiScene* ai_scene, std::vector<Model *> (&models)[NB_SHADER_TYPES], std::vector<AnimatedModel *> *animated_models, GLfloat &render_time);
+    void processNode(SceneGraphNode *SceneGraphNode, glm::mat4 &global_inverse_transform, aiNode* ai_node, const aiScene* ai_scene, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], std::vector<AnimatedModel *> *animated_models, GLfloat &render_time);
     Model *processMesh(const aiMesh *mesh, const aiScene* ai_scene, std::vector<AnimatedModel *> *animated_models, GLfloat &render_time);
-    std::vector<Texture> loadMaterialTextures(const aiMaterial *mat, const aiTextureType &type, const std::string &type_name);
-
-    GLint TextureFromFile(const GLchar *path);
+    void processGeometry(const aiMesh *ai_mesh, std::vector<Vertex> &vertices, std::vector<GLuint> &indices);
 
     //  Animation
     void fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, GLuint &num_bones, Bone *armature, VertexBoneData *&vertex_bone_data, const aiMesh *ai_mesh);
@@ -84,8 +83,8 @@ protected:
 
     std::vector<Model *> m_models[NB_SHADER_TYPES];
 
-    std::string m_directory;
-    std::vector<Texture> m_textures_loaded;
+    std::string &m_path;
+    std::vector<Texture *> m_textures_loaded;
 
     std::string m_name;
 
@@ -109,7 +108,7 @@ protected:
 class SceneGraphRoot : public SceneGraphNode
 {
 public:
-    SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, const std::string &path, std::vector<Model *> (&models)[NB_SHADER_TYPES], GLfloat &render_time);
+    SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, std::__1::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time);
     virtual ~SceneGraphRoot();
 
     void loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models);
