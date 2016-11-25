@@ -1,17 +1,7 @@
 #ifndef DIRLIGHT_H
 #define DIRLIGHT_H
 
-#ifndef OGL_DEF
-#define OGL_DEF
-#ifdef __APPLE__
-    #include <QGLWidget>
-#elif __linux__
-    #define GL_GLEXT_PROTOTYPES
-    #include <GL/gl.h>
-#elif _WIN32
-    #include "lib/glew/glew.h"
-#endif
-#endif
+#include "openglincludes.h"
 
 #define GLM_FORCE_RADIANS
 #include "lib/glm/glm.hpp"

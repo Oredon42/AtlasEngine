@@ -3,20 +3,10 @@
 
 #include <string>
 
-#ifndef OGL_DEF
-#define OGL_DEF
-#ifdef __APPLE__
-    #include <QGLWidget>
-#elif __linux__
-    #define GL_GLEXT_PROTOTYPES
-    #include <GL/gl.h>
-#elif _WIN32
-    #define GLEW_STATIC
-    #include <GL/glew.h>
-#endif
-#endif
+#include "openglincludes.h"
 
 #include "shader.h"
+#include "framebuffer.h"
 
 class Scene;
 
@@ -26,15 +16,15 @@ public:
     Renderer();
 
     void init(const std::string &path, const GLuint &window_width, const GLuint &window_height, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
-    void drawSceneForward(Scene &scene, const GLfloat &render_time, const GLfloat &window_width, const GLfloat &window_height, GLboolean (&keys)[1024]);
+    void drawSceneForward(Scene &scene, const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height, GLboolean (&keys)[1024]);
     void drawSceneDeffered(Scene &scene, const GLfloat &render_time, const GLfloat &window_width, const GLfloat &window_height, GLboolean (&keys)[1024]);
 
     void reloadShaders();
 
 private:
-    GLuint m_default_buffer_binding;
+    GLint m_default_buffer_binding;
 
-    GLuint m_gBuffer;
+    Framebuffer m_gBuffer;
     GLuint m_rbo_depth;
     GLuint m_quad_VAO, m_quad_VBO;
     GLfloat m_quad_vertices[20];
@@ -44,8 +34,10 @@ private:
     Shader m_shader_forward[NB_SHADER_TYPES];
     ShaderType m_shader_types[NB_SHADER_TYPES];
 
-    GLuint m_HDR_buffer;
+    Framebuffer m_hdr_buffer;
+    Shader m_hdr_shader;
     GLuint m_color_buffer;
+    GLfloat m_exposure;
 
     GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
 };

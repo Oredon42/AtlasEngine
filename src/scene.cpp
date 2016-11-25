@@ -158,6 +158,7 @@ GLboolean Scene::importFile(const std::string &path)
      * */
     glm::mat4 global_inverse_transform = glm::inverse(assimpToGlmMat4(scene->mRootNode->mTransformation));
     m_roots.push_back(new SceneGraphRoot(scene, global_inverse_transform, new_path, m_models, m_render_time));
+    m_roots[m_roots.size() - 1]->spreadTransform(glm::mat4(1));
 
     //  Import lights
     if(scene->HasLights())

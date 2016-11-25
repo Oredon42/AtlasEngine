@@ -10,19 +10,7 @@
 
 #include <QtGui/QImage>
 
-#ifndef OGL_DEF
-#define OGL_DEF
-#ifdef __APPLE__
-    #include <QGLWidget>
-//#include <OpenGL/gl.h>
-#elif __linux__
-    #define GL_GLEXT_PROTOTYPES
-    #include <GL/gl.h>
-#elif _WIN32
-    #define GLEW_STATIC
-    #include <GL/glew.h>
-#endif
-#endif
+#include "openglincludes.h"
 
 #define GLM_FORCE_RADIANS
 #include "lib/glm/glm.hpp"
@@ -74,10 +62,9 @@ public:
     void rotate(const glm::vec3 &r, const std::string &name);
     void scale(const glm::vec3 &s, const std::string &name);
     void calculateTransform(const glm::mat4 &parent_transform);
-
-protected:
     inline void spreadTransform(const glm::mat4 &parent_transform){calculateTransform(parent_transform);for(GLuint i = 0; i < m_children.size(); ++i)m_children[i]->spreadTransform(m_transform);}
 
+protected:
     SceneGraphNode *m_parent;
     std::vector<SceneGraphNode *> m_children;
 

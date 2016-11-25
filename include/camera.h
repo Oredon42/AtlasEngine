@@ -1,17 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#ifndef OGL_DEF
-#define OGL_DEF
-#ifdef __APPLE__
-    #include <QGLWidget>
-#elif __linux__
-    #define GL_GLEXT_PROTOTYPES
-    #include <GL/gl.h>
-#elif _WIN32
-    #include "lib/glew/glew.h"
-#endif
-#endif
+#include "openglincludes.h"
 
 #include <QtGui/QKeyEvent>
 #include <iostream>

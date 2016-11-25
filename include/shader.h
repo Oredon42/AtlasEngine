@@ -1,14 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#ifdef __APPLE__
-    #include <QGLWidget>
-#elif __linux__
-    #define GL_GLEXT_PROTOTYPES
-    #include <GL/gl.h>
-#elif _WIN32
-    #include "lib/glew/glew.h"
-#endif
+#include "openglincludes.h"
 
 #include <string>
 #include <fstream>

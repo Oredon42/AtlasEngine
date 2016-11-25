@@ -2,17 +2,17 @@
 #include "include/scene.h"
 #include "include/pointlight.h"
 
+#include <QOpenGLFramebufferObject>
+
 Renderer::Renderer() :
-    m_gBuffer(0),
     m_rbo_depth(0),
     m_quad_VAO(0),
     m_quad_VBO(0),
     m_gPosition(0),
     m_gNormal(0),
-    m_gAlbedoSpec(0)
+    m_gAlbedoSpec(0),
+    m_exposure(1.f)
 {
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &m_default_buffer_binding);
-
     m_shader_types[0].setValues(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, 0);
     m_shader_types[1].setValues(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE, 1);
     m_shader_types[2].setValues(GL_FALSE, GL_TRUE, GL_FALSE, GL_FALSE, 2);
@@ -37,7 +37,14 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     /*
      * G BUFFER
      * */
-    glGenFramebuffers(1, &m_gBuffer);
+    m_gBuffer.init(window_width, window_height);
+
+    FramebufferTextureDatas gTexture_datas[3] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),         //  position
+                                                 FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),         //  normal
+                                                 FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE)}; //  albedo
+
+    m_gBuffer.attachTextures(gTexture_datas, 3);
+    /*glGenFramebuffers(1, &m_gBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer);
 
     // Position
@@ -74,7 +81,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "gBuffer not complete!" << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
 
     m_quad_vertices[0] = -1.0f; m_quad_vertices[1] = 1.0f; m_quad_vertices[2] = 0.0f; m_quad_vertices[3] = 0.0f; m_quad_vertices[4] = 1.0f;
     m_quad_vertices[5] = -1.0f; m_quad_vertices[6] = -1.0f; m_quad_vertices[7] = 0.0f; m_quad_vertices[8] = 0.0f; m_quad_vertices[9] = 0.0f;
@@ -109,7 +116,17 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     /*
      * HDR
      * */
-    glGenFramebuffers(1, &m_HDR_buffer);
+    m_hdr_shader.init("/shaders/hdr.vert", "/shaders/hdr.frag", path);
+    m_hdr_shader.use();
+    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "hdrBuffer"), 0);
+    glUseProgram(0);
+
+    m_hdr_buffer.init(window_width, window_height);
+
+    FramebufferTextureDatas hdr_texture_datas[1] = {FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT)};
+
+    m_hdr_buffer.attachTextures(hdr_texture_datas, 1);
+    /*glGenFramebuffers(1, &m_HDR_buffer);
 
     glGenTextures(1, &m_color_buffer);
     glBindTexture(GL_TEXTURE_2D, m_color_buffer);
@@ -125,15 +142,50 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_color_buffer, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
 }
 
 /*
  * Render a scene using forward rendering
  * */
-void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const GLfloat &window_width, const GLfloat &window_height, GLboolean (&keys)[1024])
+void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height, GLboolean (&keys)[1024])
 {
+    /*
+     * Scene drawing pass
+     * */
+    glBindFramebuffer(GL_FRAMEBUFFER, m_hdr_buffer.getBuffer());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     scene.drawForward(m_shader_forward, keys, render_time, window_width, window_height);
+
+    /*
+     * HDR pass
+     * */
+    QOpenGLFramebufferObject::bindDefault();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_hdr_shader.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(0));
+
+    //  Use last level of mipmap to get the average brightness of the scene
+    glGenerateMipmap(GL_TEXTURE_2D);
+    GLint num_levels = floor(log2(std::max(window_width, window_height)));
+    GLfloat average[4];
+    glGetTexImage(GL_TEXTURE_2D, num_levels, GL_RGBA, GL_FLOAT, average);
+
+    GLfloat average_brightness = 0.2126*average[0] + 0.7152*average[1] + 0.0722*average[2];
+    average_brightness=(average_brightness < 0.3f)?0.3f:(average_brightness > 1.f)?1.f:average_brightness; // clamp
+    GLfloat target_exposure = 0.5f / average_brightness;
+    //  Slowly reach exposure
+    m_exposure = m_exposure + (target_exposure - m_exposure) * 0.1f;
+
+    glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "hdr"), false);//hdr);
+    glUniform1f(glGetUniformLocation(m_hdr_shader.getProgram(), "exposure"), m_exposure);
+
+    glBindVertexArray(m_quad_VAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
 }
 
 /*
@@ -141,36 +193,34 @@ void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const 
  * */
 void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const GLfloat &window_width, const GLfloat &window_height, GLboolean (&keys)[1024])
 {
-    GLenum err;
-    while((err = glGetError()) != GL_NO_ERROR)
-        std::cerr << "OpenGL error: " << err << std::endl;
-
-    // GEOMETRY PASS
-    glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer);
-
+    /*
+     * Geometry pass
+     * */
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer.getBuffer());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     scene.drawDeferred(m_shader_geometry_pass, keys, render_time, window_width, window_height);
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_buffer_binding);
 
-    // LIGHTNING PASS
+    /*
+     * Lightning pass
+     * */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_shader_lightning_pass.use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_gPosition);
+    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(0));
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_gNormal);
+    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(1));
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_gAlbedoSpec);
+    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(2));
 
-    // Also send light relevant uniforms
     for(GLuint i = 0; i < scene.numberOfPointLights(); ++i)
         scene.sendPointLightDatas(i, m_shader_lightning_pass);
 
     scene.sendCameraDatas(m_shader_lightning_pass, window_width, window_height);
 
-    // Finally render quad
     glBindVertexArray(m_quad_VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
