@@ -37,7 +37,7 @@ public:
     inline void updateCamera(const GLfloat &xoffset, const GLfloat &yoffset){m_cameras[m_current_camera]->setOffset(xoffset, yoffset);}
     inline void addDirLight(const glm::vec3 &direction, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular){m_dirlights.push_back(DirLight(direction, ambient, diffuse, specular));}
     inline void addSpotLight(const glm::vec3 &position, const glm::vec3 &direction, const GLfloat &cutOff, const GLfloat &outerCutOff, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic){m_spotlights.push_back(SpotLight(position, direction, cutOff, outerCutOff, ambient, diffuse, specular, constant, linear, quadratic));}
-    inline void addPointLight(const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic){m_pointlights.push_back(PointLight(m_pointlights.size(), position, ambient, diffuse, specular, constant, linear, quadratic));}
+    inline void addPointLight(const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic, const GLfloat &intensity){m_pointlights.push_back(PointLight(m_pointlights.size(), position, ambient, diffuse, specular, constant, linear, quadratic, intensity));}
     inline void addCamera(const glm::vec3 &pos, const glm::vec3 &front, const glm::vec3 &up, const GLfloat &speed, const GLfloat &fov){m_cameras.push_back(new Camera(pos, front, up, speed, fov));}
 
     //  Getters

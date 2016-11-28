@@ -1,10 +1,12 @@
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
+layout (location = 2) out float Brightness;
+
 in vec3 FragPos;
 in vec3 Normal;
 #if defined(TEXTURE) || defined(NORMAL) || defined(SPECULAR)
 in vec2 TexCoords;
 #endif
-
-out vec4 color;
 
 struct Material
 {
@@ -23,6 +25,15 @@ struct Material
     float metalness;
     float refraction;
 };
+
+vec3 getDiffuse
+{
+#ifdef TEXTURE
+    return vec3(texture(material.texture_diffuse1, TexCoords));
+#else
+    return material.diffuse;
+#endif
+}
 
 struct DirLight {
     vec3 direction;
@@ -151,6 +162,14 @@ void main()
     for(int i = 0; i < SPOTLIGHT; i++)
         result += CalcSpotLight(spotLights[i], normal, FragPos, viewDir);
 #endif
+    
+    result = dot(result * vec3(1, 0, 0));
+    
+    Brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
+    if(Brightness > 1.0)
+        BrightColor = vec4(result, 1.0);
+    
+    Brightness = clamp(Brightness, 0.3, 0.7);
 
-    color = vec4(result, 1.0);
+    FragColor = vec4(result, 1.0);
 }

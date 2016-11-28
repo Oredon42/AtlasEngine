@@ -24,7 +24,7 @@ public:
     ~Framebuffer();
 
     void init(const GLuint &width, const GLuint &height);
-    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size);
+    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size, GLuint clamp_to_edges = GL_FALSE, GLuint renderbuffer = GL_TRUE);
 //  Vecteur de textures?
     //  Getters
     inline GLuint getBuffer() const{return m_buffer;}

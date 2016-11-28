@@ -51,6 +51,7 @@ private:
     GLfloat m_roughness;
     GLfloat m_metalness;
     GLfloat m_refraction;
+    GLfloat m_opacity;
 
     GLboolean m_has_normal_map;
 

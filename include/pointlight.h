@@ -14,7 +14,7 @@ class PointLight
 {
 public:
     PointLight();
-    PointLight(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic);
+    PointLight(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic, const GLfloat &intensity);
     PointLight(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &diffuse, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic);
     PointLight(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &diffuse);
     void init(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic);
@@ -38,6 +38,8 @@ private:
     GLfloat m_constant;
     GLfloat m_linear;
     GLfloat m_quadratic;
+
+    GLfloat m_intensity;
 
     glm::vec3 m_ambient;
     glm::vec3 m_diffuse;

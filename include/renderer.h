@@ -21,6 +21,9 @@ public:
 
     void reloadShaders();
 
+    inline void switchHDR(){m_hdr = !m_hdr;}
+    inline void switchBloom(){m_bloom = !m_bloom;}
+
 private:
     GLint m_default_buffer_binding;
 
@@ -38,6 +41,11 @@ private:
     Shader m_hdr_shader;
     GLuint m_color_buffer;
     GLfloat m_exposure;
+    GLboolean m_hdr;
+
+    Framebuffer m_blur_buffers[2];
+    Shader m_blur_shaders[3];
+    GLboolean m_bloom;
 
     GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
 };

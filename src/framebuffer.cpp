@@ -21,9 +21,13 @@ void Framebuffer::init(const GLuint &width, const GLuint &height)
     m_height = height;
 }
 
-void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, const GLuint &size)
+void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, const GLuint &size, GLuint clamp_to_edges, GLuint renderbuffer)
 {
-    GLuint *attachments = new GLuint[size];
+    GLuint *attachments;
+
+    if(size > 0)
+        attachments = new GLuint[size];
+
     m_textures = new GLuint[size];
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
@@ -35,18 +39,30 @@ void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, c
         glTexImage2D(GL_TEXTURE_2D, 0, texture_datas[i].internal_format, m_width, m_height, 0, texture_datas[i].format, texture_datas[i].type, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if(clamp_to_edges)
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        }
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i], 0);
 
-        attachments[i] = GL_COLOR_ATTACHMENT0 + i;
+        if(size > 0)
+            attachments[i] = GL_COLOR_ATTACHMENT0 + i;
     }
 
-    glDrawBuffers(size, attachments);
-    delete[] attachments;
+    if(size > 0)
+    {
+        glDrawBuffers(size, attachments);
+        delete[] attachments;
+    }
 
-    glGenRenderbuffers(1, &m_render_buffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_render_buffer);
+    if(renderbuffer)
+    {
+        glGenRenderbuffers(1, &m_render_buffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_render_buffer);
+    }
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cerr << "Framebuffer not complete!" << std::endl;

@@ -7,6 +7,7 @@ PointLight::PointLight() :
     m_constant(1.0f),
     m_linear(0.7f),
     m_quadratic(1.8f),
+    m_intensity(1.f),
     m_ambient(0.1f, 0.1f, 0.1f),
     m_diffuse(0.5f, 0.5f, 0.5f),
     m_specular(1.0f, 1.0f, 1.0f)
@@ -14,12 +15,13 @@ PointLight::PointLight() :
 
 }
 
-PointLight::PointLight(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic) :
+PointLight::PointLight(const GLuint &indice, const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic, const GLfloat &intensity) :
     m_indice(indice),
     m_position(position),
     m_constant(constant),
     m_linear(linear),
     m_quadratic(quadratic),
+    m_intensity(intensity),
     m_ambient(ambient),
     m_diffuse(diffuse),
     m_specular(specular)
@@ -33,6 +35,7 @@ PointLight::PointLight(const GLuint &indice, const glm::vec3 &position, const gl
     m_constant(constant),
     m_linear(linear),
     m_quadratic(quadratic),
+    m_intensity(1.f),
     m_ambient(glm::vec3(0.1f, 0.1f, 0.1f)),
     m_diffuse(diffuse),
     m_specular(glm::vec3(1.0f, 1.0f, 1.0f))
@@ -46,6 +49,7 @@ PointLight::PointLight(const GLuint &indice, const glm::vec3 &position, const gl
     m_constant(1.0f),
     m_linear(0.7f),
     m_quadratic(1.8f),
+    m_intensity(1.f),
     m_ambient(glm::vec3(0.1f, 0.1f, 0.1f)),
     m_diffuse(diffuse),
     m_specular(glm::vec3(1.0f, 1.0f, 1.0f))
@@ -77,4 +81,5 @@ void PointLight::sendDatas(const Shader &shader) const
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("pointLights[" + indice + "].constant").c_str()), m_constant);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("pointLights[" + indice + "].linear").c_str()), m_linear);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("pointLights[" + indice + "].quadratic").c_str()), m_quadratic);
+    glUniform1f(glGetUniformLocation(shader.getProgram(), ("pointLights[" + indice + "].intensity").c_str()), m_intensity);
 }
