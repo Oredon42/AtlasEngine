@@ -21,7 +21,7 @@ void Framebuffer::init(const GLuint &width, const GLuint &height)
     m_height = height;
 }
 
-void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, const GLuint &size, GLuint clamp_to_edges, GLuint renderbuffer)
+void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, const GLuint &size, GLint clamp, GLuint renderbuffer)
 {
     GLuint *attachments;
 
@@ -39,10 +39,10 @@ void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, c
         glTexImage2D(GL_TEXTURE_2D, 0, texture_datas[i].internal_format, m_width, m_height, 0, texture_datas[i].format, texture_datas[i].type, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        if(clamp_to_edges)
+        if(clamp)
         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp);
         }
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i], 0);
 

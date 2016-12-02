@@ -92,9 +92,6 @@ void Scene::drawForward(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&ke
  * */
 void Scene::drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height)
 {
-
-    //m_spotlights[0].updatePosDir(m_cameras[0]->getPos(), m_cameras[0]->getFront());
-
     Camera *current_camera = m_cameras[m_current_camera];
     current_camera->orientate();
     current_camera->move(keys, render_time);

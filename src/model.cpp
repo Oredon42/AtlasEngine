@@ -26,10 +26,6 @@ Model::~Model()
     delete m_material;
 }
 
-
-/*
- * Deferred shading drawing
- * */
 void Model::draw(const Shader &shader)
 {
     glUniformMatrix4fv(glGetUniformLocation(shader.getProgram(), "model"), 1, GL_FALSE, glm::value_ptr(m_transform));
@@ -210,18 +206,20 @@ void AnimatedModel::buildBoneTree(const aiNode *ai_node)
 {
     std::string bone_name = ai_node->mName.C_Str();
 
-    //  If has bone
+    //  if AM has bone
     if(m_bone_mapping.find(ai_node->mName.C_Str()) != m_bone_mapping.end())
     {
         for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
         {
             std::string child_name = ai_node->mChildren[i]->mName.C_Str();
 
+            //  if AM has child bone
             if(m_bone_mapping.find(child_name) != m_bone_mapping.end())
             {
                 GLuint  parent_index = m_bone_mapping.find(bone_name)->second,
                         child_index = m_bone_mapping.find(child_name)->second;
 
+                //  set parent
                 m_armature[child_index].parent = parent_index;
                 m_armature[parent_index].children.push_back(child_index);
 

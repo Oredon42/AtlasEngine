@@ -1,6 +1,7 @@
-#include <iostream>
 #include <fstream>
 #include <QFileDialog>
+#include <QApplication>
+#include <QDesktopWidget>
 
 #include "include/atlaswidget.h"
 #include "include/renderer.h"
@@ -58,13 +59,13 @@ void AtlasWidget::initializeGL()
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-    m_current_scene->importFile("/obj/test/test2.dae");
+    m_current_scene->importFile("/obj/test/test.dae");
 
     m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
-    m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 10.f);
+    m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
     m_current_scene->addPointLight(glm::vec3(-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
-    m_current_scene->addDirLight(glm::normalize(glm::vec3(-1.f, -1.f, -1.f)),glm::vec3(0.2),glm::vec3(0.8),glm::vec3(1));
-    m_current_scene->addSpotLight(glm::vec3(0,3,0),glm::vec3(0,0,-1),glm::cos(glm::radians(12.5f)),glm::cos(glm::radians(15.0f)),glm::vec3(0.1f),glm::vec3(0.5),glm::vec3(1.f),1.f,0.7f,1.8f);
+    //m_current_scene->addDirLight(glm::normalize(glm::vec3(-1.f, -1.f, -1.f)),glm::vec3(0.2),glm::vec3(0.8),glm::vec3(1));
+    //m_current_scene->addSpotLight(glm::vec3(0,3,0),glm::vec3(0,0,-1),glm::cos(glm::radians(12.5f)),glm::cos(glm::radians(15.0f)),glm::vec3(0.1f),glm::vec3(0.5),glm::vec3(1.f),1.f,0.7f,1.8f);
 
     /*  END OF SCENES MODIFICATION */
 
@@ -118,23 +119,29 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
         //m_current_scene = (m_current_scene == 0)?m_current_scene:m_num_scenes - 1;
         break;
 
+    case Qt::Key_R:
+        m_renderer.reloadShaders();
+        break;
+
     case Qt::Key_F:
-        /*if(m_fullscreen)
+        if(m_fullscreen)
         {
             m_window_width = 800;
             m_window_height = 600;
-            setWindowState(Qt::WindowMaximized);
+            parentWidget()->parentWidget()->setWindowState(Qt::WindowMaximized);
+            resize(m_window_width, m_window_height);
             setGeometry(0, 0, 800, 600);
             m_fullscreen = false;
         }
         else
         {
-            setWindowState(Qt::WindowFullScreen);
+            parentWidget()->parentWidget()->setWindowState(Qt::WindowFullScreen);
             m_window_width = QApplication::desktop()->width();
             m_window_height = QApplication::desktop()->height();
+            resize(m_window_width, m_window_height);
             glViewport(0, 0, m_window_width, m_window_height);
             m_fullscreen = true;
-        }*/
+        }
         break;
 
     case Qt::Key_H:
@@ -143,6 +150,10 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
 
     case Qt::Key_B:
         m_renderer.switchBloom();
+        break;
+
+    case Qt::Key_N:
+        m_renderer.switchAdaptation();
         break;
 
     default:

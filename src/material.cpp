@@ -3,9 +3,9 @@
 Material::Material() :
     m_diffuse(glm::vec3(1.0, 0.0, 1.0)),
     m_specular(glm::vec3(1.0, 1.0, 1.0)),
-    m_roughness(0.1),
-    m_metalness(0.f),
-    m_refraction(1.f),
+    m_roughness(0.1f),
+    m_metalness(1.f),
+    m_refraction(1.2f),
     m_textures(0)
 {
 
@@ -19,12 +19,12 @@ Material::Material(const aiMaterial *ai_material, const GLboolean &animated, con
     m_diffuse = glm::vec3(color.r, color.g, color.b);
     ai_material->Get(AI_MATKEY_COLOR_SPECULAR, color);
     m_specular = glm::vec3(color.r, color.g, color.b);
-    ai_material->Get(AI_MATKEY_OPACITY, m_opacity);
+    /*ai_material->Get(AI_MATKEY_OPACITY, m_opacity);
     ai_material->Get(AI_MATKEY_SHININESS, m_shininess);
     ai_material->Get(AI_MATKEY_SHININESS_STRENGTH, m_metalness);
-    ai_material->Get(AI_MATKEY_REFRACTI, m_refraction);
+    ai_material->Get(AI_MATKEY_REFRACTI, m_refraction);*/
 
-    m_roughness = 1.f;
+    //m_roughness = 1.f;
 
     //  Textures
     std::vector<Texture *> diffuseMaps = loadMaterialTextures(ai_material, aiTextureType_DIFFUSE, "texture_diffuse", path, textures_loaded);

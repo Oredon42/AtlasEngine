@@ -5,14 +5,17 @@
 #include <QOpenGLFramebufferObject>
 
 Renderer::Renderer() :
+    m_width(800),
+    m_height(600),
     m_rbo_depth(0),
     m_quad_VAO(0),
     m_quad_VBO(0),
-    m_gPosition(0),
-    m_gNormal(0),
     m_exposure(1.f),
     m_hdr(GL_TRUE),
+    m_adaptation(GL_TRUE),
     m_bloom(GL_TRUE),
+    m_gPosition(0),
+    m_gNormal(0),
     m_gAlbedoSpec(0)
 {
     m_shader_types[0].setValues(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, 0);
@@ -36,16 +39,17 @@ Renderer::Renderer() :
 
 void Renderer::init(const std::string &path, const GLuint &window_width, const GLuint &window_height, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
 {
+    setDimensions(window_width, window_height);
+
     /*
      * G BUFFER
      * */
     m_gBuffer.init(window_width, window_height);
-
-    FramebufferTextureDatas gTexture_datas[3] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),         //  position
+    FramebufferTextureDatas gTexture_datas[3] = {FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT),       //  position + depth
                                                  FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),         //  normal
                                                  FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE)}; //  albedo
 
-    m_gBuffer.attachTextures(gTexture_datas, 3);
+    m_gBuffer.attachTextures(gTexture_datas, 3, GL_CLAMP_TO_EDGE);
 
 
     m_quad_vertices[0] = -1.0f; m_quad_vertices[1] = 1.0f; m_quad_vertices[2] = 0.0f; m_quad_vertices[3] = 0.0f; m_quad_vertices[4] = 1.0f;
@@ -70,7 +74,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
         m_shader_forward[i].init(m_shader_types[i], RenderingMethod::FORWARD, nb_dirlights, nb_pointlights, nb_spotlights);
         m_shader_geometry_pass[i].init(m_shader_types[i], RenderingMethod::DEFFERED, nb_dirlights, nb_pointlights, nb_spotlights);
     }
-    m_shader_lightning_pass.init("/shaders/deffered_shading.vert", "/shaders/deffered_shading.frag", path);
+    m_shader_lightning_pass.init("shaders/deffered_shading.vert", "shaders/deffered_shading.frag", path);
 
     m_shader_lightning_pass.use();
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gPosition"), 0);
@@ -81,27 +85,28 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     /*
      * HDR
      * */
-    m_hdr_shader.init("/shaders/hdr.vert", "/shaders/hdr.frag", path);
+    m_hdr_shader.init("shaders/hdr.vert", "shaders/hdr.frag", path);
     m_hdr_shader.use();
     glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "scene"), 0);
     glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "bloomBlur"), 1);
     glUseProgram(0);
     m_hdr_buffer.init(window_width, window_height);
-    FramebufferTextureDatas hdr_texture_datas[2] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),
-                                                    FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT)};
-    m_hdr_buffer.attachTextures(hdr_texture_datas, 2, GL_TRUE);
+    FramebufferTextureDatas hdr_texture_datas[3] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),
+                                                    FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT),
+                                                    FramebufferTextureDatas(GL_R16F, GL_RED, GL_FLOAT)};
+    m_hdr_buffer.attachTextures(hdr_texture_datas, 3, GL_CLAMP_TO_BORDER);
 
     /*
      * BLOOM
      * */
-    m_blur_shaders[0].init("/shaders/blur.vert", "/shaders/blurv.frag", path);
-    m_blur_shaders[1].init("/shaders/blur.vert", "/shaders/blurh.frag", path);
-    m_blur_shaders[2].init("/shaders/blur.vert", "/shaders/blurmipmap.frag", path);
+    m_blur_shaders[0].init("shaders/blur.vert", "shaders/blurv.frag", path);
+    m_blur_shaders[1].init("shaders/blur.vert", "shaders/blurh.frag", path);
+    m_blur_shaders[2].init("shaders/blur.vert", "shaders/blurmipmap.frag", path);
     m_blur_buffers[0].init(window_width, window_height);
     m_blur_buffers[1].init(window_width, window_height);
     FramebufferTextureDatas bloom_texture_datas[1] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT)};
-    m_blur_buffers[0].attachTextures(bloom_texture_datas, 1, GL_TRUE, GL_FALSE);
-    m_blur_buffers[1].attachTextures(bloom_texture_datas, 1, GL_TRUE, GL_FALSE);
+    m_blur_buffers[0].attachTextures(bloom_texture_datas, 1, GL_CLAMP_TO_EDGE, GL_FALSE);
+    m_blur_buffers[1].attachTextures(bloom_texture_datas, 1, GL_CLAMP_TO_EDGE, GL_FALSE);
 }
 
 /*
@@ -109,9 +114,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
  * */
 void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height, GLboolean (&keys)[1024])
 {
-    GLfloat background_brightness = 0.2126*scene.getBackgroundColor().x + 0.7152*scene.getBackgroundColor().y + 0.0722*scene.getBackgroundColor().z;
-    background_brightness=(background_brightness < 0.3f)?0.3f:(background_brightness > 1.f)?1.f:background_brightness; // clamp
-    glClearColor(scene.getBackgroundColor().x, scene.getBackgroundColor().y, scene.getBackgroundColor().z, background_brightness);
+    glClearColor(scene.getBackgroundColor().x, scene.getBackgroundColor().y, scene.getBackgroundColor().z, 0.5f);
 
     /*
      * Scene drawing pass
@@ -121,65 +124,12 @@ void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const 
 
     scene.drawForward(m_shader_forward, keys, render_time, window_width, window_height);
 
-    /*
-     * Generate mipmaps of 2nd texture
-     * */
-    glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(1));
+    glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(2));
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    //  Use last level of mipmap to get the average brightness of the scene
-    GLint num_levels = floor(log2(std::max(window_width, window_height)));
-    GLfloat average[4];
-    glGetTexImage(GL_TEXTURE_2D, num_levels, GL_RGBA, GL_FLOAT, average);
+    generateBloom();
 
-    GLfloat average_brightness = average[3];
-    GLfloat target_exposure = 0.5f / average_brightness;
-
-    m_exposure = m_exposure + (target_exposure - m_exposure) * 0.1f;
-
-
-    /*
-     * Bloom
-     * */
-    glViewport(0, 0, window_width/8, window_height/8);
-    m_blur_shaders[2].use();
-    glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[0].getBuffer());
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(1));
-
-    glBindVertexArray(m_quad_VAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-
-    //GLuint amount = 1;
-
-    for(GLuint i = 8; i >= 1; i=i/2)
-    {
-        glViewport(0, 0, window_width, window_height);
-        m_blur_shaders[0].use();
-        glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[1].getBuffer());
-        //glUniform1i(glGetUniformLocation(m_blur_shaders[0].getProgram(), "horizontal"), 1);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[0].getTexture(0));
-        //glBindTexture(GL_TEXTURE_2D, first_iteration ? m_hdr_buffer.getTexture(1) : m_blur_buffers[!horizontal].getTexture(0));
-
-        glBindVertexArray(m_quad_VAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
-
-        m_blur_shaders[1].use();
-        glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[0].getBuffer());
-        glUniform1i(glGetUniformLocation(m_blur_shaders[0].getProgram(), "size"), i);
-        //glUniform1i(glGetUniformLocation(m_blur_shaders[0].getProgram(), "horizontal"), 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[1].getTexture(0));
-
-        glBindVertexArray(m_quad_VAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
-    }
-
-    glViewport(0, 0, window_width, window_height);
+    glViewport(0, 0, m_width, m_height);
     //  Write output image
     QOpenGLFramebufferObject::bindDefault();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -190,13 +140,11 @@ void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_blur_buffers[1].getTexture(0));
 
-    glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "hdr"), m_hdr);//hdr);
-    glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "bloom"), m_bloom);//bloom);
+    glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "hdr"), m_hdr);
+    glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "bloom"), m_bloom);
     glUniform1f(glGetUniformLocation(m_hdr_shader.getProgram(), "exposure"), m_exposure);
 
-    glBindVertexArray(m_quad_VAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
+    drawQuad();
 }
 
 /*
@@ -212,11 +160,10 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
 
     scene.drawDeferred(m_shader_geometry_pass, keys, render_time, window_width, window_height);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_default_buffer_binding);
-
     /*
      * Lightning pass
      * */
+    QOpenGLFramebufferObject::bindDefault();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_shader_lightning_pass.use();
 
@@ -237,9 +184,77 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
     glBindVertexArray(0);
 }
 
+void Renderer::generateBloom()
+{
+    /*
+     * Adaptation
+     * */
+    glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(2));
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    //  Use last level of mipmap to get the average brightness of the scene
+    if(m_adaptation)
+    {
+        GLfloat average[1];
+        glGetTexImage(GL_TEXTURE_2D, m_num_levels, GL_RED, GL_FLOAT, average);
+
+        GLfloat average_brightness = glm::min(glm::max(average[0], 0.05f), 1.f);
+
+        GLfloat target_exposure = 0.5f / average_brightness;
+        m_exposure = m_exposure + (target_exposure - m_exposure) * 0.1f;
+    }
+
+    //  Get hdr 2nd texture + horizontal blur
+    glViewport(0, 0, m_width/8, m_height/8);
+    m_blur_shaders[2].use();
+    glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[0].getBuffer());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(1));
+    drawQuad();
+
+    glViewport(0, 0, m_width, m_height);
+    GLuint index_buffer = 0;
+    GLuint i = 8;
+    while(i > 1)
+    {
+        //  Vertical blur
+        m_blur_shaders[0].use();
+        glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
+        drawQuad();
+
+        i>>=1;
+
+        //  Bilinear interpolation to size*2
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_blur_buffers[index_buffer].getBuffer());
+        glBlitFramebuffer(0, 0, m_width/(i*2), m_height/(i*2), 0, 0, m_width/i, m_height/i, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+        //  Horizontal blur
+        m_blur_shaders[1].use();
+        glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
+        drawQuad();
+
+        index_buffer = !index_buffer;
+    }
+
+    //  Vertical
+    m_blur_shaders[0].use();
+    glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
+    drawQuad();
+}
+
 void Renderer::reloadShaders()
 {
-    std::cout << "reload" << std::endl;
-    //m_shader_geometry_pass.reload();
-    m_shader_lightning_pass.reload();
+    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    {
+        m_shader_forward[i].reload();
+        //m_shader_geometry_pass[i].reload();
+    }
 }

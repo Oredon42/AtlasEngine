@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include <string>
+#include <math.h>
 
 #include "openglincludes.h"
 
@@ -21,11 +22,19 @@ public:
 
     void reloadShaders();
 
+    void generateBloom();
+
+    inline void drawQuad()const {glBindVertexArray(m_quad_VAO);glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);glBindVertexArray(0);}
+
+    inline void setDimensions(const GLuint &width, const GLuint &height) {m_width = width; m_height = height; m_num_levels = floor(log2(std::max(m_width, m_height)));}
     inline void switchHDR(){m_hdr = !m_hdr;}
     inline void switchBloom(){m_bloom = !m_bloom;}
+    inline void switchAdaptation(){m_adaptation = !m_adaptation;m_exposure = 1.f;}
 
 private:
-    GLint m_default_buffer_binding;
+    GLuint m_width;
+    GLuint m_height;
+    GLuint m_num_levels;
 
     Framebuffer m_gBuffer;
     GLuint m_rbo_depth;
@@ -42,6 +51,7 @@ private:
     GLuint m_color_buffer;
     GLfloat m_exposure;
     GLboolean m_hdr;
+    GLboolean m_adaptation;
 
     Framebuffer m_blur_buffers[2];
     Shader m_blur_shaders[3];

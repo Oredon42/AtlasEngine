@@ -20,7 +20,7 @@ class Skybox;
 class Scene
 {
 public:
-    Scene(std::__1::string &path, GLfloat &render_time);
+    Scene(std::string &path, GLfloat &render_time);
     ~Scene();
 
     void init(const std::string &path);
@@ -36,14 +36,21 @@ public:
 
     inline void updateCamera(const GLfloat &xoffset, const GLfloat &yoffset){m_cameras[m_current_camera]->setOffset(xoffset, yoffset);}
     inline void addDirLight(const glm::vec3 &direction, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular){m_dirlights.push_back(DirLight(direction, ambient, diffuse, specular));}
+    inline void addDirLight(const DirLight &d){m_dirlights.push_back(d);}
     inline void addSpotLight(const glm::vec3 &position, const glm::vec3 &direction, const GLfloat &cutOff, const GLfloat &outerCutOff, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic){m_spotlights.push_back(SpotLight(position, direction, cutOff, outerCutOff, ambient, diffuse, specular, constant, linear, quadratic));}
+    inline void addSpotLight(const SpotLight &s){m_spotlights.push_back(s);}
     inline void addPointLight(const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic, const GLfloat &intensity){m_pointlights.push_back(PointLight(m_pointlights.size(), position, ambient, diffuse, specular, constant, linear, quadratic, intensity));}
+    inline void addPointLight(const PointLight &p){m_pointlights.push_back(p);}
     inline void addCamera(const glm::vec3 &pos, const glm::vec3 &front, const glm::vec3 &up, const GLfloat &speed, const GLfloat &fov){m_cameras.push_back(new Camera(pos, front, up, speed, fov));}
+    inline void addCamera(Camera *c){m_cameras.push_back(c);}
 
     //  Getters
+    inline GLfloat &getRenderTime(){return m_render_time;}
+    inline SceneGraphRoot *getLastRoot()const{return m_roots[m_roots.size() - 1];}
     inline SceneGraphRoot *getRoot(const GLuint &k) const{return m_roots[k];}
     inline glm::vec3 getBackgroundColor() const{return m_background_color;}
     inline std::vector<PointLight> getPointLights() const{return m_pointlights;}
+    inline std::string getPath()const{return m_path;}
     inline GLuint numberOfModels() const{return m_roots.size();}
     inline GLuint numberOfPointLights() const{return m_pointlights.size();}
     inline GLuint numberOfDirights() const{return m_dirlights.size();}
@@ -51,7 +58,7 @@ public:
 
     //  Setters
     inline void setBackgroundColor(const glm::vec3 &background_color){m_background_color = background_color;}
-
+    inline void addSceneGraphRoot(SceneGraphRoot *s){m_roots.push_back(s);}
     inline void sendPointLightDatas(const GLuint &i, const Shader &shader){m_pointlights[i].sendDatas(shader);}
     inline void sendDirLightDatas(const GLuint &i, const Shader &shader){m_dirlights[i].sendDatas(shader);}
     inline void sendSpotLightDatas(const GLuint &i, const Shader &shader){m_spotlights[i].sendDatas(shader);}

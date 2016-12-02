@@ -58,6 +58,9 @@ public:
     inline GLuint numberOfMeshes() const{return m_number_of_models;}
 
     //  Setters
+    inline void setParent(SceneGraphNode *parent){m_parent = parent;}
+    inline void setName(const std::string &name){m_name = name;}
+    inline void setTransform(const glm::mat4 &transform){m_transform = transform;}
     void translate(const glm::vec3 &t, const std::string &name);
     void rotate(const glm::vec3 &r, const std::string &name);
     void scale(const glm::vec3 &s, const std::string &name);
@@ -95,13 +98,17 @@ protected:
 class SceneGraphRoot : public SceneGraphNode
 {
 public:
-    SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, std::__1::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time);
+    SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time);
     virtual ~SceneGraphRoot();
 
     void loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models);
     const aiNodeAnim *FindNodeAnim(const aiAnimation *ai_animation, const std::string &node_name);
     void processAnimation(const aiAnimation *ai_animation, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLuint &time_in_ticks, const aiNode *ai_node, const std::vector<AnimatedModel *> &animated_models);
 
+    void buildBoneTree();
+
+    //  Getters
+    inline std::vector<AnimatedModel *> &getAnimatedModels(){return m_animated_models;}
 
 private:
     std::vector<AnimatedModel *> m_animated_models;

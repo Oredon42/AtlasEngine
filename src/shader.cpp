@@ -70,8 +70,8 @@ void Shader::init(const std::string &vertexPath, const std::string &fragmentPath
     m_vertex_saved_path = vertexPath;
     m_fragment_saved_path = fragmentPath;
 
-    m_vertex_saved_path = path + m_vertex_saved_path;
-    m_fragment_saved_path = path + m_fragment_saved_path;
+    //m_vertex_saved_path = path + m_vertex_saved_path;
+    //m_fragment_saved_path = path + m_fragment_saved_path;
 
     std::string vertex_code,
                 fragment_code;
@@ -221,9 +221,35 @@ void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod r
         if(m_nb_pointlights > 0)
             f_shader_stream << "#define POINTLIGHT " << m_nb_pointlights << "\n";
 
+        if(shader_type.texture)
+        {
+            v_shader_stream << "#define TEXTURE\n";
+            f_shader_stream << "#define TEXTURE\n";
+        }
 
-        v_shader_file.open("shaders/meta.vert");
-        f_shader_file.open("shaders/meta.frag");
+        if(shader_type.normal)
+        {
+            v_shader_stream << "#define NORMAL\n";
+            f_shader_stream << "#define NORMAL\n";
+        }
+
+        if(shader_type.specular)
+        {
+            v_shader_stream << "#define SPECULAR\n";
+            f_shader_stream << "#define SPECULAR\n";
+        }
+
+
+        if(rendering_method == FORWARD)
+        {
+            v_shader_file.open("shaders/meta.vert");
+            f_shader_file.open("shaders/metaforward.frag");
+        }
+        else
+        {
+            v_shader_file.open("shaders/meta.vert");
+            f_shader_file.open("shaders/metagbuffer.frag");
+        }
 
 
         v_shader_stream << v_shader_file.rdbuf();
@@ -231,7 +257,6 @@ void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod r
 
         v_shader_file.close();
         f_shader_file.close();
-
 
         vertex_code = v_shader_stream.str();
         fragment_code = f_shader_stream.str();
