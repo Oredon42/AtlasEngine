@@ -62,13 +62,13 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
         m_shader_forward[i].initForward(m_shader_types[i], nb_dirlights, nb_pointlights, nb_spotlights);
         m_shader_geometry_pass[i].initGeometry(m_shader_types[i]);
     }
-    m_shader_lightning_pass.initLightning(nb_dirlights, nb_pointlights, nb_spotlights);
+    m_shader_lighting_pass.initLighting(nb_dirlights, nb_pointlights, nb_spotlights);
 
-    m_shader_lightning_pass.use();
-    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gPositionDepth"), 0);
-    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gNormal"), 1);
-    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gAlbedoSpec"), 2);
-    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "ssao"), 3);
+    m_shader_lighting_pass.use();
+    glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "gPositionDepth"), 0);
+    glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "gNormal"), 1);
+    glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "gAlbedoSpec"), 2);
+    glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "ssao"), 3);
     glUseProgram(0);
 
     /*
@@ -192,11 +192,11 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
     generateSSAO(scene);
 
     /*
-     * Lightning pass
+     * Lighting pass
      * */
     QOpenGLFramebufferObject::bindDefault();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    m_shader_lightning_pass.use();
+    m_shader_lighting_pass.use();
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(0));
@@ -208,9 +208,9 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
     glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
 
     //for(GLuint i = 0; i < scene.numberOfPointLights(); ++i)
-    //    scene.sendPointLightDatas(i, m_shader_lightning_pass);
+    //    scene.sendPointLightDatas(i, m_shader_lighting_pass);
 
-    scene.sendCameraDatas(m_shader_lightning_pass, window_width, window_height);
+    scene.sendCameraDatas(m_shader_lighting_pass, window_width, window_height);
 
     drawQuad();
 }

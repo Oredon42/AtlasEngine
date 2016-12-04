@@ -46,7 +46,7 @@ public:
     void init(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
     void initForward(const ShaderType &shader_type, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
     void initGeometry(const ShaderType &shader_type);
-    void initLightning(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
+    void initLighting(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
 
     void reload();
     void use();
@@ -64,7 +64,7 @@ private:
     GLboolean loadSourceFromFiles(std::string &vertex_code, std::string &fragment_code);
     void generateForwardCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
     void generateGeometryCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
-    void generateLightningCode(std::string &vertex_code, std::string &fragment_code);
+    void generateLightingCode(std::string &vertex_code, std::string &fragment_code);
 
     GLuint m_program;
 

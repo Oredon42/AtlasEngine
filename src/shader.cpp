@@ -62,7 +62,7 @@ void Shader::initGeometry(const ShaderType &shader_type)
     m_initialised = GL_TRUE;
 }
 
-void Shader::initLightning(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
+void Shader::initLighting(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
 {
     m_vertex_saved_path = "";
     m_fragment_saved_path = "";
@@ -74,7 +74,7 @@ void Shader::initLightning(const GLuint &nb_dirlights, const GLuint &nb_pointlig
     std::string vertex_code,
                 fragment_code;
 
-    generateLightningCode(vertex_code, fragment_code);
+    generateLightingCode(vertex_code, fragment_code);
     compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
 
     m_initialised = GL_TRUE;
@@ -304,7 +304,7 @@ void Shader::generateGeometryCode(const ShaderType &shader_type, std::string &ve
             f_shader_stream << "#define SPECULAR\n";
         }
 
-        v_shader_file.open("shaders/metadeffered.vert");
+        v_shader_file.open("shaders/metagbuffer.vert");
         f_shader_file.open("shaders/metagbuffer.frag");
 
         v_shader_stream << v_shader_file.rdbuf();
@@ -322,7 +322,7 @@ void Shader::generateGeometryCode(const ShaderType &shader_type, std::string &ve
     }
 }
 
-void Shader::generateLightningCode(std::string &vertex_code, std::string &fragment_code)
+void Shader::generateLightingCode(std::string &vertex_code, std::string &fragment_code)
 {
     std::ifstream v_shader_file;
     std::ifstream f_shader_file;
@@ -339,8 +339,8 @@ void Shader::generateLightningCode(std::string &vertex_code, std::string &fragme
         if(m_nb_pointlights > 0)
             f_shader_stream << "#define POINTLIGHT " << m_nb_pointlights << "\n";
 
-        v_shader_file.open("shaders/metadeffered.vert");
-        f_shader_file.open("shaders/metalightning.frag");
+        v_shader_file.open("shaders/metalighting.vert");
+        f_shader_file.open("shaders/metalighting.frag");
 
         v_shader_stream << v_shader_file.rdbuf();
         f_shader_stream << f_shader_file.rdbuf();

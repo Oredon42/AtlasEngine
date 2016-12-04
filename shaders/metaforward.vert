@@ -50,7 +50,7 @@ void main()
 
     gl_Position = projection * view * model * pos_L;
 
-    FragPos = vec4(model * pos_L).xyz;
+    FragPos = vec4(pos_L).xyz;
     Normal = normal_L.xyz;
 
 #if defined(TEXTURE) || defined(NORMAL) || defined(SPECULAR)

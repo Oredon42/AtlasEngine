@@ -247,4 +247,5 @@ void main()
     Brightness = brightness;
 
     FragColor = vec4(result, 1.0);
+    FragColor = vec4(1, 1, 1, 1);
 }
