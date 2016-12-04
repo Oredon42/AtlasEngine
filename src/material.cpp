@@ -1,3 +1,5 @@
+#include <QImage>
+
 #include "material.h"
 
 Material::Material() :

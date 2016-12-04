@@ -53,30 +53,16 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
 
     m_gBuffer.attachTextures(gTexture_datas, 3, GL_CLAMP_TO_EDGE, GL_TRUE);
 
-
-    m_quad_vertices[0] = -1.0f; m_quad_vertices[1] = 1.0f; m_quad_vertices[2] = 0.0f; m_quad_vertices[3] = 0.0f; m_quad_vertices[4] = 1.0f;
-    m_quad_vertices[5] = -1.0f; m_quad_vertices[6] = -1.0f; m_quad_vertices[7] = 0.0f; m_quad_vertices[8] = 0.0f; m_quad_vertices[9] = 0.0f;
-    m_quad_vertices[10] = 1.0f; m_quad_vertices[11] = 1.0f; m_quad_vertices[12] = 0.0f; m_quad_vertices[13] = 1.0f; m_quad_vertices[14] = 1.0f;
-    m_quad_vertices[15] = 1.0f; m_quad_vertices[16] = -1.0f; m_quad_vertices[17] = 0.0f; m_quad_vertices[18] = 1.0f; m_quad_vertices[19] = 0.0f;
-
     // Setup plane for framebuffer render
-    glGenVertexArrays(1, &m_quad_VAO);
-    glGenBuffers(1, &m_quad_VBO);
-    glBindVertexArray(m_quad_VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, m_quad_VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(m_quad_vertices), &m_quad_vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    initQuad();
 
     // Setup shaders
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
     {
-        m_shader_forward[i].init(ShaderFunction::FORWARD, m_shader_types[i], nb_dirlights, nb_pointlights, nb_spotlights);
-        m_shader_geometry_pass[i].init(ShaderFunction::GPASS, m_shader_types[i]);
+        m_shader_forward[i].initForward(m_shader_types[i], nb_dirlights, nb_pointlights, nb_spotlights);
+        m_shader_geometry_pass[i].initGeometry(m_shader_types[i]);
     }
-    m_shader_lightning_pass.init("shaders/deffered_shading.vert", "shaders/deffered_shading.frag", path);
+    m_shader_lightning_pass.initLightning(nb_dirlights, nb_pointlights, nb_spotlights);
 
     m_shader_lightning_pass.use();
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gPositionDepth"), 0);
@@ -330,4 +316,22 @@ void Renderer::reloadShaders()
         m_shader_forward[i].reload();
         //m_shader_geometry_pass[i].reload();
     }
+}
+
+void Renderer::initQuad()
+{
+    m_quad_vertices[0] = -1.0f; m_quad_vertices[1] = 1.0f; m_quad_vertices[2] = 0.0f; m_quad_vertices[3] = 0.0f; m_quad_vertices[4] = 1.0f;
+    m_quad_vertices[5] = -1.0f; m_quad_vertices[6] = -1.0f; m_quad_vertices[7] = 0.0f; m_quad_vertices[8] = 0.0f; m_quad_vertices[9] = 0.0f;
+    m_quad_vertices[10] = 1.0f; m_quad_vertices[11] = 1.0f; m_quad_vertices[12] = 0.0f; m_quad_vertices[13] = 1.0f; m_quad_vertices[14] = 1.0f;
+    m_quad_vertices[15] = 1.0f; m_quad_vertices[16] = -1.0f; m_quad_vertices[17] = 0.0f; m_quad_vertices[18] = 1.0f; m_quad_vertices[19] = 0.0f;
+
+    glGenVertexArrays(1, &m_quad_VAO);
+    glGenBuffers(1, &m_quad_VBO);
+    glBindVertexArray(m_quad_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_quad_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(m_quad_vertices), &m_quad_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 }

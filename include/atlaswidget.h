@@ -12,10 +12,10 @@
 #include "lib/glm/gtc/matrix_transform.hpp"
 #include "lib/glm/gtc/type_ptr.hpp"
 
-#include <QOpenGLWidget>
-
 #include "renderer.h"
 #include "scene.h"
+
+#include <QOpenGLWidget>
 
 class AtlasWidget : public QOpenGLWidget
 {

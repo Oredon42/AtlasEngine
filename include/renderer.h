@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include <string>
+#include <vector>
 #include <math.h>
 
 #include "openglincludes.h"
@@ -35,6 +36,8 @@ public:
     inline void switchAdaptation(){m_adaptation = !m_adaptation;m_exposure = 1.f;}
 
 private:
+    void initQuad();
+
     GLuint m_width;
     GLuint m_height;
     GLuint m_num_levels;

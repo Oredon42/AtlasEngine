@@ -1,6 +1,9 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include <vector>
+#include <cstring>
+
 #include "openglincludes.h"
 
 #define GLM_FORCE_RADIANS

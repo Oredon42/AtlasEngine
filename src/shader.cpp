@@ -9,27 +9,6 @@ Shader::Shader() :
 
 }
 
-/*
- * Create shader according to its shader type
- * Shader code is divided into blocks that will be reunited
- * */
-Shader::Shader(const ShaderType &shader_type, RenderingMethod rendering_method, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights) :
-    m_vertex_saved_path(""),
-    m_fragment_saved_path(""),
-    m_nb_dirlights(nb_dirlights),
-    m_nb_pointlights(nb_pointlights),
-    m_nb_spotlights(nb_spotlights),
-    m_initialised(GL_FALSE)
-{
-    std::string vertex_code,
-                fragment_code;
-
-    generateShaderCode(shader_type, rendering_method, vertex_code, fragment_code);
-    compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
-
-    m_initialised = GL_TRUE;
-}
-
 Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath, std::string path) :
     m_vertex_saved_path(vertexPath),
     m_fragment_saved_path(fragmentPath),
@@ -47,7 +26,7 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath, s
     m_initialised = GL_TRUE;
 }
 
-void Shader::initForward(const ShaderType &shader_type, const ShaderFunction &function, GLuint nb_dirlights, GLuint nb_pointlights, GLuint nb_spotlights)
+void Shader::initForward(const ShaderType &shader_type, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
 {
     m_vertex_saved_path = "";
     m_fragment_saved_path = "";
@@ -59,13 +38,13 @@ void Shader::initForward(const ShaderType &shader_type, const ShaderFunction &fu
     std::string vertex_code,
                 fragment_code;
 
-    generateShaderCode(shader_type, function, vertex_code, fragment_code);
+    generateForwardCode(shader_type, vertex_code, fragment_code);
     compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
 
     m_initialised = GL_TRUE;
 }
 
-void Shader::initgPass(const ShaderType &shader_type)
+void Shader::initGeometry(const ShaderType &shader_type)
 {
     m_vertex_saved_path = "";
     m_fragment_saved_path = "";
@@ -77,7 +56,25 @@ void Shader::initgPass(const ShaderType &shader_type)
     std::string vertex_code,
                 fragment_code;
 
-    generategPassCode(shader_type, vertex_code, fragment_code);
+    generateGeometryCode(shader_type, vertex_code, fragment_code);
+    compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
+
+    m_initialised = GL_TRUE;
+}
+
+void Shader::initLightning(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
+{
+    m_vertex_saved_path = "";
+    m_fragment_saved_path = "";
+
+    m_nb_dirlights = nb_dirlights;
+    m_nb_pointlights = nb_pointlights;
+    m_nb_spotlights = nb_spotlights;
+
+    std::string vertex_code,
+                fragment_code;
+
+    generateLightningCode(vertex_code, fragment_code);
     compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
 
     m_initialised = GL_TRUE;
@@ -222,7 +219,7 @@ GLboolean Shader::loadSourceFromFiles(std::string &vertex_code, std::string &fra
  * according to rendering_method
  * using the value of shader_type to generate material
  * */
-void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod rendering_method, std::string &vertex_code, std::string &fragment_code)
+void Shader::generateForwardCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code)
 {
     std::ifstream v_shader_file;
     std::ifstream f_shader_file;
@@ -257,17 +254,8 @@ void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod r
             f_shader_stream << "#define SPECULAR\n";
         }
 
-
-        if(rendering_method == FORWARD)
-        {
-            v_shader_file.open("shaders/meta.vert");
-            f_shader_file.open("shaders/metaforward.frag");
-        }
-        else
-        {
-            v_shader_file.open("shaders/meta.vert");
-            f_shader_file.open("shaders/metagbuffer.frag");
-        }
+        v_shader_file.open("shaders/metaforward.vert");
+        f_shader_file.open("shaders/metaforward.frag");
 
         v_shader_stream << v_shader_file.rdbuf();
         f_shader_stream << f_shader_file.rdbuf();
@@ -284,7 +272,7 @@ void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod r
     }
 }
 
-void Shader::generategPassCode(const ShaderType &shader_type, )
+void Shader::generateGeometryCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code)
 {
     std::ifstream v_shader_file;
     std::ifstream f_shader_file;
@@ -316,7 +304,7 @@ void Shader::generategPassCode(const ShaderType &shader_type, )
             f_shader_stream << "#define SPECULAR\n";
         }
 
-        v_shader_file.open("shaders/meta.vert");
+        v_shader_file.open("shaders/metadeffered.vert");
         f_shader_file.open("shaders/metagbuffer.frag");
 
         v_shader_stream << v_shader_file.rdbuf();
@@ -333,6 +321,42 @@ void Shader::generategPassCode(const ShaderType &shader_type, )
         std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << m_vertex_saved_path << " " << std::endl;
     }
 }
+
+void Shader::generateLightningCode(std::string &vertex_code, std::string &fragment_code)
+{
+    std::ifstream v_shader_file;
+    std::ifstream f_shader_file;
+
+    v_shader_file.exceptions(std::ifstream::badbit);
+    f_shader_file.exceptions(std::ifstream::badbit);
+    try
+    {
+        std::stringstream v_shader_stream, f_shader_stream;
+
+        v_shader_stream << "#version 330 core\n\n";
+        f_shader_stream << "#version 330 core\n\n";
+
+        if(m_nb_pointlights > 0)
+            f_shader_stream << "#define POINTLIGHT " << m_nb_pointlights << "\n";
+
+        v_shader_file.open("shaders/metadeffered.vert");
+        f_shader_file.open("shaders/metalightning.frag");
+
+        v_shader_stream << v_shader_file.rdbuf();
+        f_shader_stream << f_shader_file.rdbuf();
+
+        v_shader_file.close();
+        f_shader_file.close();
+
+        vertex_code = v_shader_stream.str();
+        fragment_code = f_shader_stream.str();
+    }
+    catch(std::ifstream::failure e)
+    {
+        std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << m_vertex_saved_path << " " << std::endl;
+    }
+}
+
 
 /*
  * Return the shader type of a Model

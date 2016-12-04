@@ -20,7 +20,7 @@ Texture::Texture(const GLint &internal_format, const GLsizei &width, const GLsiz
     generateTexture(data);
 }
 
-void Texture::init(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp, GLuint filter_min, GLuint filter_max, std::__1::string path, std::__1::string shading_type)
+void Texture::init(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp, GLuint filter_min, GLuint filter_max, std::string path, std::string shading_type)
 {
     m_internal_format = internal_format;
     m_width = width;

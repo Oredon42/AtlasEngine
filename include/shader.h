@@ -10,7 +10,7 @@
 
 #define NB_SHADER_TYPES 16
 
-enum ShaderFunction
+enum ShaderGeneration
 {
     FORWARD,
     GPASS,
@@ -41,11 +41,12 @@ class Shader
 {
 public:
     Shader();
-    Shader(const ShaderType &shader_type, RenderingMethod rendering_method, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
     Shader(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
 
-    void init(const ShaderType &shader_type, const ShaderFunction &function,  GLuint nb_dirlights = 0, GLuint nb_pointlights = 0, GLuint nb_spotlights = 0);
     void init(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
+    void initForward(const ShaderType &shader_type, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
+    void initGeometry(const ShaderType &shader_type);
+    void initLightning(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
 
     void reload();
     void use();
@@ -61,7 +62,9 @@ public:
 private:
     GLboolean compileSourceCode(const GLchar *v_shader_code, const GLchar *f_shader_code);
     GLboolean loadSourceFromFiles(std::string &vertex_code, std::string &fragment_code);
-    void generateShaderCode(const ShaderType &shader_type, RenderingMethod r, std::string &vertex_code, std::string &fragment_code);
+    void generateForwardCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
+    void generateGeometryCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
+    void generateLightningCode(std::string &vertex_code, std::string &fragment_code);
 
     GLuint m_program;
 
