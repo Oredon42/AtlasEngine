@@ -9,6 +9,8 @@
 #include "shader.h"
 #include "framebuffer.h"
 
+inline GLfloat lerp(GLfloat a, GLfloat b, GLfloat f){return a + f * (b - a);}
+
 class Scene;
 
 class Renderer
@@ -23,6 +25,7 @@ public:
     void reloadShaders();
 
     void generateBloom();
+    void generateSSAO(const Scene &scene);
 
     inline void drawQuad()const {glBindVertexArray(m_quad_VAO);glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);glBindVertexArray(0);}
 
@@ -46,6 +49,7 @@ private:
     Shader m_shader_forward[NB_SHADER_TYPES];
     ShaderType m_shader_types[NB_SHADER_TYPES];
 
+    //  HDR
     Framebuffer m_hdr_buffer;
     Shader m_hdr_shader;
     GLuint m_color_buffer;
@@ -53,9 +57,19 @@ private:
     GLboolean m_hdr;
     GLboolean m_adaptation;
 
+    //  BLOOM
     Framebuffer m_blur_buffers[2];
     Shader m_blur_shaders[3];
     GLboolean m_bloom;
+
+    //  SSAO
+    Framebuffer m_SSAO_buffer;
+    Framebuffer m_SSAO_blur_buffer;
+    Shader m_SSAO_shader;
+    Shader m_SSAO_blur_shader;
+    GLboolean m_SSAO;
+    Texture m_noise_texture;
+    std::vector<glm::vec3> m_ssao_kernel;
 
     GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
 };

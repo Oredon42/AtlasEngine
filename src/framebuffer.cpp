@@ -28,23 +28,14 @@ void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, c
     if(size > 0)
         attachments = new GLuint[size];
 
-    m_textures = new GLuint[size];
+    m_textures = new Texture[size];
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 
     for(GLuint i = 0; i < size; ++i)
     {
-        glGenTextures(1, &m_textures[i]);
-        glBindTexture(GL_TEXTURE_2D, m_textures[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, texture_datas[i].internal_format, m_width, m_height, 0, texture_datas[i].format, texture_datas[i].type, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        if(clamp)
-        {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp);
-        }
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i], 0);
+        m_textures[i].init(texture_datas[i].internal_format, m_width, m_height, texture_datas[i].format, texture_datas[i].type, NULL, clamp, GL_NEAREST, GL_NEAREST);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i].getId(), 0);
 
         if(size > 0)
             attachments[i] = GL_COLOR_ATTACHMENT0 + i;

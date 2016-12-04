@@ -93,8 +93,8 @@ void AtlasWidget::paintGL()
     GLuint current_time = m_time.elapsed();
     m_render_time = current_time;
 
-    //m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
-    m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
+    m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
+    //m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
 
     m_last_frame = current_time;
 }

@@ -13,21 +13,7 @@
 #include "lib/assimp/postprocess.h"
 
 #include "shader.h"
-
-struct Texture
-{
-    GLuint id;
-    std::string type;
-    std::string path;
-
-    Texture(const GLuint &i, const std::string &t, const std::string &p) :
-        id(i),
-        type(t),
-        path(p)
-    {
-
-    }
-};
+#include "texture.h"
 
 class Material
 {
@@ -36,7 +22,7 @@ public:
     Material(const aiMaterial *ai_material, const GLboolean &animated, const std::string &path, std::vector<Texture *> &textures_loaded);
 
     std::vector<Texture *> loadMaterialTextures(const aiMaterial *ai_material, const aiTextureType &type, const std::string &type_name, const std::string &path, std::vector<Texture *> &textures_loaded);
-    GLint textureFromFile(const std::string &directory, const GLchar *path) const;
+    Texture *textureFromFile(const std::string &directory, const GLchar *path, const std::string &shading_type) const;
 
     void sendDatas(const Shader &shader) const;
 

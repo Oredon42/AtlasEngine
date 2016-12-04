@@ -51,6 +51,7 @@ public:
     inline glm::vec3 getBackgroundColor() const{return m_background_color;}
     inline std::vector<PointLight> getPointLights() const{return m_pointlights;}
     inline std::string getPath()const{return m_path;}
+    inline Camera *getCurrentCamera() const{return m_cameras[m_current_camera];}
     inline GLuint numberOfModels() const{return m_roots.size();}
     inline GLuint numberOfPointLights() const{return m_pointlights.size();}
     inline GLuint numberOfDirights() const{return m_dirlights.size();}

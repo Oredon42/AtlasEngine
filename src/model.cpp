@@ -34,12 +34,6 @@ void Model::draw(const Shader &shader)
 
     for(GLuint i = 0; i < m_meshes.size(); ++i)
         m_meshes[i]->draw();
-
-    for(GLuint i = 0; i < m_textures.size(); i++)
-    {
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
 }
 
 

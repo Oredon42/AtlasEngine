@@ -10,10 +10,11 @@
 
 #define NB_SHADER_TYPES 16
 
-enum RenderingMethod
+enum ShaderFunction
 {
-    DEFFERED,
-    FORWARD
+    FORWARD,
+    GPASS,
+    LPASS
 };
 
 struct ShaderType
@@ -43,7 +44,7 @@ public:
     Shader(const ShaderType &shader_type, RenderingMethod rendering_method, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
     Shader(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
 
-    void init(const ShaderType &shader_type, RenderingMethod r,  const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
+    void init(const ShaderType &shader_type, const ShaderFunction &function,  GLuint nb_dirlights = 0, GLuint nb_pointlights = 0, GLuint nb_spotlights = 0);
     void init(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
 
     void reload();

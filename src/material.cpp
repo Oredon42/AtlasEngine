@@ -52,14 +52,14 @@ std::vector<Texture *> Material::loadMaterialTextures(const aiMaterial *ai_mater
     //  For each texture
     for(GLuint i = 0; i < ai_material->GetTextureCount(type); i++)
     {
-        aiString str;
-        ai_material->GetTexture(type, i, &str);
+        aiString ai_texture_path;
+        ai_material->GetTexture(type, i, &ai_texture_path);
         GLboolean skip = GL_FALSE;
 
         //  Check if texture is not already loaded
         for(GLuint j = 0; j < textures_loaded.size(); ++j)
         {
-            if(textures_loaded[j]->path == str.C_Str())
+            if(textures_loaded[j]->getPath() == ai_texture_path.C_Str())
             {
                 //  If texture already loaded, push it back
                 textures.push_back(textures_loaded[j]);
@@ -70,9 +70,8 @@ std::vector<Texture *> Material::loadMaterialTextures(const aiMaterial *ai_mater
         if(!skip)
         {
             //  If not already loaded, load it
-            Texture *texture = new Texture(textureFromFile(path, str.C_Str()), type_name, str.C_Str());
-            textures.push_back(texture);
-            textures_loaded.push_back(texture);
+            textures.push_back(textureFromFile(path, ai_texture_path.C_Str(), type_name));
+            textures_loaded.push_back(textures[textures.size()-1]);
         }
     }
     return textures;
@@ -82,7 +81,7 @@ std::vector<Texture *> Material::loadMaterialTextures(const aiMaterial *ai_mater
  *  Load texture from a file
  *  Returns the id of the texture
  * */
-GLint Material::textureFromFile(const std::string &directory, const GLchar *path) const
+Texture *Material::textureFromFile(const std::string &directory, const GLchar *path, const std::string &shading_type) const
 {
     //  Concatenate directory path to filename
     std::string filename;
@@ -91,22 +90,10 @@ GLint Material::textureFromFile(const std::string &directory, const GLchar *path
     else
         filename = directory + '/' + std::string(path);
 
-    GLuint texture_ID;
-    glGenTextures(1, &texture_ID);
-
-    glBindTexture(GL_TEXTURE_2D, texture_ID);
     QImage image_container(filename.c_str());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_container.width(), image_container.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image_container.bits());
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    // Parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return texture_ID;
+    Texture *texture = new Texture(GL_RGBA, image_container.width(), image_container.height(), GL_BGRA, GL_UNSIGNED_BYTE, image_container.bits(), GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, path, shading_type);
+    texture->generateMipmaps();
+    return texture;
 }
 
 void Material::sendDatas(const Shader &shader) const
@@ -128,7 +115,7 @@ void Material::sendDatas(const Shader &shader) const
             glActiveTexture(GL_TEXTURE0 + i);
             std::stringstream ss;
             std::string number;
-            std::string name = m_textures[i]->type;
+            std::string name = m_textures[i]->getShadingType();
             if(name == "texture_diffuse")
                 ss << diffuseNr++;
             else if(name == "texture_specular")
@@ -138,12 +125,12 @@ void Material::sendDatas(const Shader &shader) const
 
             number = ss.str();
             glUniform1i(glGetUniformLocation(shader.getProgram(), ("material." + name + number).c_str()), i);
-            glBindTexture(GL_TEXTURE_2D, m_textures[i]->id);
+            glBindTexture(GL_TEXTURE_2D, m_textures[i]->getId());
         }
     }
 
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.shininess"), m_shininess);
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.roughness"), m_roughness);
-    glUniform1f(glGetUniformLocation(shader.getProgram(), "material.metalness"), 0.5f);
+    glUniform1f(glGetUniformLocation(shader.getProgram(), "material.metalness"), m_metalness);
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.refraction"), m_refraction);
 }

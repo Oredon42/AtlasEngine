@@ -2,6 +2,7 @@
 #define FRAMEBUFFER_H
 
 #include "openglincludes.h"
+#include "texture.h"
 
 struct FramebufferTextureDatas
 {
@@ -24,15 +25,15 @@ public:
     ~Framebuffer();
 
     void init(const GLuint &width, const GLuint &height);
-    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size, GLint clamp = GL_FALSE, GLuint renderbuffer = GL_TRUE);
+    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size, GLint clamp = GL_FALSE, GLuint renderbuffer = GL_FALSE);
 //  Vecteur de textures?
     //  Getters
     inline GLuint getBuffer() const{return m_buffer;}
-    inline GLuint getTexture(const GLuint &i) const{return m_textures[i];}
+    inline GLuint getTexture(const GLuint &i) const{return m_textures[i].getId();}
 
 private:
     GLuint m_buffer;
-    GLuint *m_textures;
+    Texture *m_textures;
     GLuint m_render_buffer;
 
     GLuint m_width;

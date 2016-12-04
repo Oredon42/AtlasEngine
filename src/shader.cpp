@@ -47,7 +47,7 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath, s
     m_initialised = GL_TRUE;
 }
 
-void Shader::init(const ShaderType &shader_type, RenderingMethod r, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
+void Shader::initForward(const ShaderType &shader_type, const ShaderFunction &function, GLuint nb_dirlights, GLuint nb_pointlights, GLuint nb_spotlights)
 {
     m_vertex_saved_path = "";
     m_fragment_saved_path = "";
@@ -59,7 +59,25 @@ void Shader::init(const ShaderType &shader_type, RenderingMethod r, const GLuint
     std::string vertex_code,
                 fragment_code;
 
-    generateShaderCode(shader_type, r, vertex_code, fragment_code);
+    generateShaderCode(shader_type, function, vertex_code, fragment_code);
+    compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
+
+    m_initialised = GL_TRUE;
+}
+
+void Shader::initgPass(const ShaderType &shader_type)
+{
+    m_vertex_saved_path = "";
+    m_fragment_saved_path = "";
+
+    m_nb_dirlights = 0;
+    m_nb_pointlights = 0;
+    m_nb_spotlights = 0;
+
+    std::string vertex_code,
+                fragment_code;
+
+    generategPassCode(shader_type, vertex_code, fragment_code);
     compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
 
     m_initialised = GL_TRUE;
@@ -251,6 +269,55 @@ void Shader::generateShaderCode(const ShaderType &shader_type, RenderingMethod r
             f_shader_file.open("shaders/metagbuffer.frag");
         }
 
+        v_shader_stream << v_shader_file.rdbuf();
+        f_shader_stream << f_shader_file.rdbuf();
+
+        v_shader_file.close();
+        f_shader_file.close();
+
+        vertex_code = v_shader_stream.str();
+        fragment_code = f_shader_stream.str();
+    }
+    catch(std::ifstream::failure e)
+    {
+        std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << m_vertex_saved_path << " " << std::endl;
+    }
+}
+
+void Shader::generategPassCode(const ShaderType &shader_type, )
+{
+    std::ifstream v_shader_file;
+    std::ifstream f_shader_file;
+
+    v_shader_file.exceptions(std::ifstream::badbit);
+    f_shader_file.exceptions(std::ifstream::badbit);
+    try
+    {
+        std::stringstream v_shader_stream, f_shader_stream;
+
+        v_shader_stream << "#version 330 core\n\n";
+        f_shader_stream << "#version 330 core\n\n";
+
+        if(shader_type.texture)
+        {
+            v_shader_stream << "#define TEXTURE\n";
+            f_shader_stream << "#define TEXTURE\n";
+        }
+
+        if(shader_type.normal)
+        {
+            v_shader_stream << "#define NORMAL\n";
+            f_shader_stream << "#define NORMAL\n";
+        }
+
+        if(shader_type.specular)
+        {
+            v_shader_stream << "#define SPECULAR\n";
+            f_shader_stream << "#define SPECULAR\n";
+        }
+
+        v_shader_file.open("shaders/meta.vert");
+        f_shader_file.open("shaders/metagbuffer.frag");
 
         v_shader_stream << v_shader_file.rdbuf();
         f_shader_stream << f_shader_file.rdbuf();

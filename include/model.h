@@ -49,8 +49,6 @@ public:
 protected:
     std::vector<Mesh *> m_meshes;
 
-    std::vector<Texture> m_textures;
-
     Material *m_material;
     ShaderType m_shader_type;
 

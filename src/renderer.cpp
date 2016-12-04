@@ -3,6 +3,7 @@
 #include "include/pointlight.h"
 
 #include <QOpenGLFramebufferObject>
+#include <random>
 
 Renderer::Renderer() :
     m_width(800),
@@ -14,6 +15,7 @@ Renderer::Renderer() :
     m_hdr(GL_TRUE),
     m_adaptation(GL_TRUE),
     m_bloom(GL_TRUE),
+    m_SSAO(GL_TRUE),
     m_gPosition(0),
     m_gNormal(0),
     m_gAlbedoSpec(0)
@@ -49,7 +51,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
                                                  FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),         //  normal
                                                  FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE)}; //  albedo
 
-    m_gBuffer.attachTextures(gTexture_datas, 3, GL_CLAMP_TO_EDGE);
+    m_gBuffer.attachTextures(gTexture_datas, 3, GL_CLAMP_TO_EDGE, GL_TRUE);
 
 
     m_quad_vertices[0] = -1.0f; m_quad_vertices[1] = 1.0f; m_quad_vertices[2] = 0.0f; m_quad_vertices[3] = 0.0f; m_quad_vertices[4] = 1.0f;
@@ -71,15 +73,16 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     // Setup shaders
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
     {
-        m_shader_forward[i].init(m_shader_types[i], RenderingMethod::FORWARD, nb_dirlights, nb_pointlights, nb_spotlights);
-        m_shader_geometry_pass[i].init(m_shader_types[i], RenderingMethod::DEFFERED, nb_dirlights, nb_pointlights, nb_spotlights);
+        m_shader_forward[i].init(ShaderFunction::FORWARD, m_shader_types[i], nb_dirlights, nb_pointlights, nb_spotlights);
+        m_shader_geometry_pass[i].init(ShaderFunction::GPASS, m_shader_types[i]);
     }
     m_shader_lightning_pass.init("shaders/deffered_shading.vert", "shaders/deffered_shading.frag", path);
 
     m_shader_lightning_pass.use();
-    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gPosition"), 0);
+    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gPositionDepth"), 0);
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gNormal"), 1);
     glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "gAlbedoSpec"), 2);
+    glUniform1i(glGetUniformLocation(m_shader_lightning_pass.getProgram(), "ssao"), 3);
     glUseProgram(0);
 
     /*
@@ -94,7 +97,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     FramebufferTextureDatas hdr_texture_datas[3] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT),
                                                     FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT),
                                                     FramebufferTextureDatas(GL_R16F, GL_RED, GL_FLOAT)};
-    m_hdr_buffer.attachTextures(hdr_texture_datas, 3, GL_CLAMP_TO_BORDER);
+    m_hdr_buffer.attachTextures(hdr_texture_datas, 3, GL_CLAMP_TO_BORDER, GL_TRUE);
 
     /*
      * BLOOM
@@ -105,8 +108,48 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     m_blur_buffers[0].init(window_width, window_height);
     m_blur_buffers[1].init(window_width, window_height);
     FramebufferTextureDatas bloom_texture_datas[1] = {FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT)};
-    m_blur_buffers[0].attachTextures(bloom_texture_datas, 1, GL_CLAMP_TO_EDGE, GL_FALSE);
-    m_blur_buffers[1].attachTextures(bloom_texture_datas, 1, GL_CLAMP_TO_EDGE, GL_FALSE);
+    m_blur_buffers[0].attachTextures(bloom_texture_datas, 1, GL_CLAMP_TO_EDGE);
+    m_blur_buffers[1].attachTextures(bloom_texture_datas, 1, GL_CLAMP_TO_EDGE);
+
+    /*
+     * SSAO
+     * */
+    m_SSAO_shader.init("shaders/ssao.vert", "shaders/ssao.frag");
+    m_SSAO_blur_shader.init("shaders/ssao.vert", "shaders/ssaoblur.frag");
+    m_SSAO_shader.use();
+    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gPositionDepth"), 0);
+    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gNormal"), 1);
+    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
+
+    m_SSAO_buffer.init(window_width, window_height);
+    FramebufferTextureDatas SSAO_texture_datas[1] = {FramebufferTextureDatas(GL_RED, GL_RGB, GL_FLOAT)};
+    m_SSAO_buffer.attachTextures(SSAO_texture_datas, 1);
+    m_SSAO_blur_buffer.init(window_width, window_height);
+    m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas, 1);
+
+    std::uniform_real_distribution<GLfloat> random_floats(0.0, 1.0);
+    std::default_random_engine generator;
+    for (GLuint i = 0; i < 64; ++i)
+    {
+        glm::vec3 sample(random_floats(generator) * 2.0 - 1.0, random_floats(generator) * 2.0 - 1.0, random_floats(generator));
+        sample = glm::normalize(sample);
+        sample *= random_floats(generator);
+        GLfloat scale = GLfloat(i) / 64.0;
+
+        // Scale samples s.t. they're more aligned to center of kernel
+        scale = lerp(0.1f, 1.0f, scale * scale);
+        sample *= scale;
+        m_ssao_kernel.push_back(sample);
+    }
+
+    // Noise texture
+    std::vector<glm::vec3> ssao_noise;
+    for (GLuint i = 0; i < 16; i++)
+    {
+        glm::vec3 noise(random_floats(generator) * 2.0 - 1.0, random_floats(generator) * 2.0 - 1.0, 0.0f);
+        ssao_noise.push_back(noise);
+    }
+    m_noise_texture.init(GL_RGB16F, 4, 4, GL_RGB, GL_FLOAT, &ssao_noise[0], GL_REPEAT, GL_NEAREST, GL_NEAREST);
 }
 
 /*
@@ -160,6 +203,8 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
 
     scene.drawDeferred(m_shader_geometry_pass, keys, render_time, window_width, window_height);
 
+    generateSSAO(scene);
+
     /*
      * Lightning pass
      * */
@@ -173,15 +218,15 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
     glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(1));
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(2));
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
 
-    for(GLuint i = 0; i < scene.numberOfPointLights(); ++i)
-        scene.sendPointLightDatas(i, m_shader_lightning_pass);
+    //for(GLuint i = 0; i < scene.numberOfPointLights(); ++i)
+    //    scene.sendPointLightDatas(i, m_shader_lightning_pass);
 
     scene.sendCameraDatas(m_shader_lightning_pass, window_width, window_height);
 
-    glBindVertexArray(m_quad_VAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
+    drawQuad();
 }
 
 void Renderer::generateBloom()
@@ -248,6 +293,34 @@ void Renderer::generateBloom()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
     drawQuad();
+}
+
+void Renderer::generateSSAO(const Scene &scene)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_buffer.getBuffer());
+    glClear(GL_COLOR_BUFFER_BIT);
+    m_SSAO_shader.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(0));
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(1));
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(2));
+    // Send kernel + rotation
+    for (GLuint i = 0; i < 64; ++i)
+        glUniform3fv(glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str()), 1, &m_ssao_kernel[i][0]);
+    glUniformMatrix4fv(glGetUniformLocation(m_SSAO_shader.getProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(scene.getCurrentCamera()->getProjection()));
+    drawQuad();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_blur_buffer.getBuffer());
+    glClear(GL_COLOR_BUFFER_BIT);
+    m_SSAO_blur_shader.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
+    drawQuad();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::reloadShaders()

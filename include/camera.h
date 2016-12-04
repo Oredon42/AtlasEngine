@@ -37,6 +37,7 @@ public:
     inline glm::vec3 getUp() const{return m_up;}
     inline glm::mat4 getModel() const{return m_model;}
     inline glm::mat4 getView() const{return m_view;}
+    inline glm::mat4 getProjection() const{return m_projection;}
     inline GLboolean isInitialised() const{return m_initialised;}
 
     //  Setters
