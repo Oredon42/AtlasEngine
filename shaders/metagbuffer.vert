@@ -6,12 +6,14 @@ layout (location = 2) in vec2 texCoords;
 #ifdef NORMAL
 layout (location = 3) in vec3 tangent;
 layout (location = 4) in vec3 bitangent;
-#ifdef ANIMATED
+#endif
+
+#if defined(ANIMATED) || defined(NORMAL)
 layout (location = 5) in ivec4 BoneIDs;
 layout (location = 6) in vec4 Weights;
 #endif
 
-#elseif ANIMATED
+#if defined(ANIMATED) || !defined(NORMAL)
 layout (location = 3) in ivec4 BoneIDs;
 layout (location = 4) in vec4 Weights;
 #endif
@@ -43,12 +45,12 @@ void main()
     vec4 normal_L = bone_transform * vec4(normal, 0.0);
 #else
     vec4 pos_L = vec4(position, 1.0);
-    vec3 normal_L = transpose(inverse(mat3(model))) * normal;
+    vec3 normal_L = transpose(inverse(mat3(view * model))) * normal;
 #endif
 
     gl_Position = projection * view * model * pos_L;
 
-    FragPos = vec4(pos_L).xyz;
+    FragPos = vec4(view * model * pos_L).xyz;
     Normal = normal_L.xyz;
 
 #if defined(TEXTURE) || defined(NORMAL) || defined(SPECULAR)

@@ -16,10 +16,16 @@ void main()
 
     if(bloom)
         hdrColor += bloomColor;
-        
-    // exposure
-    vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
-    // also gamma correct while we're at it
-    result = pow(result, vec3(1.0 / gamma));
+    
+    vec3 result;
+    if(hdr)
+    {
+        result = vec3(1.0) - exp(-hdrColor * exposure);
+        result = pow(result, vec3(1.0 / gamma));
+    }
+    else
+    {
+        result = hdrColor;
+    }
     FragColor = vec4(result, 1.0f);
 }
