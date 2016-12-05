@@ -104,6 +104,10 @@ void Scene::drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&k
         {
             glUseProgram(shaders[i].getProgram());
             current_camera->sendDatas(shaders[i], window_width, window_height);
+
+            for(GLuint j = 0; j < m_pointlights.size(); ++j)
+                sendPointLightDatas(j, shaders[i]);
+
             for(GLuint j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->draw(shaders[i]);
         }

@@ -7,10 +7,11 @@
 
 #include "openglincludes.h"
 
+#include "quad.h"
 #include "shader.h"
 #include "framebuffer.h"
 
-inline GLfloat lerp(GLfloat a, GLfloat b, GLfloat f){return a + f * (b - a);}
+#include "ssaopostprocess.h"
 
 class Scene;
 
@@ -52,6 +53,10 @@ private:
     Shader m_shader_forward[NB_SHADER_TYPES];
     ShaderType m_shader_types[NB_SHADER_TYPES];
 
+    Quad m_quad;
+
+    GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
+
     //  HDR
     Framebuffer m_hdr_buffer;
     Shader m_hdr_shader;
@@ -66,15 +71,7 @@ private:
     GLboolean m_bloom;
 
     //  SSAO
-    Framebuffer m_SSAO_buffer;
-    Framebuffer m_SSAO_blur_buffer;
-    Shader m_SSAO_shader;
-    Shader m_SSAO_blur_shader;
-    GLboolean m_SSAO;
-    Texture m_noise_texture;
-    std::vector<glm::vec3> m_ssao_kernel;
-
-    GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
+    SSAOPostProcess m_SSAO_postprocess;
 };
 
 #endif // RENDERER_H

@@ -136,3 +136,23 @@ void Material::sendDatas(const Shader &shader) const
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.metalness"), m_metalness);
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.refraction"), m_refraction);
 }
+
+void Material::copy(const Material &material)
+{
+    m_diffuse = material.m_diffuse;
+    m_specular = material.m_specular;
+    m_shininess = material.m_shininess;
+    m_roughness = material.m_roughness;
+    m_metalness = material.m_metalness;
+    m_refraction = material.m_refraction;
+    m_opacity = material.m_opacity;
+
+    m_has_normal_map = material.m_has_normal_map;
+
+    m_textures.clear();
+
+    for(GLuint i = 0; i < material.m_textures.size(); ++i)
+        m_textures.push_back(material.m_textures[i]);
+
+    m_shader_type = material.m_shader_type;
+}

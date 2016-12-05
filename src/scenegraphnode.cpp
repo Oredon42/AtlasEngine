@@ -43,6 +43,19 @@ SceneGraphNode::~SceneGraphNode()
     m_children.clear();
 }
 
+void SceneGraphNode::setMaterial(const Material& material, const std::string &name)
+{
+    if(m_name == name)
+    {
+        for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+            for(GLuint j = 0; j < m_models[i].size(); ++j)
+                m_models[i][j]->setMaterial(material);
+    }
+    else
+        for(GLuint i = 0; i < m_children.size(); ++i)
+            m_children[i]->setMaterial(material, name);
+}
+
 /*
  * If name is this node name
  * translate this node with t

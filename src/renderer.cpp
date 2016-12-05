@@ -3,7 +3,6 @@
 #include "include/pointlight.h"
 
 #include <QOpenGLFramebufferObject>
-#include <random>
 
 Renderer::Renderer() :
     m_width(800),
@@ -11,14 +10,15 @@ Renderer::Renderer() :
     m_rbo_depth(0),
     m_quad_VAO(0),
     m_quad_VBO(0),
+    m_quad(1.f),
+    m_gPosition(0),
+    m_gNormal(0),
+    m_gAlbedoSpec(0),
+    m_SSAO_postprocess(m_quad),
     m_exposure(1.f),
     m_hdr(GL_TRUE),
     m_adaptation(GL_TRUE),
-    m_bloom(GL_TRUE),
-    m_SSAO(GL_TRUE),
-    m_gPosition(0),
-    m_gNormal(0),
-    m_gAlbedoSpec(0)
+    m_bloom(GL_TRUE)
 {
     m_shader_types[0].setValues(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, 0);
     m_shader_types[1].setValues(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE, 1);
@@ -54,7 +54,8 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     m_gBuffer.attachTextures(gTexture_datas, 3, GL_CLAMP_TO_EDGE, GL_TRUE);
 
     // Setup plane for framebuffer render
-    initQuad();
+    //initQuad();
+    m_quad.setupBuffers();
 
     // Setup shaders
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
@@ -100,42 +101,7 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     /*
      * SSAO
      * */
-    m_SSAO_shader.init("shaders/ssao.vert", "shaders/ssao.frag");
-    m_SSAO_blur_shader.init("shaders/ssao.vert", "shaders/ssaoblur.frag");
-    m_SSAO_shader.use();
-    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gPositionDepth"), 0);
-    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gNormal"), 1);
-    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
-
-    m_SSAO_buffer.init(window_width, window_height);
-    FramebufferTextureDatas SSAO_texture_datas[1] = {FramebufferTextureDatas(GL_RED, GL_RGB, GL_FLOAT)};
-    m_SSAO_buffer.attachTextures(SSAO_texture_datas, 1);
-    m_SSAO_blur_buffer.init(window_width, window_height);
-    m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas, 1);
-
-    std::uniform_real_distribution<GLfloat> random_floats(0.0, 1.0);
-    std::default_random_engine generator;
-    for (GLuint i = 0; i < 64; ++i)
-    {
-        glm::vec3 sample(random_floats(generator) * 2.0 - 1.0, random_floats(generator) * 2.0 - 1.0, random_floats(generator));
-        sample = glm::normalize(sample);
-        sample *= random_floats(generator);
-        GLfloat scale = GLfloat(i) / 64.0;
-
-        // Scale samples s.t. they're more aligned to center of kernel
-        scale = lerp(0.1f, 1.0f, scale * scale);
-        sample *= scale;
-        m_ssao_kernel.push_back(sample);
-    }
-
-    // Noise texture
-    std::vector<glm::vec3> ssao_noise;
-    for (GLuint i = 0; i < 16; i++)
-    {
-        glm::vec3 noise(random_floats(generator) * 2.0 - 1.0, random_floats(generator) * 2.0 - 1.0, 0.0f);
-        ssao_noise.push_back(noise);
-    }
-    m_noise_texture.init(GL_RGB16F, 4, 4, GL_RGB, GL_FLOAT, &ssao_noise[0], GL_REPEAT, GL_NEAREST, GL_NEAREST);
+    m_SSAO_postprocess.init(window_width, window_height);
 }
 
 /*
@@ -173,7 +139,8 @@ void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, const 
     glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "bloom"), m_bloom);
     glUniform1f(glGetUniformLocation(m_hdr_shader.getProgram(), "exposure"), m_exposure);
 
-    drawQuad();
+    m_quad.draw();
+    //drawQuad();
 }
 
 /*
@@ -189,7 +156,7 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
 
     scene.drawDeferred(m_shader_geometry_pass, keys, render_time, window_width, window_height);
 
-    generateSSAO(scene);
+    m_SSAO_postprocess.process(m_gBuffer, scene.getCurrentCamera()->getProjection());
 
     /*
      * Lighting pass
@@ -205,14 +172,15 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, const
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(2));
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
+    glBindTexture(GL_TEXTURE_2D, m_SSAO_postprocess.getTexture());
 
     //for(GLuint i = 0; i < scene.numberOfPointLights(); ++i)
     //    scene.sendPointLightDatas(i, m_shader_lighting_pass);
 
     scene.sendCameraDatas(m_shader_lighting_pass, window_width, window_height);
 
-    drawQuad();
+    m_quad.draw();
+    //drawQuad();
 }
 
 void Renderer::generateBloom()
@@ -242,7 +210,8 @@ void Renderer::generateBloom()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(1));
-    drawQuad();
+    m_quad.draw();
+    //drawQuad();
 
     glViewport(0, 0, m_width, m_height);
     GLuint index_buffer = 0;
@@ -254,7 +223,8 @@ void Renderer::generateBloom()
         glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
-        drawQuad();
+        m_quad.draw();
+        //drawQuad();
 
         i>>=1;
 
@@ -268,7 +238,8 @@ void Renderer::generateBloom()
         glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
-        drawQuad();
+        m_quad.draw();
+        //drawQuad();
 
         index_buffer = !index_buffer;
     }
@@ -278,35 +249,8 @@ void Renderer::generateBloom()
     glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!index_buffer].getBuffer());
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_blur_buffers[index_buffer].getTexture(0));
-    drawQuad();
-}
-
-void Renderer::generateSSAO(const Scene &scene)
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_buffer.getBuffer());
-    glClear(GL_COLOR_BUFFER_BIT);
-    m_SSAO_shader.use();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(0));
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(1));
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(2));
-    // Send kernel + rotation
-    for (GLuint i = 0; i < 64; ++i)
-        glUniform3fv(glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str()), 1, &m_ssao_kernel[i][0]);
-    glUniformMatrix4fv(glGetUniformLocation(m_SSAO_shader.getProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(scene.getCurrentCamera()->getProjection()));
-    drawQuad();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_blur_buffer.getBuffer());
-    glClear(GL_COLOR_BUFFER_BIT);
-    m_SSAO_blur_shader.use();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
-    drawQuad();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    m_quad.draw();
+    //drawQuad();
 }
 
 void Renderer::reloadShaders()
@@ -314,7 +258,7 @@ void Renderer::reloadShaders()
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
     {
         m_shader_forward[i].reload();
-        //m_shader_geometry_pass[i].reload();
+        m_shader_geometry_pass[i].reload();
     }
 }
 

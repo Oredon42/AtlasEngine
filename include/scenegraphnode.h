@@ -25,6 +25,7 @@
 #include "mesh.h"
 
 class Model;
+class Material;
 class AnimatedModel;
 class Camera;
 class DirLight;
@@ -58,6 +59,7 @@ public:
     inline GLuint numberOfMeshes() const{return m_number_of_models;}
 
     //  Setters
+    void setMaterial(const Material& material, const std::string &name);
     inline void setParent(SceneGraphNode *parent){m_parent = parent;}
     inline void setName(const std::string &name){m_name = name;}
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}

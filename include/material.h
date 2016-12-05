@@ -30,6 +30,9 @@ public:
     inline GLboolean hasNormalMap() const{return m_has_normal_map;}
     inline GLuint getShaderTypeIndex() const{return m_shader_type.index;}
 
+    //  Setters
+    void copy(const Material &material);
+
 private:
     glm::vec3 m_diffuse;
     glm::vec3 m_specular;

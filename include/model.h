@@ -42,9 +42,8 @@ public:
     inline GLuint getShaderTypeIndex() const{return m_material->getShaderTypeIndex();}
 
     //  Setters
-    //inline void setDiffuse(const glm::vec3 &diffuse){m_material.diffuse = diffuse;}
-    //inline void setSpecular(const glm::vec3 &specular){m_material.specular = specular;}
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}
+    inline void setMaterial(const Material &material){m_material->copy(material);}
 
 protected:
     std::vector<Mesh *> m_meshes;

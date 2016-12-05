@@ -103,7 +103,6 @@ void Camera::sendDatas(const Shader& shader, const GLfloat& screen_width, const 
 
     glGetUniformLocation(shader.getProgram(), "viewPos");
     glUniform3f(glGetUniformLocation(shader.getProgram(), "viewPos"), m_position.x, m_position.y, m_position.z);
-    //glUniformMatrix4fv(glGetUniformLocation(shader.m_program, "model"), 1, GL_FALSE, glm::value_ptr(m_model));
     glUniformMatrix4fv(glGetUniformLocation(shader.getProgram(), "view"), 1, GL_FALSE, glm::value_ptr(m_view));
     glUniformMatrix4fv(glGetUniformLocation(shader.getProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(m_projection));
 }

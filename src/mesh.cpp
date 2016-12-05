@@ -1,6 +1,15 @@
 #include "include/mesh.h"
 
-Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, const GLboolean &has_normal_map) :
+Mesh::Mesh() :
+    m_VAO(0),
+    m_VBO(0),
+    m_EBO(0),
+    m_has_normal_map(GL_FALSE)
+{
+
+}
+
+Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, GLboolean has_normal_map) :
     m_VAO(0),
     m_VBO(0),
     m_EBO(0),

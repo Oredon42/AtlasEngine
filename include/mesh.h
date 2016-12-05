@@ -17,15 +17,31 @@ struct Vertex
     glm::vec2 TexCoords;
     glm::vec3 Tangent;
     glm::vec3 Bitangent;
+
+    Vertex()
+    {
+
+    }
+
+    Vertex(const glm::vec3 &p, const glm::vec2 &tc) :
+        Position(p),
+        Normal(0.f),
+        TexCoords(tc),
+        Tangent(0.f),
+        Bitangent(0.f)
+    {
+
+    }
 };
 
 class Mesh
 {
 public:
-    Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, const GLboolean &has_normal_map);
+    Mesh();
+    Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, GLboolean has_normal_map = GL_FALSE);
     virtual ~Mesh();
 
-    void draw();
+    virtual void draw();
     virtual void setupBuffers();
 
 protected:
