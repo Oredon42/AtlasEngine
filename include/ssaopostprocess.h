@@ -6,9 +6,9 @@
 #include "shader.h"
 #include "framebuffer.h"
 
-class Quad;
-
 GLfloat lerp(GLfloat a, GLfloat b, GLfloat f);
+
+class Quad;
 
 class SSAOPostProcess
 {

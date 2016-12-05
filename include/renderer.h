@@ -12,6 +12,7 @@
 #include "framebuffer.h"
 
 #include "ssaopostprocess.h"
+#include "hdrpostprocess.h"
 
 class Scene;
 
@@ -28,8 +29,6 @@ public:
 
     void generateBloom();
     void generateSSAO(const Scene &scene);
-
-    inline void drawQuad()const {glBindVertexArray(m_quad_VAO);glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);glBindVertexArray(0);}
 
     inline void setDimensions(const GLuint &width, const GLuint &height) {m_width = width; m_height = height; m_num_levels = floor(log2(std::max(m_width, m_height)));}
     inline void switchHDR(){m_hdr = !m_hdr;}
@@ -70,7 +69,7 @@ private:
     Shader m_blur_shaders[3];
     GLboolean m_bloom;
 
-    //  SSAO
+    HDRPostProcess m_HDR_postprocess;
     SSAOPostProcess m_SSAO_postprocess;
 };
 
