@@ -18,7 +18,8 @@ void SSAOPostProcess::init(const GLuint &window_width, const GLuint &window_heig
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
 
     m_SSAO_buffer.init(window_width, window_height);
-    FramebufferTextureDatas SSAO_texture_datas[1] = {FramebufferTextureDatas(GL_RED, GL_RGB, GL_FLOAT)};
+    FramebufferTextureDatas SSAO_texture_datas[1] = {//FramebufferTextureDatas(GL_RED, GL_RGB, GL_FLOAT)};
+                                                     FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT)};
     m_SSAO_buffer.attachTextures(SSAO_texture_datas, 1);
     m_SSAO_blur_buffer.init(window_width, window_height);
     m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas, 1);
@@ -42,8 +43,8 @@ void SSAOPostProcess::process(const Framebuffer &gBuffer, const glm::mat4 &proje
     for (GLuint i = 0; i < 64; ++i)
         glUniform3fv(glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str()), 1, &m_SSAO_kernel[i][0]);
     glUniformMatrix4fv(glGetUniformLocation(m_SSAO_shader.getProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
     m_quad.draw();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_blur_buffer.getBuffer());
@@ -52,6 +53,7 @@ void SSAOPostProcess::process(const Framebuffer &gBuffer, const glm::mat4 &proje
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
     m_quad.draw();
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

@@ -22,24 +22,26 @@ public:
     Renderer();
 
     void init(const std::string &path, const GLuint &window_width, const GLuint &window_height, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
-    void drawSceneForward(Scene &scene, const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height, GLboolean (&keys)[1024]);
-    void drawSceneDeffered(Scene &scene, const GLfloat &render_time, const GLfloat &window_width, const GLfloat &window_height, GLboolean (&keys)[1024]);
+    void drawSceneForward(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024]);
+    void drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024]);
 
     void reloadShaders();
 
     void generateBloom();
     void generateSSAO(const Scene &scene);
 
+    //  Setters
     inline void setDimensions(const GLuint &width, const GLuint &height) {m_width = width; m_height = height; m_num_levels = floor(log2(std::max(m_width, m_height)));}
-    inline void switchHDR(){m_hdr = !m_hdr;}
-    inline void switchBloom(){m_bloom = !m_bloom;}
-    inline void switchAdaptation(){m_adaptation = !m_adaptation;m_exposure = 1.f;}
+    inline void switchHDR(){m_HDR_postprocess.switchHDR();}
+    inline void switchBloom(){m_HDR_postprocess.switchBloom();}
+    inline void switchAdaptation(){m_HDR_postprocess.switchAdaptation();}
 
 private:
     void initQuad();
 
     GLuint m_width;
     GLuint m_height;
+
     GLuint m_num_levels;
 
     Framebuffer m_gBuffer;

@@ -12,8 +12,6 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
     m_pitch(0.0f),
     angle(0),
     m_last_frame(0.0),
-    m_window_width(window()->width()),
-    m_window_height(window()->height()),
     m_fullscreen(false),
     m_num_scenes(0),
     m_current_scene(0)
@@ -59,7 +57,7 @@ void AtlasWidget::initializeGL()
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-    m_current_scene->importFile("/obj/test/test.dae");
+    m_current_scene->importFile("/obj/test/test2.dae");
 
     m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
     m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
@@ -69,7 +67,7 @@ void AtlasWidget::initializeGL()
 
     /*  END OF SCENES MODIFICATION */
 
-    m_renderer.init(m_path, m_window_width, m_window_height, m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
+    m_renderer.init(m_path, window()->width(), window()->height(), m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -78,8 +76,7 @@ void AtlasWidget::initializeGL()
 
 void AtlasWidget::resizeGL(int w, int h)
 {
-    m_window_height = h;
-    m_window_width =  w;
+    m_renderer.setDimensions(w, h);
 
     m_mouse_last_x = w * 0.5;
     m_mouse_last_y = h * 0.5;
@@ -93,8 +90,8 @@ void AtlasWidget::paintGL()
     GLuint current_time = m_time.elapsed();
     m_render_time = current_time;
 
-    //m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
-    m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_window_width, m_window_height, m_keys);
+    m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_keys);
+    //m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_keys);
 
     m_last_frame = current_time;
 }
@@ -126,22 +123,21 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
     case Qt::Key_F:
         if(m_fullscreen)
         {
-            m_window_width = 800;
-            m_window_height = 600;
+            m_renderer.setDimensions(800, 600);
             parentWidget()->parentWidget()->setWindowState(Qt::WindowMaximized);
-            resize(m_window_width, m_window_height);
+            resize(800, 600);
             setGeometry(0, 0, 800, 600);
-            m_fullscreen = false;
         }
         else
         {
             parentWidget()->parentWidget()->setWindowState(Qt::WindowFullScreen);
-            m_window_width = QApplication::desktop()->width();
-            m_window_height = QApplication::desktop()->height();
-            resize(m_window_width, m_window_height);
-            glViewport(0, 0, m_window_width, m_window_height);
-            m_fullscreen = true;
+            GLuint width = QApplication::desktop()->width(),
+                   height = QApplication::desktop()->height();
+            m_renderer.setDimensions(width, height);
+            resize(width, height);
+            glViewport(0, 0, width, height);
         }
+        m_fullscreen = !m_fullscreen;
         break;
 
     case Qt::Key_H:
@@ -191,11 +187,3 @@ void AtlasWidget::setPath(const std::string &path)
     m_path = m_path.substr(0, m_path.find_last_of('/'));
 #endif
 }
-
-/*void AtlasWidget::reloadShaders()
-{
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-       m_shaders[i].reload();
-
-    m_renderer.reloadShaders();
-}*/

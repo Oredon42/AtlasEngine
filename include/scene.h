@@ -26,7 +26,7 @@ public:
     void init(const std::string &path);
     void clear();
 
-    void drawForward(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height);
+    void drawForward(const Shader (&shaders)[NB_SHADER_TYPES], const GLuint &window_width, const GLuint &window_height);
     void drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height);
 
     GLboolean importFile(const std::string &path);
@@ -63,7 +63,8 @@ public:
     inline void sendPointLightDatas(const GLuint &i, const Shader &shader){m_pointlights[i].sendDatas(shader);}
     inline void sendDirLightDatas(const GLuint &i, const Shader &shader){m_dirlights[i].sendDatas(shader);}
     inline void sendSpotLightDatas(const GLuint &i, const Shader &shader){m_spotlights[i].sendDatas(shader);}
-    inline void sendCameraDatas(const Shader &shader, const GLfloat &screen_width, const GLfloat &screen_height){m_cameras[m_current_camera]->sendDatas(shader, screen_width, screen_height);}
+    inline void sendCameraToShader(const Shader &shader, const GLfloat &screen_width, const GLfloat &screen_height){m_cameras[m_current_camera]->sendDatas(shader, screen_width, screen_height);}
+    inline void moveCamera(GLboolean (&keys)[1024], const GLfloat &render_time){m_cameras[m_current_camera]->orientate(); m_cameras[m_current_camera]->move(keys, render_time);}
 
     inline void translate(const glm::vec3 &t, const std::string &node_name){m_roots[m_roots.size() - 1]->translate(t, node_name);}
     inline void rotate(const glm::vec3 &r, const std::string &node_name){m_roots[m_roots.size() - 1]->rotate(r, node_name);}

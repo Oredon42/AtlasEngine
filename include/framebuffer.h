@@ -9,11 +9,17 @@ struct FramebufferTextureDatas
     GLint internal_format;
     GLenum format;
     GLenum type;
+    GLint clamp;
+    GLuint filter_min;
+    GLuint filter_max;
 
-    FramebufferTextureDatas(const GLint &i_f, const GLenum &f, const GLenum &t) :
+    FramebufferTextureDatas(const GLint &i_f, const GLenum &f, const GLenum &t, GLint c = GL_FALSE, GLuint f_min = GL_NEAREST, GLuint f_max = GL_NEAREST) :
         internal_format(i_f),
         format(f),
-        type(t)
+        type(t),
+        clamp(c),
+        filter_min(f_min),
+        filter_max(f_max)
     {
     }
 };
@@ -25,7 +31,9 @@ public:
     ~Framebuffer();
 
     void init(const GLuint &width, const GLuint &height);
-    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size, GLint clamp = GL_FALSE, GLuint renderbuffer = GL_FALSE);
+    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
+
+    inline void bind(GLenum target = GL_FRAMEBUFFER)const {glBindFramebuffer(target, m_buffer);}
 
     //  Getters
     inline GLuint getBuffer() const{return m_buffer;}

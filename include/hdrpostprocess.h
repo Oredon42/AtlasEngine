@@ -6,6 +6,7 @@
 #include "shader.h"
 #include "framebuffer.h"
 
+class Scene;
 class Quad;
 
 class HDRPostProcess
@@ -13,27 +14,44 @@ class HDRPostProcess
 public:
     HDRPostProcess(Quad &quad);
 
-    void init(const GLuint &window_width, const GLuint &window_height);
-    void process(const GLuint &width, const GLuint &height);
+    void init(const GLuint &width, const GLuint &height);
+    void process();
+
+    inline void bindBuffer()const {m_hdr_buffer.bind();}
 
     //  Getters
     inline GLuint getHDRTexture()const {return m_hdr_buffer.getTexture(0);}
     inline GLuint getBlurTexture()const {return m_blur_buffers[1].getTexture(0);}
 
+    //  Setters
+    inline void switchHDR(){m_HDR = !m_HDR;}
+    inline void switchAdaptation(){m_adaptation = !m_adaptation; m_exposure = 1.f;}
+    inline void switchBloom(){m_bloom = !m_bloom;}
+
 private:
     Quad &m_quad;
+
+    GLuint m_width;
+    GLuint m_height;
 
     Framebuffer m_hdr_buffer;
     Shader m_hdr_shader;
     GLuint m_color_buffer;
     GLfloat m_exposure;
-    GLboolean m_hdr;
+    GLboolean m_HDR;
     GLboolean m_adaptation;
 
     //  BLOOM
     Framebuffer m_blur_buffers[2];
     Shader m_blur_shaders[3];
     GLboolean m_bloom;
+
+    //ADAPTATION
+    Framebuffer m_brightness_ping_buffer;
+    Framebuffer m_brightness_ping_buffer2;
+    Framebuffer m_brightness_pong_buffer;
+    Framebuffer m_brightness_pong_buffer2;
+    Shader m_downscaling_shader;
 };
 
 #endif // HDRPOSTPROCESS_H

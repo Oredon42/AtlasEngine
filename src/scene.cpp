@@ -58,11 +58,11 @@ void Scene::clear()
  * Draw the scene using forward rendering
  * with the shaders of the renderer
  * */
-void Scene::drawForward(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height)
+void Scene::drawForward(const Shader (&shaders)[NB_SHADER_TYPES], const GLuint &window_width, const GLuint &window_height)
 {
     Camera *current_camera = m_cameras[m_current_camera];
-    current_camera->orientate();
-    current_camera->move(keys, render_time);
+    //current_camera->orientate();
+    //current_camera->move(keys, render_time);
 
     //  Loop on every shader type
     //  Loop and draw every mesh that uses this shader

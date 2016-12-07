@@ -21,11 +21,11 @@ void Framebuffer::init(const GLuint &width, const GLuint &height)
     m_height = height;
 }
 
-void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, const GLuint &size, GLint clamp, GLuint renderbuffer)
+void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, const GLuint &size, GLuint *custom_widths, GLuint *custom_heights)
 {
     GLuint *attachments;
 
-    if(size > 0)
+    if(size > 1)
         attachments = new GLuint[size];
 
     m_textures = new Texture[size];
@@ -34,21 +34,29 @@ void Framebuffer::attachTextures(const FramebufferTextureDatas *texture_datas, c
 
     for(GLuint i = 0; i < size; ++i)
     {
-        m_textures[i].init(texture_datas[i].internal_format, m_width, m_height, texture_datas[i].format, texture_datas[i].type, NULL, clamp, GL_NEAREST, GL_NEAREST);
+        GLuint width, height;
+        if(custom_widths == 0 || custom_heights == 0)
+        {
+            width = m_width;
+            height = m_height;
+        }
+        else
+        {
+            width = custom_widths[i];
+            height = custom_heights[i];
+        }
+        m_textures[i].init(texture_datas[i].internal_format, width, height, texture_datas[i].format, texture_datas[i].type, NULL, texture_datas->clamp, texture_datas->filter_max, texture_datas->filter_min);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i].getId(), 0);
 
-        if(size > 0)
+        if(size > 1)
             attachments[i] = GL_COLOR_ATTACHMENT0 + i;
     }
 
-    if(size > 0)
+    if(size > 1)
     {
         glDrawBuffers(size, attachments);
         delete[] attachments;
-    }
 
-    if(renderbuffer)
-    {
         glGenRenderbuffers(1, &m_render_buffer);
         glBindRenderbuffer(GL_RENDERBUFFER, m_render_buffer);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
