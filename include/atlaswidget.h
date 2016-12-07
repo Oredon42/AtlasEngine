@@ -12,8 +12,8 @@
 #include "lib/glm/gtc/matrix_transform.hpp"
 #include "lib/glm/gtc/type_ptr.hpp"
 
-#include "renderer.h"
-#include "scene.h"
+#include "include/render/renderer.h"
+#include "include/data/scene.h"
 
 #include <QOpenGLWidget>
 

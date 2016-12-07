@@ -4,7 +4,7 @@
 #include <QDesktopWidget>
 
 #include "include/atlaswidget.h"
-#include "include/renderer.h"
+#include "include/render/renderer.h"
 
 AtlasWidget::AtlasWidget(QWidget * parent) :
     QOpenGLWidget(parent),
@@ -57,7 +57,7 @@ void AtlasWidget::initializeGL()
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-    m_current_scene->importFile("/obj/test/test2.dae");
+    m_current_scene->importFile("/obj/test/test.dae");
 
     m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
     m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);

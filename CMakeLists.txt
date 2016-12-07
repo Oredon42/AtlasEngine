@@ -6,10 +6,24 @@ project(AtlasEngine)
 cmake_minimum_required(VERSION 2.8)
 set(SOURCE_DIR src)
 set(INCLUDE_DIR include)
-file(GLOB INCLUDE_LIST ${INCLUDE_DIR}/*.h)
 
-aux_source_directory(${SOURCE_DIR} SRC_LIST)
-include_directories(${INCLUDE_DIR})
+#file(GLOB_RECURSE INCLUDE ${INCLUDE_DIR}/*)
+
+file(GLOB_RECURSE SOURCES ${SOURCE_DIR}/*.cpp)
+file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/*.h)
+
+set (INCLUDE_DIRS "")
+foreach (_headerFile ${HEADERS})
+    get_filename_component(_dir ${_headerFile} PATH)
+    list (APPEND INCLUDE_DIRS ${_dir})
+endforeach()
+list(REMOVE_DUPLICATES INCLUDE_DIRS)
+
+include_directories(${INCLUDE_DIRS})
+
+#aux_source_directory(${SOURCE_DIR} SRC_LIST)
+
+#include_directories(${INCLUDE_DIR})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
@@ -34,7 +48,7 @@ if(APPLE)
         include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
         link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
 
-        add_executable(${PROJECT_NAME} ${SRC_LIST} ${INCLUDE_LIST})
+        add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 	qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
 
@@ -80,7 +94,7 @@ elseif(WIN32)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/glew)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/glew)
 
-    add_executable(${PROJECT_NAME} ${SRC_LIST} ${INCLUDE_LIST})
+    add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
     qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
 
