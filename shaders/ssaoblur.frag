@@ -3,12 +3,12 @@ in vec2 TexCoords;
 
 out float fragColor;
 
-//uniform sampler2D ssaoInput;
+uniform sampler2D ssaoInput;
 const int blurSize = 4;
 
 void main()
 {
-    /*vec2 texelSize = 1.0 / vec2(textureSize(ssaoInput, 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(ssaoInput, 0));
     float result = 0.0;
     for (int x = 0; x < blurSize; ++x)
     {
@@ -19,6 +19,5 @@ void main()
         }
     }
     
-    fragColor = result / float(blurSize * blurSize);*/
-    fragColor = 1.0;
+    fragColor = result / float(blurSize * blurSize);
 }

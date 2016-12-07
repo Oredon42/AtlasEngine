@@ -69,8 +69,9 @@ float getRefraction()
 
 uniform vec3 viewPos;
 
-const float NEAR = 1; // projection matrix's near plane
+const float NEAR = 1.f; // projection matrix's near plane
 const float FAR = 100.0f; // projection matrix's far plane
+
 float LinearizeDepth(float depth)
 {
     float z = depth * 2.0 - 1.0; // Back to NDC

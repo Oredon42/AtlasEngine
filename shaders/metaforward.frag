@@ -107,7 +107,8 @@ struct SpotLight {
 
 
 
-vec3 F_Schlick(vec3 f0, float f90, float u) {
+vec3 F_Schlick(vec3 f0, float f90, float u)
+{
     return f0 + ( f90 - f0 ) * pow(1.f - u , 5.f);
 }
 
@@ -115,7 +116,8 @@ float chiGGX(float v) {
     return v > 0.0f ? 1.0f : 0.0f;
 }
 
-float GGX_PartialGeometryTerm(vec3 v, vec3 n, vec3 h, float alpha) {
+float GGX_PartialGeometryTerm(vec3 v, vec3 n, vec3 h, float alpha)
+{
     float VdotH = clamp(dot(v, h), 0.0, 1.0);
     float chi = chiGGX(VdotH / clamp(dot(v, n),0.0,1.0));
     VdotH = VdotH * VdotH;
@@ -125,7 +127,8 @@ float GGX_PartialGeometryTerm(vec3 v, vec3 n, vec3 h, float alpha) {
 }
 
 
-float D_GGX ( float NdotH , float m ) {
+float D_GGX ( float NdotH , float m )
+{
     float m2 = m * m ;
     float NdotH2 = NdotH * NdotH;
     float f = NdotH2 * m2 + (1 - NdotH2);
@@ -133,7 +136,8 @@ float D_GGX ( float NdotH , float m ) {
 }
 
 
-float Fr_DisneyDiffuse( float NdotV , float NdotL , float LdotH , float linearRoughness) {
+float Fr_DisneyDiffuse( float NdotV , float NdotL , float LdotH , float linearRoughness)
+{
     float energyBias = linearRoughness * 0.5;
     float energyFactor = (1.0f - linearRoughness) * 1.0 + linearRoughness * (1.0 / 1.51);
     float fd90 = energyBias + 2.0 * LdotH * LdotH * linearRoughness;
@@ -179,7 +183,7 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 V, vec3 N, float NdotV,
     //Diffuse
     float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
     
-    return (getDiffuse() / M_PI * Fd + Fr) * light.intensity * light.diffuse * NdotL;
+    return (color / M_PI * Fd + Fr) * light.intensity * light.diffuse * NdotL;
 }
 uniform PointLight pointLights[POINTLIGHT];
 #endif
@@ -247,5 +251,4 @@ void main()
     Brightness = brightness;
 
     FragColor = vec4(result, 1.0);
-    FragColor = vec4(1, 1, 1, 1);
 }
