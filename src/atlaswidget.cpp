@@ -57,13 +57,18 @@ void AtlasWidget::initializeGL()
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-    m_current_scene->importFile("/obj/test/test.dae");
+    m_file_loader.load("/obj/test/test.dae", m_current_scene);
+    //m_current_scene->importFile("/obj/test/test.dae");
 
-    m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
-    m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
-    m_current_scene->addPointLight(glm::vec3(-3.f), glm::vec3(0.2f), glm::vec3(0.8f), glm::vec3(1.0f), 1.f, 0.09f, 0.032f, 1.f);
+    m_current_scene->rotate(glm::vec3(0, 0, 270), "Scene");
+
+    m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(1.0f), 1.f);
+    m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(1.0f), 1.f);
+    m_current_scene->addPointLight(glm::vec3(-3.f), glm::vec3(1.0f), 1.f);
     //m_current_scene->addDirLight(glm::normalize(glm::vec3(-1.f, -1.f, -1.f)),glm::vec3(0.2),glm::vec3(0.8),glm::vec3(1));
     //m_current_scene->addSpotLight(glm::vec3(0,3,0),glm::vec3(0,0,-1),glm::cos(glm::radians(12.5f)),glm::cos(glm::radians(15.0f)),glm::vec3(0.1f),glm::vec3(0.5),glm::vec3(1.f),1.f,0.7f,1.8f);
+
+    m_current_scene->addCamera(new Camera());
 
     /*  END OF SCENES MODIFICATION */
 

@@ -36,7 +36,7 @@ class Animation;
 struct Bone;
 struct VertexBoneData;
 
-struct Texture;
+class Texture;
 
 glm::mat4 assimpToGlmMat4(const aiMatrix4x4 &assimp_mat);
 
@@ -46,24 +46,28 @@ class SceneGraphNode
 public:
     SceneGraphNode();
     SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform);
-    SceneGraphNode(SceneGraphNode *parent, std::string &name, std::string &path, glm::mat4 &global_inverse_transform, glm::mat4 &transform);
+    SceneGraphNode(SceneGraphNode *parent, const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform);
     virtual ~SceneGraphNode();
 
+    void spreadTransform(const glm::mat4 &parent_transform);
+    inline void insertModel(Model *model, const GLuint &shader_index){m_models[shader_index].push_back(model);}
+    inline void addChild(SceneGraphNode *child){m_children.push_back(child);}
+    void calculateTransform(const glm::mat4 &parent_transform);
+
     //  Getters
+    SceneGraphNode *getNode(const std::string &name);
+    inline std::string getName() const{return m_name;}
     inline GLuint numberOfMeshes() const{return m_number_of_models;}
+    inline glm::mat4 getGlobalInverseTransform() const{return m_global_inverse_transform;}
 
     //  Setters
     void setMaterial(const Material& material, const std::string &name);
     inline void setParent(SceneGraphNode *parent){m_parent = parent;}
     inline void setName(const std::string &name){m_name = name;}
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}
-    void translate(const glm::vec3 &t, const std::string &name);
-    void rotate(const glm::vec3 &r, const std::string &name);
-    void scale(const glm::vec3 &s, const std::string &name);
-    void calculateTransform(const glm::mat4 &parent_transform);
-    inline void spreadTransform(const glm::mat4 &parent_transform){calculateTransform(parent_transform);for(GLuint i = 0; i < m_children.size(); ++i)m_children[i]->spreadTransform(m_transform);}
-    inline void insertModel(Model *model, const GLuint &shader_index){m_models[shader_index].push_back(model);}
-    inline void addChild(SceneGraphNode *child){m_children.push_back(child);}
+    inline void setPosition(const glm::vec3 &position){m_position = position;spreadTransform(glm::mat4());}
+    inline void setRotation(const glm::quat &rotation){m_rotation = rotation;spreadTransform(glm::mat4());}
+    inline void setScale(const glm::vec3 &scale){m_scale = scale;spreadTransform(glm::mat4());}
 
 protected:
     SceneGraphNode *m_parent;
@@ -71,14 +75,14 @@ protected:
 
     std::vector<Model *> m_models[NB_SHADER_TYPES];
 
-    std::string &m_path;
+    std::string m_path;
     std::vector<Texture *> m_textures_loaded;
 
     std::string m_name;
 
     GLuint m_number_of_models;
 
-    glm::mat4 &m_global_inverse_transform;
+    glm::mat4 m_global_inverse_transform;
 
     glm::mat4 m_node_transform;
 
@@ -96,17 +100,14 @@ protected:
 class SceneGraphRoot : public SceneGraphNode
 {
 public:
-    SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time);
+    SceneGraphRoot(const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform);
+    SceneGraphRoot(glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time);
+    void translate(const glm::vec3 &t, const std::string &name);
+    void rotate(const glm::vec3 &r, const std::string &name);
+    void scale(const glm::vec3 &s, const std::string &name);
     virtual ~SceneGraphRoot();
 
-    //  Getters
-    inline std::vector<AnimatedModel *> getAnimatedModels()const {return m_animated_models;}
-
-    //  Setters
-    inline void addAnimatedModel(AnimatedModel* animated_model){m_animated_models.push_back(animated_model);}
-
 private:
-    std::vector<AnimatedModel *> m_animated_models;
     std::vector<Animation *> m_animations;
 };
 

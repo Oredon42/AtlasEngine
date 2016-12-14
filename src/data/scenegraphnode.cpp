@@ -5,7 +5,6 @@
 #include "include/data/spotlight.h"
 #include "include/data/pointlight.h"
 #include "include/data/animation.h"
-#include "include/data/animatedmesh.h"
 
 #include <string>
 
@@ -13,17 +12,22 @@ SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_tran
     m_parent(0),
     m_path(path),
     m_global_inverse_transform(global_inverse_transform),
-    m_scale(1)
+    m_position(0.f),
+    m_rotation(0.f, 0.f, 0.f, 0.f),
+    m_scale(1.f)
 {
 
 }
 
-SceneGraphNode::SceneGraphNode(SceneGraphNode *parent, std::string &name, std::string &path, glm::mat4 &global_inverse_transform, glm::mat4 &transform) :
+SceneGraphNode::SceneGraphNode(SceneGraphNode *parent, const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform) :
     m_parent(parent),
     m_name(name),
     m_path(path),
     m_global_inverse_transform(global_inverse_transform),
-    m_node_transform(transform)
+    m_node_transform(transform),
+    m_position(0.f),
+    m_rotation(0.f, 0.f, 0.f, 0.f),
+    m_scale(1.f)
 {
 
 }
@@ -67,59 +71,32 @@ void SceneGraphNode::setMaterial(const Material& material, const std::string &na
             m_children[i]->setMaterial(material, name);
 }
 
-/*
- * If name is this node name
- * translate this node with t
- * and spread to every child
- * */
-void SceneGraphNode::translate(const glm::vec3 &t, const std::string &name)
+SceneGraphNode *SceneGraphNode::getNode(const std::string &name)
 {
     if(m_name == name)
-    {
-        m_position = t;
-        calculateTransform(glm::mat4());
-        spreadTransform(m_transform);
-    }
+        return this;
+    else if(m_children.size() == 0)
+            return 0;
     else
+    {
+        SceneGraphNode *node = 0;
         for(GLuint i = 0; i < m_children.size(); ++i)
-            m_children[i]->translate(t, name);
+        {
+            node = m_children[i]->getNode(name);
+            if(node != 0)
+                return node;
+        }
+    }
+    return 0;
 }
 
-/*
- * If name is this node name
- * rotate this node with r
- * and spread to every child
- * */
-void SceneGraphNode::rotate(const glm::vec3 &r, const std::string &name)
+void SceneGraphNode::spreadTransform(const glm::mat4 &parent_transform)
 {
-    if(m_name == name)
-    {
-        m_rotation = glm::quat(r);
-        calculateTransform(glm::mat4());
-        spreadTransform(m_transform);
-    }
-    else
-        for(GLuint i = 0; i < m_children.size(); ++i)
-            m_children[i]->rotate(r, name);
-}
+    calculateTransform(parent_transform);
 
-/*
- * If name is this node name
- * scale this node with s
- * and spread to every child
- * */
-void SceneGraphNode::scale(const glm::vec3 &s, const std::string &name)
-{
-    if(m_name == name)
-    {
-        m_scale = s;
-        calculateTransform(glm::mat4());
-        spreadTransform(m_transform);
-    }
-    else
-        for(GLuint i = 0; i < m_children.size(); ++i)
-            m_children[i]->scale(s, name);
-}
+    for(GLuint i = 0; i < m_children.size(); ++i)
+        m_children[i]->spreadTransform(m_transform);
+};
 
 /*
  * Calculate node transform matrix
@@ -146,10 +123,16 @@ void SceneGraphNode::calculateTransform(const glm::mat4 &parent_transform)
  * SCENEGRAPHROOT
  * ************* */
 
+SceneGraphRoot::SceneGraphRoot(const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform) :
+    SceneGraphNode(0, name, path, global_inverse_transform, transform)
+{
+
+}
+
 /*
  * Scene graph root creation from aiScene
  * */
-SceneGraphRoot::SceneGraphRoot(const aiScene *ai_scene, glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time) :
+SceneGraphRoot::SceneGraphRoot(glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time) :
     SceneGraphNode(path, global_inverse_transform)
 {
 
@@ -164,3 +147,41 @@ SceneGraphRoot::~SceneGraphRoot()
     m_animations.clear();
 }
 
+/*
+ * If name is this node name
+ * translate this node with t
+ * and spread to every child
+ * */
+void SceneGraphRoot::translate(const glm::vec3 &t, const std::string &name)
+{
+    SceneGraphNode *node = getNode(name);
+
+    if(node != 0)
+        node->setPosition(t);
+}
+
+/*
+ * If name is this node name
+ * rotate this node with r
+ * and spread to every child
+ * */
+void SceneGraphRoot::rotate(const glm::vec3 &r, const std::string &name)
+{
+    SceneGraphNode *node = getNode(name);
+
+    if(node != 0)
+        node->setRotation(glm::quat(r));
+}
+
+/*
+ * If name is this node name
+ * scale this node with s
+ * and spread to every child
+ * */
+void SceneGraphRoot::scale(const glm::vec3 &s, const std::string &name)
+{
+    SceneGraphNode *node = getNode(name);
+
+    if(node != 0)
+        node->setScale(s);
+}

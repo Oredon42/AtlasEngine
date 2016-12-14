@@ -101,27 +101,12 @@ void HDRPostProcess::process()
     glBindTexture(GL_TEXTURE_2D, m_brightness_pong_buffer2.getTexture(0));
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, average_luminance);
 
-    //glBindTexture(GL_TEXTURE_2D, m_hdr_buffer.getTexture(2));
-    //glGenerateMipmap(GL_TEXTURE_2D);
-
-    //  Use last level of mipmap to get the average brightness of the scene
     if(m_adaptation)
     {
-        /*GLuint num_levels = floor(log2(std::max(m_width, m_height)));
-        GLfloat average[1];
-        glGetTexImage(GL_TEXTURE_2D, num_levels, GL_RED, GL_FLOAT, average);
-
-        GLfloat average_brightness = 1.03f - 2.0f / (2.0f + glm::log(average[0] + 1));
-
-        //GLfloat average_brightness = glm::min(glm::max(average[0], 0.7f), 0.01f);
-
-        //GLfloat target_exposure = 0.5f / average_brightness;
-        GLfloat target_exposure = glm::max(glm::min(1.0f, average_brightness / average[0]), 0.05f);
-        m_exposure = m_exposure + (target_exposure - m_exposure) * 0.1f;*/
-
         average_luminance[0] = fmax(0.05f, average_luminance[0]);
-        GLfloat key = fmax(0.f, 1.5f - (1.5f / (average_luminance[0] * 0.1f + 1.f))) + 0.1f;
-        m_exposure = m_exposure + (key - m_exposure) * 0.1f;
+        GLfloat max_luminance = (1.2f * pow(2.f, log2(average_luminance[0] * 8)));
+        GLfloat target_exposure = fmax(0.1f, fmin(0.7f, 1.f / max_luminance));
+        m_exposure = m_exposure + (target_exposure - m_exposure) * 0.1f;
     }
 
     //  Get hdr 2nd texture + horizontal blur
@@ -184,7 +169,6 @@ void HDRPostProcess::process()
     glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "hdr"), m_HDR);
     glUniform1i(glGetUniformLocation(m_hdr_shader.getProgram(), "bloom"), m_bloom);
     glUniform1f(glGetUniformLocation(m_hdr_shader.getProgram(), "exposure"), m_exposure);
-    glUniform1f(glGetUniformLocation(m_hdr_shader.getProgram(), "avg_luminance"), average_luminance[0]);
 
     m_quad.draw();
 }

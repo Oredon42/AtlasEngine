@@ -90,7 +90,7 @@ void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, GLbool
     m_HDR_postprocess.bindBuffer();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    scene.drawForward(m_shader_forward, m_width, m_height);
+    scene.drawForward(m_shader_forward, m_width, m_height, render_time);
 
     m_HDR_postprocess.process();
 }
@@ -113,7 +113,6 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboo
     /*
      * Lighting pass
      * */
-    //QOpenGLFramebufferObject::bindDefault();
     m_HDR_postprocess.bindBuffer();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_shader_lighting_pass.use();
@@ -127,8 +126,7 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboo
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, m_SSAO_postprocess.getTexture());
 
-    for(GLuint i = 0; i < scene.numberOfPointLights(); ++i)
-        scene.sendPointLightDatas(i, m_shader_lighting_pass);
+    scene.sendViewSpacePointLightDatas(m_shader_lighting_pass);
 
     scene.sendCameraToShader(m_shader_lighting_pass, m_width, m_height);
 

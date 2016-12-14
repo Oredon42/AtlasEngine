@@ -1,14 +1,21 @@
 #include "include/loader/fileloader.h"
 #include "include/data/scene.h"
 
-FileLoader::FileLoader()
+FileLoader::FileLoader() :
+    m_process_meshes(GL_TRUE),
+    m_process_lights(GL_TRUE),
+    m_process_cameras(GL_TRUE),
+    m_process_armatures(GL_TRUE),
+    m_process_animations(GL_TRUE)
 {
 
 }
 
-void FileLoader::load(Scene scene)
+GLboolean FileLoader::load(const std::string path, Scene *scene, Flags flags)
 {
-    /*std::string new_path = m_path + path;
+    processFlags(flags);
+
+    std::string new_path = scene->getPath() + path;
     Assimp::Importer importer;
     const aiScene* ai_scene = importer.ReadFile(new_path,  aiProcess_Triangulate |
                                                             aiProcess_ImproveCacheLocality |
@@ -23,84 +30,70 @@ void FileLoader::load(Scene scene)
     }
     new_path = new_path.substr(0, new_path.find_last_of('/'));
 
-    m_meshloader.load(scene);
-    m_armatureloader.load();
-    m_animationloader.load();
+    if(m_process_meshes)
+        m_meshloader.load(ai_scene, scene);
+    if(m_process_animations)
+        m_animationloader.load(ai_scene, scene);
+    if(m_process_lights)
+        loadLights(ai_scene, scene);
+    if(m_process_cameras)
+        loadCameras(ai_scene, scene);
 
-    m_roots.push_back(new SceneGraphRoot(scene, global_inverse_transform, new_path, m_models, m_render_time));
-    m_roots[m_roots.size() - 1]->spreadTransform(glm::mat4(1));
+    scene->getLastRoot()->spreadTransform(glm::mat4(1.f));
 
-*/
+    return GL_TRUE;
 }
 
-void FileLoader::loadLights()
+void FileLoader::loadLights(const aiScene *ai_scene, Scene *scene)
 {
-    /*if(scene->HasLights())
+    if(ai_scene->HasLights())
     {
-        for(GLuint i = 0; i < scene->mNumLights; ++i)
+        for(GLuint i = 0; i < ai_scene->mNumLights; ++i)
         {
-            const aiLight *current_light = scene->mLights[i];
+            const aiLight *current_light = ai_scene->mLights[i];
             switch(current_light->mType)
             {
-            case aiLightSource_DIRECTIONAL :
-                m_dirlights.push_back(DirLight(glm::vec3(current_light->mDirection.x, current_light->mDirection.y, current_light->mDirection.z),
-                                               glm::vec3(current_light->mColorAmbient.r, current_light->mColorAmbient.g, current_light->mColorAmbient.b),
-                                               glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b),
-                                               glm::vec3(current_light->mColorSpecular.r, current_light->mColorSpecular.g, current_light->mColorSpecular.b)));
-                break;
 
             case aiLightSource_POINT :
             {
                 //  Get the node transform matrix
-                aiNode *node = scene->mRootNode->FindNode(scene->mLights[i]->mName);
-                glm::mat4 glm_transform;
-                for(GLuint i = 0; i < 4; ++i)
-                    for(GLuint j = 0; j < 4; ++j)
-                        glm_transform[j][i] = node->mTransformation[i][j];
+                aiNode *node = ai_scene->mRootNode->FindNode(ai_scene->mLights[i]->mName);
+                glm::mat4 glm_transform = assimpToGlmMat4(node->mTransformation);
 
                 //  Apply transformation
                 glm::vec4 position = glm_transform * glm::vec4(current_light->mPosition.x, current_light->mPosition.y, current_light->mPosition.z, 1.f);
-                if(current_light->mAttenuationConstant == 0 && current_light->mAttenuationLinear == 0 && current_light->mAttenuationQuadratic == 0)
-                    m_pointlights.push_back(PointLight(m_pointlights.size(), glm::vec3(position.x / position.w, position.y / position.w, position.z / position.w),
-                                                       glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b)));
-                else
-                    m_pointlights.push_back(PointLight(m_pointlights.size(), glm::vec3(position.x / position.w, position.y / position.w, position.z / position.w),
-                            glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b),
-                            current_light->mAttenuationConstant,
-                            current_light->mAttenuationLinear,
-                            current_light->mAttenuationQuadratic));
-            }
-                break;
 
-            case aiLightSource_SPOT :
-                m_spotlights.push_back(SpotLight(glm::vec3(current_light->mPosition.x, current_light->mPosition.y, current_light->mPosition.z),
-                                                 glm::vec3(current_light->mDirection.x, current_light->mDirection.y, current_light->mDirection.z),
-                                                 current_light->mAngleInnerCone,
-                                                 current_light->mAngleOuterCone,
-                                                 glm::vec3(current_light->mColorAmbient.r, current_light->mColorAmbient.g, current_light->mColorAmbient.b),
-                                                 glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b),
-                                                 glm::vec3(current_light->mColorSpecular.r, current_light->mColorSpecular.g, current_light->mColorSpecular.b),
-                                                 current_light->mAttenuationConstant,
-                                                 current_light->mAttenuationLinear,
-                                                 current_light->mAttenuationQuadratic));
+
+                scene->addPointLight(PointLight(scene->numberOfPointLights(), glm::vec3(position.x / position.w, position.y / position.w, position.z / position.w),
+                                               glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b), 1.f));
+            }
                 break;
 
             default:
                 break;
             }
         }
-    }*/
+    }
 }
 
-void FileLoader::loadCameras()
-{
-    /*if(scene->HasCameras())
+void FileLoader::loadCameras(const aiScene *ai_scene, Scene *scene)
+{    
+    if(ai_scene->HasCameras())
     {
-        for(GLuint i = 0; i < scene->mNumCameras; ++i)
-            m_cameras.push_back(new Camera(glm::vec3(scene->mCameras[i]->mPosition.x, scene->mCameras[i]->mPosition.y, scene->mCameras[i]->mPosition.z),
-                                           glm::vec3(scene->mCameras[i]->mLookAt.x,scene->mCameras[i]->mLookAt.y, scene->mCameras[i]->mLookAt.z),
-                                           glm::vec3(scene->mCameras[i]->mUp.x, scene->mCameras[i]->mUp.y, scene->mCameras[i]->mUp.z),
-                                           0.005f,
-                                           scene->mCameras[i]->mHorizontalFOV));
-    }*/
+        for(GLuint i = 0; i < ai_scene->mNumCameras; ++i)
+            scene->addCamera(new Camera(glm::vec3(ai_scene->mCameras[i]->mPosition.x, ai_scene->mCameras[i]->mPosition.y, ai_scene->mCameras[i]->mPosition.z),
+                                        glm::vec3(ai_scene->mCameras[i]->mLookAt.x, ai_scene->mCameras[i]->mLookAt.y, ai_scene->mCameras[i]->mLookAt.z),
+                                        glm::vec3(ai_scene->mCameras[i]->mUp.x, ai_scene->mCameras[i]->mUp.y, ai_scene->mCameras[i]->mUp.z),
+                                        0.005f,
+                                        ai_scene->mCameras[i]->mHorizontalFOV));
+    }
+}
+
+void FileLoader::processFlags(const Flags &flags)
+{
+        m_process_meshes = ((flags&aeMissMesh)==1)?GL_FALSE:GL_TRUE;
+        m_process_lights = ((flags&aeMissLight)==1)?GL_FALSE:GL_TRUE;
+        m_process_cameras = ((flags&aeMissCamera)==1)?GL_FALSE:GL_TRUE;
+        m_process_armatures = ((flags&aeMissArmature)==1)?GL_FALSE:GL_TRUE;
+        m_process_animations = ((flags&aeMissAnimation)==1)?GL_FALSE:GL_TRUE;
 }

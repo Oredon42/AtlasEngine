@@ -48,11 +48,15 @@ if(APPLE)
         include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
         link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
 
+        #OpenMesh inclusion
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/openmesh)
+        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/openmesh)
+
         add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 	qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
 
-        target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES} libassimpd.dylib)
+        target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES} libassimpd.dylib libOpenMeshCore.dylib)
 elseif(UNIX)
         set(CMAKE_CXX_FLAGS "-std=c++11 -g -ggdb -O0 -Wall -Wextra")
         find_package(OpenGL REQUIRED)

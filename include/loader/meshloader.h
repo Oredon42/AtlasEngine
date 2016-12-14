@@ -7,16 +7,14 @@
 class Scene;
 class Texture;
 
-glm::mat4 assimpToGlmMat4(const aiMatrix4x4 &assimp_mat);
-
 class MeshLoader
 {
 public:
     MeshLoader();
 
-    void load(const aiScene *ai_scene, Scene &scene);
-    SceneGraphNode *processNode(SceneGraphNode *parent, aiNode *ai_node, const aiScene *ai_scene, Scene &scene, std::vector<AnimatedModel *> *animated_models, const std::string &path, const glm::mat4 &global_inverse_transform);
-    Model *processMesh(const aiMesh *ai_mesh, const aiScene *ai_scene, Scene &scene);
+    void load(const aiScene *ai_scene, Scene *scene);
+    SceneGraphNode *processNode(SceneGraphNode *parent, aiNode *ai_node, const aiScene *ai_scene, Scene *scene);
+    Model *processMesh(const aiMesh *ai_mesh, const aiScene *ai_scene, Scene *scene);
     void processGeometry(const aiMesh *ai_mesh, std::vector<Vertex> &vertices, std::vector<GLuint> &indices);
 
 private:

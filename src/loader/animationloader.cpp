@@ -1,6 +1,7 @@
 #include "include/loader/animationloader.h"
-#include "include/data/animatedmodel.h"
 #include "include/data/animation.h"
+#include "include/data/scene.h"
+#include "include/data/model.h"
 
 AnimationLoader::AnimationLoader()
 {
@@ -11,7 +12,7 @@ AnimationLoader::AnimationLoader()
  * Load animations from an aiScene
  * fill informations of models inside the current SceneGraph
  * */
-void AnimationLoader::loadAnimations(const aiScene *ai_scene, const std::vector<AnimatedModel *> &animated_models)
+void AnimationLoader::load(const aiScene *ai_scene, const Scene *scene)
 {
     /*
      * This loop will store animation pose
@@ -24,18 +25,18 @@ void AnimationLoader::loadAnimations(const aiScene *ai_scene, const std::vector<
     for(GLuint animation_index = 0; animation_index < ai_scene->mNumAnimations; ++animation_index)
     {
         //  Get animation parameters
-        GLfloat animation_time = ai_scene->mAnimations[animation_index]->mDuration;
+        GLfloat total_time = ai_scene->mAnimations[animation_index]->mDuration;
         GLfloat ticks_per_seconds = ai_scene->mAnimations[animation_index]->mTicksPerSecond != 1?ai_scene->mAnimations[0]->mTicksPerSecond : 24.0f;
         //  Total time of the animation in ticks
-        GLuint time_in_ticks = animation_time * ticks_per_seconds;
+        GLuint total_time_in_ticks = total_time * ticks_per_seconds;
         GLfloat seconds_per_tick = 1.f / ticks_per_seconds;
 
         aiAnimation *ai_animation = ai_scene->mAnimations[animation_index];
 
         //  For each tick of the animation
         //  Retrieve animation pose
-        for(GLuint current_tick = 0; current_tick < time_in_ticks; ++current_tick)
-            processAnimation(ai_animation, "default", ticks_per_seconds, current_tick, current_tick * seconds_per_tick, time_in_ticks, ai_scene->mRootNode, animated_models);
+        for(GLuint current_tick = 0; current_tick < total_time_in_ticks; ++current_tick)
+            processAnimation(ai_animation, scene, "default", ticks_per_seconds, current_tick, current_tick * seconds_per_tick, total_time_in_ticks, ai_scene->mRootNode);
     }
 }
 
@@ -46,12 +47,12 @@ void AnimationLoader::loadAnimations(const aiScene *ai_scene, const std::vector<
  *  create interpolated transformation matrix
  *  store matrix into concerned animated meshes
  * */
-void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLuint &time_in_ticks, const aiNode *ai_node, const std::vector<AnimatedModel *> &animated_models)
+void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const Scene *scene, const std::string &animation_name, const GLfloat &ticks_per_second, const GLuint &current_tick, const GLfloat &current_time, const GLuint &total_time_in_ticks, const aiNode *ai_node)
 {
     std::string bone_name = ai_node->mName.data;
 
-    //  Try to find the bone inside animation
-    const aiNodeAnim *ai_node_anim = FindNodeAnim(ai_animation, bone_name);
+    //  Is bone used in animation?
+    const aiNodeAnim *ai_node_anim = findNodeAnim(ai_animation, bone_name);
 
     glm::vec3 scale;
     glm::quat rotation;
@@ -80,27 +81,29 @@ void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const st
     current_channel.scale = scale;
     current_channel.time = time;
 
-    //  Loop over every animated model
-    for(GLuint i = 0; i < animated_models.size(); ++i)
+    //  Loop over every model
+    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
     {
-        //  If current model has the current bone
-        //  Send animation datas (anim info + channel)
-        if(animated_models[i]->hasBone(bone_name))
+        for(GLuint j = 0; j < scene->numberOfModels(i); ++j)
         {
-            animated_models[i]->setAnimationInfo(animation_name, time_in_ticks, ticks_per_second);
-            animated_models[i]->setChannel(animation_name, bone_name, current_tick, current_channel);
+            Model *model = scene->getModel(i,j);
+            if(model->hasBone(bone_name))
+            {
+                    model->setAnimationInfo(animation_name, total_time_in_ticks, ticks_per_second);
+                    model->setChannel(animation_name, bone_name, current_tick, current_channel);
+            }
         }
     }
 
     //  Loop over children bones
     for(GLuint i = 0 ; i < ai_node->mNumChildren ; ++i)
-       processAnimation(ai_animation, animation_name, ticks_per_second, current_tick, current_time, time_in_ticks, ai_node->mChildren[i], animated_models);
+       processAnimation(ai_animation, scene, animation_name, ticks_per_second, current_tick, current_time, total_time_in_ticks, ai_node->mChildren[i]);
 }
 
 /*
  *  Return aiNodeAnim with the name node_name
  * */
-const aiNodeAnim *AnimationLoader::FindNodeAnim(const aiAnimation *ai_animation, const std::string &node_name)
+const aiNodeAnim *AnimationLoader::findNodeAnim(const aiAnimation *ai_animation, const std::string &node_name)
 {
     //  Loop over animation channels
     for(GLuint i = 0 ; i < ai_animation->mNumChannels ; ++i)

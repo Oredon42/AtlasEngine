@@ -25,6 +25,9 @@ class Camera;
 class DirLight;
 class SpotLight;
 class PointLight;
+class Armature;
+class Animation;
+struct Channel;
 
 class Model
 {
@@ -33,14 +36,20 @@ public:
     Model(Mesh *mesh, Material *material);
     ~Model();
 
-    virtual void draw(const Shader &shader);
+    virtual void draw(const Shader &shader, const GLfloat &render_time);
+
+    void attachArmature(Armature *armature);
+    void detachArmature();
 
     //  Getters
     inline GLuint getShaderTypeIndex() const{return m_material->getShaderTypeIndex();}
+    GLboolean hasBone(const std::string &bone_name) const;
 
     //  Setters
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}
     inline void setMaterial(const Material &material){m_material->copy(material);}
+    void setAnimationInfo(const std::string &animation_name, const GLuint &duration, const GLuint &ticks_per_sec);
+    void setChannel(const std::string &animation_name, const std::string &bone_name, const GLuint &current_tick, const Channel &channel);
 
 protected:
     std::vector<Mesh *> m_meshes;
@@ -49,6 +58,11 @@ protected:
     ShaderType m_shader_type;
 
     glm::mat4 m_transform;
+
+    Armature *m_armature;
+
+    std::map<std::string, Animation> m_animations;
+    Animation *m_current_animation;
 };
 
 #endif // MODEL_H

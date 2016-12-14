@@ -1,4 +1,5 @@
 #include "include/data/mesh.h"
+#include "include/data/armature.h"
 
 Mesh::Mesh() :
     m_VAO(0),
@@ -13,10 +14,13 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indic
     m_VAO(0),
     m_VBO(0),
     m_EBO(0),
+    m_bone_buffer(0),
     m_has_normal_map(has_normal_map)
 {
     m_vertices = vertices;
     m_indices = indices;
+
+    setupBuffers();
 }
 
 Mesh::~Mesh()
@@ -58,4 +62,43 @@ void Mesh::setupBuffers()
     }
 
     glBindVertexArray(0);
+}
+
+void Mesh::attachArmature(const VertexBoneData *vertex_bone_data)
+{
+    if(m_bone_buffer != 0)
+        detachArmature();
+
+    glBindVertexArray(m_VAO);
+
+    //  Vertex bones datas
+    glGenBuffers(1, &m_bone_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, m_bone_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_bone_data[0]) * m_indices.size(), &vertex_bone_data[0], GL_STATIC_DRAW);
+
+    if(m_has_normal_map)
+    {
+        glEnableVertexAttribArray(5);
+        glVertexAttribIPointer(5, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
+    }
+    else
+    {
+        glEnableVertexAttribArray(3);
+        glVertexAttribIPointer(3, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
+    }
+
+    glBindVertexArray(0);
+}
+
+void Mesh::detachArmature()
+{
+    if(m_bone_buffer != 0)
+    {
+        glDeleteBuffers(1, &m_bone_buffer);
+        m_bone_buffer = 0;
+    }
 }

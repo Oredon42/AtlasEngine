@@ -26,36 +26,37 @@ public:
     void init(const std::string &path);
     void clear();
 
-    void drawForward(const Shader (&shaders)[NB_SHADER_TYPES], const GLuint &window_width, const GLuint &window_height);
+    void drawForward(const Shader (&shaders)[NB_SHADER_TYPES], const GLuint &window_width, const GLuint &window_height, const GLfloat &render_time);
     void drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height);
 
-    GLboolean importFile(const std::string &path);
-    void importAnimation(const std::string &animation_name, const std::string path);
-
     void buildKdTree();
+
+    void sendViewSpacePointLightDatas(const Shader &shader);
 
     inline void updateCamera(const GLfloat &xoffset, const GLfloat &yoffset){m_cameras[m_current_camera]->setOffset(xoffset, yoffset);}
     inline void addDirLight(const glm::vec3 &direction, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular){m_dirlights.push_back(DirLight(direction, ambient, diffuse, specular));}
     inline void addDirLight(const DirLight &d){m_dirlights.push_back(d);}
     inline void addSpotLight(const glm::vec3 &position, const glm::vec3 &direction, const GLfloat &cutOff, const GLfloat &outerCutOff, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic){m_spotlights.push_back(SpotLight(position, direction, cutOff, outerCutOff, ambient, diffuse, specular, constant, linear, quadratic));}
     inline void addSpotLight(const SpotLight &s){m_spotlights.push_back(s);}
-    inline void addPointLight(const glm::vec3 &position, const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular, const GLfloat &constant, const GLfloat &linear, const GLfloat &quadratic, const GLfloat &intensity){m_pointlights.push_back(PointLight(m_pointlights.size(), position, ambient, diffuse, specular, constant, linear, quadratic, intensity));}
+    inline void addPointLight(const glm::vec3 &position, const glm::vec3 &color, const GLfloat &intensity){m_pointlights.push_back(PointLight(m_pointlights.size(), position, color, intensity));}
     inline void addPointLight(const PointLight &p){m_pointlights.push_back(p);}
     inline void addCamera(const glm::vec3 &pos, const glm::vec3 &front, const glm::vec3 &up, const GLfloat &speed, const GLfloat &fov){m_cameras.push_back(new Camera(pos, front, up, speed, fov));}
     inline void addCamera(Camera *c){m_cameras.push_back(c);}
 
     //  Getters
     inline GLfloat &getRenderTime(){return m_render_time;}
+    inline Model *getModel(const GLuint &shader_index, const GLuint &model_index) const{return m_models[shader_index][model_index];}
     inline SceneGraphRoot *getLastRoot()const{return m_roots[m_roots.size() - 1];}
     inline SceneGraphRoot *getRoot(const GLuint &k) const{return m_roots[k];}
     inline glm::vec3 getBackgroundColor() const{return m_background_color;}
     inline std::vector<PointLight> getPointLights() const{return m_pointlights;}
-    inline std::string getPath()const{return m_path;}
+    inline std::string getPath() const{return m_path;}
     inline Camera *getCurrentCamera() const{return m_cameras[m_current_camera];}
-    inline GLuint numberOfModels() const{return m_roots.size();}
+    inline GLuint numberOfRoots() const{return m_roots.size();}
     inline GLuint numberOfPointLights() const{return m_pointlights.size();}
     inline GLuint numberOfDirights() const{return m_dirlights.size();}
     inline GLuint numberOfSpotLights() const{return m_spotlights.size();}
+    inline GLuint numberOfModels(const GLuint &shader_index) const{return m_models[shader_index].size();}
 
     //  Setters
     inline void setBackgroundColor(const glm::vec3 &background_color){m_background_color = background_color;}

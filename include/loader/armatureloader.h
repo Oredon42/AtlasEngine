@@ -4,6 +4,7 @@
 #include <map>
 
 #include "openglincludes.h"
+#include "include/data/armature.h"
 
 #include "lib/assimp/Importer.hpp"
 #include "lib/assimp/scene.h"
@@ -15,16 +16,19 @@
 #include "lib/glm/gtc/type_ptr.hpp"
 
 class AnimatedModel;
-class Bone;
-class VertexBoneData;
+struct Bone;
+struct VertexBoneData;
+
+glm::mat4 assimpToGlmMat4(const aiMatrix4x4 &assimp_mat);
 
 class ArmatureLoader
 {
 public:
     ArmatureLoader();
 
-    AnimatedModel *load();
-    void fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, GLuint &num_bones, Bone *armature, VertexBoneData *&vertex_bone_data, const aiMesh *ai_mesh);
+    Armature *load(const aiScene *ai_scene, const aiMesh *ai_mesh);
+    void fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, GLuint &num_bones, Bone *bone_tree, VertexBoneData *&vertex_bone_data, const aiMesh *ai_mesh);
+    void buildBoneTree(const aiNode *ai_node, Bone *bone_tree, const std::map<std::string, GLuint> &bone_mapping);
 };
 
 #endif // ARMATURELOADER_H

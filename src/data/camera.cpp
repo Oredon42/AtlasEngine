@@ -11,7 +11,7 @@ Camera::Camera() :
     m_fov(45.5f),
     m_speed(0.005f),
     m_position(glm::vec3(0.0f, 0.0f,  0.0f)),
-    m_front(glm::vec3(0.0f, 0.0f, 0.0f)),
+    m_front(glm::vec3(1.0f, 0.0f, 0.0f)),
     m_up(glm::vec3(0.0f, 1.0f,  0.0f))
 {
 

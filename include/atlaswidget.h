@@ -14,6 +14,7 @@
 
 #include "include/render/renderer.h"
 #include "include/data/scene.h"
+#include "include/loader/fileloader.h"
 
 #include <QOpenGLWidget>
 
@@ -34,6 +35,8 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent *e);
 
 private:
+    inline void addScene(){m_scenes.push_back(Scene(m_path, m_render_time)); m_current_scene = &m_scenes[m_num_scenes++];}
+
     GLfloat m_yaw;
     GLfloat m_pitch;
     GLfloat m_mouse_saved_x;
@@ -55,7 +58,7 @@ private:
     GLfloat m_render_time;
     Scene *m_current_scene;
 
-    inline void addScene(){m_scenes.push_back(Scene(m_path, m_render_time)); m_current_scene = &m_scenes[m_num_scenes++];}
+    FileLoader m_file_loader;
 };
 
 #endif // RENDERINGWIDGET_H
