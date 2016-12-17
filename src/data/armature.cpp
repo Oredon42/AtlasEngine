@@ -4,7 +4,7 @@
 #include "include/data/animation.h"
 #include "include/render/shader.h"
 
-Armature::Armature(std::map<std::string, GLuint> bone_mapping, GLuint num_bones, Bone *bone_tree, VertexBoneData *vertex_bone_data) :
+Armature::Armature(std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *bone_tree, VertexBoneData *vertex_bone_data) :
     m_bone_mapping(bone_mapping),
     m_num_bones(num_bones),
     m_bone_tree(bone_tree),

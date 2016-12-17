@@ -29,16 +29,12 @@ public:
 
 private:
     GLuint m_indice;
-
     glm::vec3 m_position;
-
+    glm::vec3 m_color;
     GLfloat m_intensity;
-
     GLfloat m_constant;
     GLfloat m_linear;
     GLfloat m_quadratic;
-
-    glm::vec3 m_color;
 };
 
 #endif // POINTLIGHT_H

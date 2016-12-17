@@ -4,11 +4,11 @@
 PointLight::PointLight() :
     m_indice(0),
     m_position(0.0f, 0.0f, 0.0f),
+    m_intensity(1.f),
+    m_color(1.f, 0.f, 1.f),
     m_constant(1.0f),
     m_linear(0.7f),
-    m_quadratic(1.8f),
-    m_intensity(1.f),
-    m_color(1.f, 0.f, 1.f)
+    m_quadratic(1.8f)
 {
 
 }
@@ -30,6 +30,7 @@ void PointLight::init(const GLuint &indice, const glm::vec3 &position, const glm
     m_indice = indice;
     m_position = position;
     m_color = color;
+    m_intensity = intensity;
 }
 
 void PointLight::sendViewDatas(const Shader &shader, const glm::mat4 &view) const

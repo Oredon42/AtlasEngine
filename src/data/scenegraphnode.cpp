@@ -9,8 +9,8 @@
 #include <string>
 
 SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform) :
-    m_parent(0),
     m_path(path),
+    m_parent(0),
     m_global_inverse_transform(global_inverse_transform),
     m_position(0.f),
     m_rotation(0.f, 0.f, 0.f, 0.f),
@@ -20,9 +20,9 @@ SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_tran
 }
 
 SceneGraphNode::SceneGraphNode(SceneGraphNode *parent, const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform) :
-    m_parent(parent),
-    m_name(name),
     m_path(path),
+    m_name(name),
+    m_parent(parent),
     m_global_inverse_transform(global_inverse_transform),
     m_node_transform(transform),
     m_position(0.f),
@@ -125,15 +125,6 @@ void SceneGraphNode::calculateTransform(const glm::mat4 &parent_transform)
 
 SceneGraphRoot::SceneGraphRoot(const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform) :
     SceneGraphNode(0, name, path, global_inverse_transform, transform)
-{
-
-}
-
-/*
- * Scene graph root creation from aiScene
- * */
-SceneGraphRoot::SceneGraphRoot(glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time) :
-    SceneGraphNode(path, global_inverse_transform)
 {
 
 }

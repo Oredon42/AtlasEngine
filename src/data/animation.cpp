@@ -48,7 +48,6 @@ void Animation::setDuration(const GLuint &d)
 
 void Animation::setChannel(const GLuint &bone_index, const GLuint &time_index, const Channel &channel)
 {
-    Channel &tmp=m_channels[bone_index][time_index];
     m_channels[bone_index][time_index] = channel;
 }
 

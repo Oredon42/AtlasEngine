@@ -17,9 +17,9 @@ void SSAOPostProcess::init(const GLuint &window_width, const GLuint &window_heig
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gNormal"), 1);
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
 
-    m_SSAO_buffer.init(window_width, window_height);
     FramebufferTextureDatas SSAO_texture_datas[1] = {//FramebufferTextureDatas(GL_RED, GL_RGB, GL_FLOAT)};
                                                      FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT)};
+    m_SSAO_buffer.init(window_width, window_height);
     m_SSAO_buffer.attachTextures(SSAO_texture_datas, 1);
     m_SSAO_blur_buffer.init(window_width, window_height);
     m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas, 1);

@@ -9,6 +9,7 @@ class Skybox : public Model
 public:
     Skybox();
     Skybox(std::string texture_path, std::string path);
+    virtual ~Skybox(){}
 
     void init(std::string texture_path, std::string path);
     void Draw(glm::mat4 view);

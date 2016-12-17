@@ -22,10 +22,11 @@ public:
     //  Getters
     inline GLuint getHDRTexture()const {return m_hdr_buffer.getTexture(0);}
     inline GLuint getBlurTexture()const {return m_blur_buffers[1].getTexture(0);}
+    inline GLuint getOutTexture()const {return m_out_buffer.getTexture(0);}
 
     //  Setters
     inline void switchHDR(){m_HDR = !m_HDR;}
-    inline void switchAdaptation(){m_adaptation = !m_adaptation; m_exposure = 1.f;}
+    inline void switchAdaptation(){m_adaptation = !m_adaptation;}
     inline void switchBloom(){m_bloom = !m_bloom;}
 
 private:
@@ -37,7 +38,6 @@ private:
     Framebuffer m_hdr_buffer;
     Shader m_hdr_shader;
     GLuint m_color_buffer;
-    GLfloat m_exposure;
     GLboolean m_HDR;
     GLboolean m_adaptation;
 
@@ -52,6 +52,9 @@ private:
     Framebuffer m_brightness_pong_buffer;
     Framebuffer m_brightness_pong_buffer2;
     Shader m_downscaling_shader;
+    Framebuffer m_exposure_buffer;
+
+    Framebuffer m_out_buffer;
 };
 
 #endif // HDRPOSTPROCESS_H

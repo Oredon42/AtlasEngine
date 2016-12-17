@@ -34,7 +34,7 @@ class Model
 public:
     Model();
     Model(Mesh *mesh, Material *material);
-    ~Model();
+    virtual ~Model();
 
     virtual void draw(const Shader &shader, const GLfloat &render_time);
 

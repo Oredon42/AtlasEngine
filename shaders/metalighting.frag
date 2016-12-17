@@ -1,9 +1,9 @@
 
 //out vec4 FragColor;
 
-layout (location = 0) out vec4 FragColor;
+layout (location = 0) out vec3 FragColor;
 layout (location = 1) out vec4 BrightColor;
-layout (location = 2) out float Brightness;
+layout (location = 2) out vec2 Brightness;
 
 in vec2 TexCoords;
 
@@ -21,18 +21,33 @@ struct PointLight {
     float linear;
     float quadratic;
     float intensity;
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec3 color;
 };
+uniform PointLight pointLights[POINTLIGHT];
 #endif
+
+float smoothDistanceAtt(float squaredDistance , float invSqrAttRadius)
+{
+    float factor = squaredDistance * invSqrAttRadius;
+    float smoothFactor = max(1.0f - factor * factor, 0.0f);
+    return smoothFactor * smoothFactor;
+}
+
+float getDistanceAtt(vec3 unormalizedLightVector, float invSqrAttRadius)
+{
+    float sqrDist = dot(unormalizedLightVector , unormalizedLightVector);
+    float attenuation = 1.0 / (max(sqrDist, 0.01*0.01));
+    attenuation *= smoothDistanceAtt(sqrDist , invSqrAttRadius);
+    return attenuation;
+}
 
 vec3 F_Schlick(vec3 f0, float f90, float u)
 {
-    return f0 + ( f90 - f0 ) * pow(1.f - u , 5.f);
+    return f0 + (f90 - f0) * pow(1.f - u, 5.f);
 }
 
-float chiGGX(float v) {
+float chiGGX(float v)
+{
     return v > 0.0f ? 1.0f : 0.0f;
 }
 
@@ -62,9 +77,8 @@ float Fr_DisneyDiffuse( float NdotV , float NdotL , float LdotH , float linearRo
     float energyFactor = (1.0f - linearRoughness) * 1.0 + linearRoughness * (1.0 / 1.51);
     float fd90 = energyBias + 2.0 * LdotH * LdotH * linearRoughness;
     vec3 f0 = vec3(1.0f);
-    
     float lightScatter = F_Schlick(f0, fd90, NdotL).r;
-    float viewScatter = F_Schlick( f0, fd90, NdotV).r;
+    float viewScatter = F_Schlick(f0, fd90, NdotV).r;
     
     return lightScatter * viewScatter * energyFactor;
 }
@@ -87,18 +101,21 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 V, vec3 N, float NdotV,
     
     //Diffuse
     float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
-    return (color / M_PI * Fd + Fr) * light.intensity * light.diffuse * NdotL;
+    
+    //  Attenuation
+    vec3 dist = light.position - fragPos;
+    
+    float attenuation = getDistanceAtt(dist, light.quadratic);
+    
+    return (color / M_PI * Fd + Fr) * NdotL * light.intensity;
 }
-uniform PointLight pointLights[POINTLIGHT];
 #endif
 
 uniform vec3 viewPos;
 
 void main()
 {
-    // Retrieve data from gbuffer
     float depth = texture(gPositionDepth, TexCoords).a;
-    //vec3 FragPos = vec3(gl_FragCoord.x, gl_FragCoord.y, 1) * depth;
     vec3 FragPos = vec3(texture(gPositionDepth, TexCoords).rgb);
     vec3 N = texture(gNormal, TexCoords).rgb;
     vec3 V = normalize(-FragPos);
@@ -109,7 +126,7 @@ void main()
     float ior = texture(gPositionDepth, TexCoords).b;
     ior = 1.;
     float metalness = texture(gPositionDepth, TexCoords).g;
-    metalness = 1.;
+    metalness = 1.0;
     vec3 color = texture(gAlbedoSpec, TexCoords).rgb;
     
     float AmbientOcclusion = texture(ssao, TexCoords).r;
@@ -117,16 +134,16 @@ void main()
     vec3 F0 = vec3(0.16 * ior * ior);
     F0 = (1.0f - metalness) * F0 + metalness * color;
     
-    float NdotV = abs(dot(N , V)) + 1e-5f; // avoid artifact
+    float NdotV = abs(dot(N , V)) + 1e-5f;
     
     vec3 ambient = vec3(0.3 * AmbientOcclusion);
-    vec3 lighting  = ambient; // hard-coded ambient component
+    vec3 lighting  = ambient;
+    
 #ifdef POINTLIGHT
-    // Then calculate lighting as usual
     for(int i = 0; i < POINTLIGHT; i++)
         lighting += CalcPointLight(pointLights[i], FragPos, V, N, NdotV, F0, roughness, linearRoughness, color);
 #endif
-    Brightness = 0.0;
+    Brightness = vec2(0.0);
     float brightness = max(dot(lighting, vec3(0.2126f, 0.7152f, 0.0722f)), 0);
     
     BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -134,7 +151,7 @@ void main()
     if(brightness > 1.0)
         BrightColor = vec4(lighting, 1.0);
     
-    Brightness = brightness;
+    Brightness = vec2(brightness);
     
-    FragColor = vec4(max(lighting, vec3(0)), 1.0);
+    FragColor = vec3(max(lighting, vec3(0)));
 }

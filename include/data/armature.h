@@ -82,11 +82,10 @@ struct VertexBoneData
 class Armature
 {
 public:
-    Armature(std::map<std::string, GLuint> bone_mapping, GLuint num_bones, Bone *bone_tree, VertexBoneData *vertex_bone_data);
+    Armature(std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *bone_tree, VertexBoneData *vertex_bone_data);
     ~Armature();
 
     void update(const Shader &shader, const Animation *animation, const GLfloat &render_time);
-    void updateBone(const Animation *animation, const GLuint &bone_index, const glm::mat4 &parent_transform, const GLfloat &render_time);
 
     //  Getters
     inline VertexBoneData *getVertexBoneData() const{return m_vertex_bone_data;}
@@ -95,6 +94,8 @@ public:
     inline GLboolean hasBone(const std::string &bone_name) const{return m_bone_mapping.find(bone_name) != m_bone_mapping.end();}
 
 private:
+    void updateBone(const Animation *animation, const GLuint &bone_index, const glm::mat4 &parent_transform, const GLfloat &render_time);
+
     GLuint m_bone_location[MAX_BONES];
     std::map<std::string, GLuint> m_bone_mapping;
     GLuint m_num_bones;

@@ -43,6 +43,11 @@ void AtlasWidget::initializeGL()
 
     makeCurrent();
 
+    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+    std::cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
+    std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
+
     /*  SCENES MODIFICATION */
 
     addScene();
@@ -57,7 +62,7 @@ void AtlasWidget::initializeGL()
     //m_current_scene->importFile("/obj/Models/3spheres.dae");
     //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
     //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-    m_file_loader.load("/obj/test/test.dae", m_current_scene);
+    m_file_loader.load("/obj/test/test2.dae", m_current_scene);
     //m_current_scene->importFile("/obj/test/test.dae");
 
     m_current_scene->rotate(glm::vec3(0, 0, 270), "Scene");

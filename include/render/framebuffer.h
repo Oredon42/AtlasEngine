@@ -24,6 +24,18 @@ struct FramebufferTextureDatas
     }
 };
 
+struct FramebufferRenderbufferDatas
+{
+    GLint internal_format;
+    GLenum attachment;
+
+    FramebufferRenderbufferDatas(const GLenum &i_f, const GLenum &at) :
+        internal_format(i_f),
+        attachment(at)
+    {
+    }
+};
+
 class Framebuffer
 {
 public:
@@ -31,18 +43,21 @@ public:
     ~Framebuffer();
 
     void init(const GLuint &width, const GLuint &height);
-    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &size, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
+    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &texture_size, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
+    void attachRenderBuffers(FramebufferRenderbufferDatas *renderbuffer_datas, GLuint renderbuffer_size, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
 
     inline void bind(GLenum target = GL_FRAMEBUFFER)const {glBindFramebuffer(target, m_buffer);}
 
     //  Getters
+    inline GLuint width() const{return m_width;}
+    inline GLuint height() const{return m_height;}
     inline GLuint getBuffer() const{return m_buffer;}
     inline GLuint getTexture(const GLuint &i) const{return m_textures[i].getId();}
 
 private:
     GLuint m_buffer;
     Texture *m_textures;
-    GLuint m_render_buffer;
+    GLuint *m_renderbuffers;
 
     GLuint m_width;
     GLuint m_height;

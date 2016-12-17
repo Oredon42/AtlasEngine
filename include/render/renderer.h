@@ -58,18 +58,7 @@ private:
 
     GLuint m_gPosition, m_gNormal, m_gAlbedoSpec;
 
-    //  HDR
-    Framebuffer m_hdr_buffer;
-    Shader m_hdr_shader;
-    GLuint m_color_buffer;
-    GLfloat m_exposure;
-    GLboolean m_hdr;
-    GLboolean m_adaptation;
-
-    //  BLOOM
-    Framebuffer m_blur_buffers[2];
-    Shader m_blur_shaders[3];
-    GLboolean m_bloom;
+    Shader m_quad_shader;
 
     HDRPostProcess m_HDR_postprocess;
     SSAOPostProcess m_SSAO_postprocess;

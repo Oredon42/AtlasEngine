@@ -4,10 +4,10 @@ Quad::Quad(const GLfloat &size) :
     Mesh::Mesh(),
     m_size(size)
 {
-    m_vertices.push_back(Vertex(glm::vec3(-size, size, 0.f), glm::vec2(0.f, 1.f)));
-    m_vertices.push_back(Vertex(glm::vec3(-size, -size, 0.f), glm::vec2(0.f, 0.f)));
-    m_vertices.push_back(Vertex(glm::vec3(size, size, 0.f), glm::vec2(1.f, 1.f)));
-    m_vertices.push_back(Vertex(glm::vec3(size, -size, 0.f), glm::vec2(1.f, 0.f)));
+    m_vertices.push_back(Vertex(glm::vec3(-m_size, m_size, 0.f), glm::vec2(0.f, 1.f)));
+    m_vertices.push_back(Vertex(glm::vec3(-m_size, -m_size, 0.f), glm::vec2(0.f, 0.f)));
+    m_vertices.push_back(Vertex(glm::vec3(m_size, m_size, 0.f), glm::vec2(1.f, 1.f)));
+    m_vertices.push_back(Vertex(glm::vec3(m_size, -m_size, 0.f), glm::vec2(1.f, 0.f)));
 }
 
 void Quad::draw()

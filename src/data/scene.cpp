@@ -2,7 +2,7 @@
 #include "include/data/model.h"
 #include "include/data/skybox.h"
 
-Scene::Scene(std::string &path, GLfloat &render_time) :
+Scene::Scene(const std::string &path, GLfloat &render_time) :
     m_path(path),
     m_skybox(0),
     m_background_color(glm::vec3(0.f, 0.f, 0.f)),

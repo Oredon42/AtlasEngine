@@ -70,22 +70,18 @@ public:
     inline void setScale(const glm::vec3 &scale){m_scale = scale;spreadTransform(glm::mat4());}
 
 protected:
+    std::string m_path;
+    std::string m_name;
     SceneGraphNode *m_parent;
     std::vector<SceneGraphNode *> m_children;
 
     std::vector<Model *> m_models[NB_SHADER_TYPES];
-
-    std::string m_path;
-    std::vector<Texture *> m_textures_loaded;
-
-    std::string m_name;
-
     GLuint m_number_of_models;
 
+    std::vector<Texture *> m_textures_loaded;
+
     glm::mat4 m_global_inverse_transform;
-
     glm::mat4 m_node_transform;
-
     glm::mat4 m_transform;
     glm::vec3 m_position;
     glm::quat m_rotation;
@@ -93,6 +89,8 @@ protected:
 };
 
 /*
+ * SceneGraphRoot
+ *
  * Root of the scene graph
  * Save a list of animated meshes in the scene,
  * will be useful when adding new animations
@@ -101,11 +99,11 @@ class SceneGraphRoot : public SceneGraphNode
 {
 public:
     SceneGraphRoot(const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform);
-    SceneGraphRoot(glm::mat4 &global_inverse_transform, std::string &path, std::vector<Model *> (&scene_models)[NB_SHADER_TYPES], GLfloat &render_time);
+    virtual ~SceneGraphRoot();
+
     void translate(const glm::vec3 &t, const std::string &name);
     void rotate(const glm::vec3 &r, const std::string &name);
     void scale(const glm::vec3 &s, const std::string &name);
-    virtual ~SceneGraphRoot();
 
 private:
     std::vector<Animation *> m_animations;

@@ -15,11 +15,7 @@ Renderer::Renderer() :
     m_gNormal(0),
     m_gAlbedoSpec(0),
     m_HDR_postprocess(m_quad),
-    m_SSAO_postprocess(m_quad),
-    m_exposure(1.f),
-    m_hdr(GL_TRUE),
-    m_adaptation(GL_TRUE),
-    m_bloom(GL_TRUE)
+    m_SSAO_postprocess(m_quad)
 {
     m_shader_types[0].setValues(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, 0);
     m_shader_types[1].setValues(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE, 1);
@@ -51,8 +47,10 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     FramebufferTextureDatas gTexture_datas[3] = {FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_CLAMP_TO_EDGE),       //  position + depth
                                                  FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_EDGE),         //  normal
                                                  FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE)}; //  albedo
-
     m_gBuffer.attachTextures(gTexture_datas, 3);
+
+    FramebufferRenderbufferDatas gRenderbuffer_datas[1] = {FramebufferRenderbufferDatas(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT)};
+    m_gBuffer.attachRenderBuffers(gRenderbuffer_datas, 1);
 
     // Setup plane for framebuffer render
     m_quad.setupBuffers();
@@ -71,6 +69,8 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "gAlbedoSpec"), 2);
     glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "ssao"), 3);
     glUseProgram(0);
+
+    m_quad_shader.init("shaders/quad.vert", "shaders/quad.frag");
 
     m_HDR_postprocess.init(window_width, window_height);
     m_SSAO_postprocess.init(window_width, window_height);
@@ -114,7 +114,7 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboo
      * Lighting pass
      * */
     m_HDR_postprocess.bindBuffer();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
     m_shader_lighting_pass.use();
 
     glActiveTexture(GL_TEXTURE0);
@@ -133,6 +133,13 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboo
     m_quad.draw();
 
     m_HDR_postprocess.process();
+
+    QOpenGLFramebufferObject::bindDefault();
+    glClear(GL_COLOR_BUFFER_BIT);
+    m_quad_shader.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_HDR_postprocess.getOutTexture());
+    m_quad.draw();
 }
 
 void Renderer::reloadShaders()
