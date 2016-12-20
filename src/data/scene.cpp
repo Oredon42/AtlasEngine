@@ -55,42 +55,10 @@ void Scene::clear()
 }
 
 /*
- * Draw the scene using forward rendering
- * with the shaders of the renderer
- * */
-void Scene::drawForward(const Shader (&shaders)[NB_SHADER_TYPES], const GLuint &window_width, const GLuint &window_height, const GLfloat &render_time)
-{
-    Camera *current_camera = m_cameras[m_current_camera];
-    //current_camera->orientate();
-    //current_camera->move(keys, render_time);
-
-    //  Loop on every shader type
-    //  Loop and draw every mesh that uses this shader
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-    {
-        if(m_models[i].size() > 0)
-        {
-            glUseProgram(shaders[i].getProgram());
-            current_camera->sendDatas(shaders[i], window_width, window_height);
-
-            for(GLuint j = 0; j < m_dirlights.size(); ++j)
-                sendDirLightDatas(j, shaders[i]);
-            for(GLuint j = 0; j < m_pointlights.size(); ++j)
-                sendPointLightDatas(j, shaders[i]);
-            for(GLuint j = 0; j < m_spotlights.size(); ++j)
-                sendSpotLightDatas(j, shaders[i]);
-
-            for(GLuint j = 0; j < m_models[i].size(); ++j)
-                m_models[i][j]->draw(shaders[i], render_time);
-        }
-    }
-}
-
-/*
  * Draw the scene using deferred rendering
  * with the shaders of the renderer
  * */
-void Scene::drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height)
+void Scene::draw(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height)
 {
     Camera *current_camera = m_cameras[m_current_camera];
     current_camera->orientate();

@@ -26,8 +26,7 @@ public:
     void init(const std::string &path);
     void clear();
 
-    void drawForward(const Shader (&shaders)[NB_SHADER_TYPES], const GLuint &window_width, const GLuint &window_height, const GLfloat &render_time);
-    void drawDeferred(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height);
+    void draw(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height);
 
     void buildKdTree();
 

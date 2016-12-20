@@ -11,11 +11,7 @@ Framebuffer::Framebuffer() :
 
 Framebuffer::~Framebuffer()
 {
-    if(m_textures != 0)
-        delete[] m_textures;
 
-    if(m_renderbuffers != 0)
-        delete[] m_renderbuffers;
 }
 
 void Framebuffer::init(const GLuint &width, const GLuint &height)
@@ -25,20 +21,48 @@ void Framebuffer::init(const GLuint &width, const GLuint &height)
     m_height = height;
 }
 
-void Framebuffer::attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &texture_size, GLuint *custom_widths, GLuint *custom_heights)
+void Framebuffer::resize(const GLuint &width, const GLuint &height)
 {
-    if(texture_size > 0)
+    m_width = width;
+    m_height = height;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+
+    for(GLuint i = 0; i < m_num_textures; ++i)
     {
+        m_textures[i].init(m_texture_datas[i].internal_format, m_width, m_height, m_texture_datas[i].format, m_texture_datas[i].type, NULL, m_texture_datas[i].clamp, m_texture_datas[i].filter_max, m_texture_datas[i].filter_min);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i].getId(), 0);
+    }
+
+    for(GLuint i = 0; i < m_num_renderbuffers; ++i)
+    {
+        glBindRenderbuffer(GL_RENDERBUFFER, m_renderbuffers[i]);
+        glRenderbufferStorage(GL_RENDERBUFFER, m_renderbuffer_datas[i].internal_format, m_width, m_height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, m_renderbuffer_datas[i].attachment, GL_RENDERBUFFER, m_renderbuffers[i]);
+    }
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cerr << "Framebuffer::attachTextures::Framebuffer not complete!" << std::endl;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Framebuffer::attachTextures(const std::vector<FramebufferTextureDatas> &texture_datas, GLuint *custom_widths, GLuint *custom_heights)
+{
+    if(texture_datas.size() > 0)
+    {
+        m_num_textures = texture_datas.size();
+        m_textures = new Texture[m_num_textures];
+        m_texture_datas = texture_datas;
+
         GLuint *attachments;
 
-        if(texture_size > 1)
-            attachments = new GLuint[texture_size];
-
-        m_textures = new Texture[texture_size];
+        if(m_num_textures > 1)
+            attachments = new GLuint[m_num_textures];
 
         glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 
-        for(GLuint i = 0; i < texture_size; ++i)
+        for(GLuint i = 0; i < m_num_textures; ++i)
         {
             GLuint width, height;
             if(custom_widths == 0 || custom_heights == 0)
@@ -51,16 +75,16 @@ void Framebuffer::attachTextures(const FramebufferTextureDatas* texture_datas, c
                 width = custom_widths[i];
                 height = custom_heights[i];
             }
-            m_textures[i].init(texture_datas[i].internal_format, width, height, texture_datas[i].format, texture_datas[i].type, NULL, texture_datas->clamp, texture_datas->filter_max, texture_datas->filter_min);
+            m_textures[i].init(texture_datas[i].internal_format, width, height, texture_datas[i].format, texture_datas[i].type, NULL, texture_datas[i].clamp, texture_datas[i].filter_max, texture_datas[i].filter_min);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i].getId(), 0);
 
-            if(texture_size > 1)
+            if(m_num_textures > 1)
                 attachments[i] = GL_COLOR_ATTACHMENT0 + i;
         }
 
-        if(texture_size > 1)
+        if(m_num_textures > 1)
         {
-            glDrawBuffers(texture_size, attachments);
+            glDrawBuffers(m_num_textures, attachments);
             delete[] attachments;
         }
 
@@ -71,16 +95,18 @@ void Framebuffer::attachTextures(const FramebufferTextureDatas* texture_datas, c
     }
 }
 
-void Framebuffer::attachRenderBuffers(FramebufferRenderbufferDatas *renderbuffer_datas, GLuint renderbuffer_size, GLuint *custom_widths, GLuint *custom_heights)
+void Framebuffer::attachRenderBuffers(const std::vector<FramebufferRenderbufferDatas> &renderbuffer_datas, GLuint *custom_widths, GLuint *custom_heights)
 {
-    if(renderbuffer_size > 0)
+    if(renderbuffer_datas.size() > 0)
     {
+        m_num_renderbuffers = renderbuffer_datas.size();
+        m_renderbuffers = new GLuint[m_num_renderbuffers];
+        m_renderbuffer_datas = renderbuffer_datas;
+
         glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
+        glGenRenderbuffers(m_num_renderbuffers, m_renderbuffers);
 
-        m_renderbuffers = new GLuint[renderbuffer_size];
-        glGenRenderbuffers(renderbuffer_size, m_renderbuffers);
-
-        for(GLuint i = 0; i < renderbuffer_size; ++i)
+        for(GLuint i = 0; i < m_num_renderbuffers; ++i)
         {
             GLuint width, height;
             if(custom_widths == 0 || custom_heights == 0)
@@ -95,8 +121,8 @@ void Framebuffer::attachRenderBuffers(FramebufferRenderbufferDatas *renderbuffer
             }
 
             glBindRenderbuffer(GL_RENDERBUFFER, m_renderbuffers[i]);
-            glRenderbufferStorage(GL_RENDERBUFFER, renderbuffer_datas->internal_format, width, height);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, renderbuffer_datas->attachment, GL_RENDERBUFFER, m_renderbuffers[i]);
+            glRenderbufferStorage(GL_RENDERBUFFER, renderbuffer_datas[i].internal_format, width, height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, renderbuffer_datas[i].attachment, GL_RENDERBUFFER, m_renderbuffers[i]);
         }
 
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)

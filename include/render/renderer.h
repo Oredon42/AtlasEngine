@@ -22,8 +22,9 @@ public:
     Renderer();
 
     void init(const std::string &path, const GLuint &window_width, const GLuint &window_height, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
-    void drawSceneForward(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024]);
-    void drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024]);
+    void resize(const GLuint &width, const GLuint &height);
+
+    void drawScene(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024]);
 
     void reloadShaders();
 
@@ -45,6 +46,7 @@ private:
     GLuint m_num_levels;
 
     Framebuffer m_gBuffer;
+    Framebuffer m_lighting_buffer;
     GLuint m_rbo_depth;
     GLuint m_quad_VAO, m_quad_VBO;
     GLfloat m_quad_vertices[20];

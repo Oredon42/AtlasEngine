@@ -39,21 +39,20 @@ Renderer::Renderer() :
 void Renderer::init(const std::string &path, const GLuint &window_width, const GLuint &window_height, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
 {
     setDimensions(window_width, window_height);
+    m_quad.setupBuffers();
 
     /*
      * G BUFFER
      * */
     m_gBuffer.init(window_width, window_height);
-    FramebufferTextureDatas gTexture_datas[3] = {FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_CLAMP_TO_EDGE),       //  position + depth
-                                                 FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_EDGE),         //  normal
-                                                 FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE)}; //  albedo
-    m_gBuffer.attachTextures(gTexture_datas, 3);
-
-    FramebufferRenderbufferDatas gRenderbuffer_datas[1] = {FramebufferRenderbufferDatas(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT)};
-    m_gBuffer.attachRenderBuffers(gRenderbuffer_datas, 1);
-
-    // Setup plane for framebuffer render
-    m_quad.setupBuffers();
+    std::vector<FramebufferTextureDatas> gTexture_datas;
+    gTexture_datas.push_back(FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_CLAMP_TO_EDGE));
+    gTexture_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_EDGE));
+    gTexture_datas.push_back(FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE));
+    m_gBuffer.attachTextures(gTexture_datas);
+    std::vector<FramebufferRenderbufferDatas> gRenderbuffer_datas;
+    gRenderbuffer_datas.push_back(FramebufferRenderbufferDatas(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT));
+    m_gBuffer.attachRenderBuffers(gRenderbuffer_datas);
 
     // Setup shaders
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
@@ -61,8 +60,16 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
         m_shader_forward[i].initForward(m_shader_types[i], nb_dirlights, nb_pointlights, nb_spotlights);
         m_shader_geometry_pass[i].initGeometry(m_shader_types[i]);
     }
-    m_shader_lighting_pass.initLighting(nb_dirlights, nb_pointlights, nb_spotlights);
 
+
+    m_lighting_buffer.init(m_width, m_height);
+    std::vector<FramebufferTextureDatas> lighting_textures_datas;
+    lighting_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_BORDER));
+    lighting_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_BORDER));
+    lighting_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RG, GL_FLOAT, GL_CLAMP_TO_BORDER));
+    m_lighting_buffer.attachTextures(lighting_textures_datas);
+
+    m_shader_lighting_pass.initLighting(nb_dirlights, nb_pointlights, nb_spotlights);
     m_shader_lighting_pass.use();
     glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "gPositionDepth"), 0);
     glUniform1i(glGetUniformLocation(m_shader_lighting_pass.getProgram(), "gNormal"), 1);
@@ -76,29 +83,24 @@ void Renderer::init(const std::string &path, const GLuint &window_width, const G
     m_SSAO_postprocess.init(window_width, window_height);
 }
 
-/*
- * Render a scene using forward rendering
- * */
-void Renderer::drawSceneForward(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024])
+void Renderer::resize(const GLuint &width, const GLuint &height)
 {
-    scene.moveCamera(keys, render_time);
-    glClearColor(scene.getBackgroundColor().x, scene.getBackgroundColor().y, scene.getBackgroundColor().z, 0.5f);
+    m_width = width;
+    m_height = height;
 
-    /*
-     * Scene drawing pass
-     * */
-    m_HDR_postprocess.bindBuffer();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_SSAO_postprocess.resize(m_width, m_height);
+    m_HDR_postprocess.resize(m_width, m_height);
 
-    scene.drawForward(m_shader_forward, m_width, m_height, render_time);
+    m_gBuffer.resize(m_width, m_height);
+    m_lighting_buffer.resize(m_width, m_height);
 
-    m_HDR_postprocess.process();
+    m_SSAO_postprocess.setQuality(MEDIUM);
 }
 
 /*
  * Render a scene using deferred rendering
  * */
-void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024])
+void Renderer::drawScene(Scene &scene, const GLfloat &render_time, GLboolean (&keys)[1024])
 {
     /*
      * Geometry pass
@@ -106,14 +108,14 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboo
     glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer.getBuffer());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    scene.drawDeferred(m_shader_geometry_pass, keys, render_time, m_width, m_height);
+    scene.draw(m_shader_geometry_pass, keys, render_time, m_width, m_height);
 
     m_SSAO_postprocess.process(m_gBuffer, scene.getCurrentCamera()->getProjection());
 
     /*
      * Lighting pass
      * */
-    m_HDR_postprocess.bindBuffer();
+    m_lighting_buffer.bind();
     glClear(GL_COLOR_BUFFER_BIT);
     m_shader_lighting_pass.use();
 
@@ -124,15 +126,14 @@ void Renderer::drawSceneDeffered(Scene &scene, const GLfloat &render_time, GLboo
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_gBuffer.getTexture(2));
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, m_SSAO_postprocess.getTexture());
+    glBindTexture(GL_TEXTURE_2D, m_SSAO_postprocess.getOutTexture());
 
     scene.sendViewSpacePointLightDatas(m_shader_lighting_pass);
-
     scene.sendCameraToShader(m_shader_lighting_pass, m_width, m_height);
 
     m_quad.draw();
 
-    m_HDR_postprocess.process();
+    m_HDR_postprocess.process(m_lighting_buffer);
 
     QOpenGLFramebufferObject::bindDefault();
     glClear(GL_COLOR_BUFFER_BIT);

@@ -16,6 +16,8 @@
 #include "include/data/scene.h"
 #include "include/loader/fileloader.h"
 
+#include "include/menu.h"
+
 #include <QOpenGLWidget>
 
 class AtlasWidget : public QOpenGLWidget
@@ -34,8 +36,15 @@ protected:
     virtual void keyReleaseEvent(QKeyEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
 
+protected slots:
+    void unPause();
+
 private:
     inline void addScene(){m_scenes.push_back(Scene(m_path, m_render_time)); m_current_scene = &m_scenes[m_num_scenes++];}
+    void pause();
+
+    Menu m_menu;
+    GLboolean m_paused;
 
     GLfloat m_yaw;
     GLfloat m_pitch;

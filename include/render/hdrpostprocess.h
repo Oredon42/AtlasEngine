@@ -15,29 +15,33 @@ public:
     HDRPostProcess(Quad &quad);
 
     void init(const GLuint &width, const GLuint &height);
-    void process();
+    void resize(const GLuint &width, const GLuint &height);
 
-    inline void bindBuffer()const {m_hdr_buffer.bind();}
+    void process(const Framebuffer &lighting_buffer);
 
     //  Getters
-    inline GLuint getHDRTexture()const {return m_hdr_buffer.getTexture(0);}
-    inline GLuint getBlurTexture()const {return m_blur_buffers[1].getTexture(0);}
-    inline GLuint getOutTexture()const {return m_out_buffer.getTexture(0);}
+    inline GLuint getOutTexture()const {return m_out_texture;}
 
     //  Setters
+    void setActivated(const GLboolean &activated);
     inline void switchHDR(){m_HDR = !m_HDR;}
     inline void switchAdaptation(){m_adaptation = !m_adaptation;}
     inline void switchBloom(){m_bloom = !m_bloom;}
 
 private:
-    Quad &m_quad;
+    void processAdaptation(const Framebuffer &lighting_buffer);
+    void processBloom(const Framebuffer &lighting_buffer);
 
     GLuint m_width;
     GLuint m_height;
 
-    Framebuffer m_hdr_buffer;
-    Shader m_hdr_shader;
-    GLuint m_color_buffer;
+    Quad &m_quad;
+
+    GLboolean m_activated;
+
+    GLuint m_out_texture;
+
+    Shader m_HDR_shader;
     GLboolean m_HDR;
     GLboolean m_adaptation;
 
@@ -45,6 +49,8 @@ private:
     Framebuffer m_blur_buffers[2];
     Shader m_blur_shaders[3];
     GLboolean m_bloom;
+    GLuint m_bloom_quality;
+    GLuint m_buffer_index;
 
     //ADAPTATION
     Framebuffer m_brightness_ping_buffer;
@@ -53,6 +59,7 @@ private:
     Framebuffer m_brightness_pong_buffer2;
     Shader m_downscaling_shader;
     Framebuffer m_exposure_buffer;
+    GLfloat m_avg_max_luminances[2];
 
     Framebuffer m_out_buffer;
 };

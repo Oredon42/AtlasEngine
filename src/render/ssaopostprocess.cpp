@@ -3,13 +3,17 @@
 #include "include/data/quad.h"
 
 SSAOPostProcess::SSAOPostProcess(Quad &quad) :
-    m_quad(quad)
+    m_quad(quad),
+    m_activated(GL_TRUE)
 {
 
 }
 
 void SSAOPostProcess::init(const GLuint &window_width, const GLuint &window_height)
 {
+    m_width = window_width;
+    m_height = window_height;
+
     m_SSAO_shader.init("shaders/ssao.vert", "shaders/ssao.frag");
     m_SSAO_blur_shader.init("shaders/ssao.vert", "shaders/ssaoblur.frag");
     m_SSAO_shader.use();
@@ -17,44 +21,64 @@ void SSAOPostProcess::init(const GLuint &window_width, const GLuint &window_heig
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gNormal"), 1);
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
 
-    FramebufferTextureDatas SSAO_texture_datas[1] = {//FramebufferTextureDatas(GL_RED, GL_RGB, GL_FLOAT)};
-                                                     FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT)};
+    std::vector<FramebufferTextureDatas> SSAO_texture_datas;
+    SSAO_texture_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT));
     m_SSAO_buffer.init(window_width, window_height);
-    m_SSAO_buffer.attachTextures(SSAO_texture_datas, 1);
+    m_SSAO_buffer.attachTextures(SSAO_texture_datas);
     m_SSAO_blur_buffer.init(window_width, window_height);
-    m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas, 1);
+    m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas);
+
+    //m_SSAO_buffer.resize(m_width/2, m_height/2);
+
+    m_out_texture = m_SSAO_buffer.getTexture(0);
 
     generateNoise();
 }
 
+void SSAOPostProcess::resize(const GLuint &width, const GLuint &height)
+{
+    m_width = width;
+    m_height = height;
+
+    m_SSAO_buffer.resize(m_width, m_height);
+    m_SSAO_blur_buffer.resize(m_width, m_height);
+}
+
 void SSAOPostProcess::process(const Framebuffer &gBuffer, const glm::mat4 &projection)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_buffer.getBuffer());
-    glClear(GL_COLOR_BUFFER_BIT);
-    m_SSAO_shader.use();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gBuffer.getTexture(0));
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, gBuffer.getTexture(1));
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, gBuffer.getTexture(2));
+    if(m_activated)
+    {
+        glViewport(0, 0, m_SSAO_buffer.width(), m_SSAO_buffer.height());
+        glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_buffer.getBuffer());
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    // Send kernel + rotation
-    for (GLuint i = 0; i < 64; ++i)
-        glUniform3fv(glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str()), 1, &m_SSAO_kernel[i][0]);
-    glUniformMatrix4fv(glGetUniformLocation(m_SSAO_shader.getProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        m_SSAO_shader.use();
 
-    m_quad.draw();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gBuffer.getTexture(0));
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gBuffer.getTexture(1));
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, gBuffer.getTexture(2));
 
+        for (GLuint i = 0; i < 64; ++i)
+            glUniform3fv(glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str()), 1, &m_SSAO_kernel[i][0]);
+        glUniformMatrix4fv(glGetUniformLocation(m_SSAO_shader.getProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform2f(glGetUniformLocation(m_SSAO_shader.getProgram(), "window_size"), m_SSAO_buffer.width(), m_SSAO_buffer.height());
+        m_quad.draw();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_blur_buffer.getBuffer());
-    glClear(GL_COLOR_BUFFER_BIT);
-    m_SSAO_blur_shader.use();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
-    m_quad.draw();
+        glViewport(0, 0, m_SSAO_blur_buffer.width(), m_SSAO_blur_buffer.height());
+        glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_blur_buffer.getBuffer());
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        m_SSAO_blur_shader.use();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
+        m_quad.draw();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 }
 
 void SSAOPostProcess::generateNoise()
@@ -88,4 +112,31 @@ void SSAOPostProcess::generateNoise()
 GLfloat lerp(GLfloat a, GLfloat b, GLfloat f)
 {
     return a + f * (b - a);
+}
+
+void SSAOPostProcess::setActivated(const GLboolean &activated)
+{
+    m_activated = activated;
+
+    m_SSAO_buffer.bind();
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void SSAOPostProcess::setQuality(const PostProcessQuality &quality)
+{
+    switch(quality)
+    {
+    case LOW:
+        m_SSAO_buffer.resize(m_width/4, m_height/4);
+        break;
+
+    case MEDIUM:
+        m_SSAO_buffer.resize(m_width/2, m_height/2);
+        break;
+
+    case HIGH:
+        m_SSAO_buffer.resize(m_width, m_height);
+        break;
+    }
 }

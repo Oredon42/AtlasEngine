@@ -43,8 +43,10 @@ public:
     ~Framebuffer();
 
     void init(const GLuint &width, const GLuint &height);
-    void attachTextures(const FramebufferTextureDatas* texture_datas, const GLuint &texture_size, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
-    void attachRenderBuffers(FramebufferRenderbufferDatas *renderbuffer_datas, GLuint renderbuffer_size, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
+    void resize(const GLuint &width, const GLuint &height);
+
+    void attachTextures(const std::vector<FramebufferTextureDatas> &texture_datas, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
+    void attachRenderBuffers(const std::vector<FramebufferRenderbufferDatas> &renderbuffer_datas, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
 
     inline void bind(GLenum target = GL_FRAMEBUFFER)const {glBindFramebuffer(target, m_buffer);}
 
@@ -58,6 +60,12 @@ private:
     GLuint m_buffer;
     Texture *m_textures;
     GLuint *m_renderbuffers;
+
+    GLuint m_num_textures;
+    GLuint m_num_renderbuffers;
+
+    std::vector<FramebufferTextureDatas> m_texture_datas;
+    std::vector<FramebufferRenderbufferDatas> m_renderbuffer_datas;
 
     GLuint m_width;
     GLuint m_height;

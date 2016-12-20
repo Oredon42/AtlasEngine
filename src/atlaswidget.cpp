@@ -8,6 +8,8 @@
 
 AtlasWidget::AtlasWidget(QWidget * parent) :
     QOpenGLWidget(parent),
+    m_menu(this, Qt::FramelessWindowHint),
+    m_paused(false),
     m_yaw(0.0f),
     m_pitch(0.0f),
     angle(0),
@@ -18,7 +20,6 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
 {
     setFocus();
 
-    //  Curseur
     setMouseTracking(true);
 
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
@@ -79,6 +80,8 @@ void AtlasWidget::initializeGL()
 
     m_renderer.init(m_path, window()->width(), window()->height(), m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
 
+    //m_renderer.resize(800, 600);
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT, GL_FILL);
@@ -100,8 +103,7 @@ void AtlasWidget::paintGL()
     GLuint current_time = m_time.elapsed();
     m_render_time = current_time;
 
-    m_renderer.drawSceneDeffered(*m_current_scene, (float)(current_time - m_last_frame), m_keys);
-    //m_renderer.drawSceneForward(*m_current_scene, (GLfloat)(current_time - m_last_frame), m_keys);
+    m_renderer.drawScene(*m_current_scene, (float)(current_time - m_last_frame), m_keys);
 
     m_last_frame = current_time;
 }
@@ -110,6 +112,10 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
 {
     switch(e->key())
     {
+    case Qt::Key_Escape:
+        pause();
+        break;
+
     case Qt::Key_Up:
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         break;
@@ -171,9 +177,9 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
 
 void AtlasWidget::keyReleaseEvent(QKeyEvent * e)
 {
-    if(e->key() == Qt::Key_Escape)
+    /*if(e->key() == Qt::Key_Escape)
         QCoreApplication::instance()->quit();
-    else if(e->key() >= 0 && e->key() < 1024)
+    else if(e->key() >= 0 && e->key() < 1024)*/
         m_keys[e->key()] = false;
 }
 
@@ -196,4 +202,25 @@ void AtlasWidget::setPath(const std::string &path)
 #if defined(__APPLE__) || defined(__linux__)
     m_path = m_path.substr(0, m_path.find_last_of('/'));
 #endif
+}
+
+void AtlasWidget::unPause()
+{
+    if(m_paused == true)
+    {
+        m_paused = false;
+
+        QApplication::setOverrideCursor(Qt::BlankCursor);
+    }
+}
+
+void AtlasWidget::pause()
+{
+    if(m_paused == false)
+    {
+        m_paused = true;
+
+        QApplication::setOverrideCursor(Qt::ArrowCursor);
+        m_menu.exec();
+    }
 }
