@@ -1,7 +1,7 @@
 #include <sstream>
 
 #include "armature.h"
-#include "include/data/animation.h"
+#include "include/data/animation/animation.h"
 #include "include/render/shader.h"
 
 Armature::Armature(std::map<std::string, GLuint> &bone_mapping, const GLuint &num_bones, Bone *bone_tree, VertexBoneData *vertex_bone_data) :

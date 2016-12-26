@@ -43,7 +43,7 @@ public:
     Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indices, GLboolean has_normal_map = GL_FALSE);
     virtual ~Mesh();
 
-    virtual void draw();
+    virtual void draw() const;
     virtual void setupBuffers();
 
     void attachArmature(const VertexBoneData *vertex_bone_data);

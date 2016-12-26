@@ -1,15 +1,25 @@
 #include "include/data/scenegraphnode.h"
-#include "include/data/model.h"
 #include "include/data/camera.h"
-#include "include/data/dirlight.h"
-#include "include/data/spotlight.h"
-#include "include/data/pointlight.h"
-#include "include/data/animation.h"
+#include "include/data/lighting/dirlight.h"
+#include "include/data/lighting/spotlight.h"
+#include "include/data/lighting/pointlight.h"
+#include "include/data/animation/animation.h"
 
 #include <string>
 
-SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform) :
+SceneGraphNode::SceneGraphNode(const std::string &name, glm::mat4 transform) :
+    m_name(name),
+    m_transform(transform),
+    m_position(0.f),
+    m_rotation(0.f, 0.f, 0.f, 0.f),
+    m_scale(1.f)
+{
+
+}
+
+SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform, const std::string &name) :
     m_path(path),
+    m_name(name),
     m_parent(0),
     m_global_inverse_transform(global_inverse_transform),
     m_position(0.f),
@@ -56,6 +66,15 @@ SceneGraphNode::~SceneGraphNode()
         delete m_children[i];
 
     m_children.clear();
+}
+
+void SceneGraphNode::addChild(SceneGraphNode *child)
+{
+    child->m_path = this->m_path;
+    child->m_parent = this;
+    child->m_global_inverse_transform = this->m_global_inverse_transform;
+
+    m_children.push_back(child);
 }
 
 void SceneGraphNode::setMaterial(const Material& material, const std::string &name)
@@ -159,7 +178,6 @@ void SceneGraphRoot::translate(const glm::vec3 &t, const std::string &name)
 void SceneGraphRoot::rotate(const glm::vec3 &r, const std::string &name)
 {
     SceneGraphNode *node = getNode(name);
-
     if(node != 0)
         node->setRotation(glm::quat(r));
 }

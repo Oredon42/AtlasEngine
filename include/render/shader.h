@@ -10,13 +10,6 @@
 
 #define NB_SHADER_TYPES 16
 
-enum ShaderGeneration
-{
-    FORWARD,
-    GPASS,
-    LPASS
-};
-
 struct ShaderType
 {
     GLboolean texture;
@@ -35,6 +28,21 @@ struct ShaderType
     }
 };
 
+struct ShaderTypes
+{
+    ShaderType shader_type[NB_SHADER_TYPES];
+
+    ShaderType &operator[](GLuint i)
+    {
+        return shader_type[i];
+    }
+
+    const ShaderType &operator[](GLuint i) const
+    {
+        return shader_type[i];
+    }
+};
+
 ShaderType getShaderType(const GLboolean &is_animated, const GLuint &diffuse_size, const GLuint &specular_size, const GLuint &normal_size);
 
 class Shader
@@ -49,7 +57,7 @@ public:
     void initLighting(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
 
     void reload();
-    void use();
+    void use() const;
 
     //  Getters
     inline GLuint getProgram() const{return m_program;}
@@ -76,6 +84,21 @@ private:
     GLuint m_nb_spotlights;
 
     GLboolean m_initialised;
+};
+
+struct Shaders
+{
+    Shader shaders[NB_SHADER_TYPES];
+
+    Shader &operator[](GLuint i)
+    {
+        return shaders[i];
+    }
+
+    const Shader &operator[](GLuint i) const
+    {
+        return shaders[i];
+    }
 };
 
 #endif

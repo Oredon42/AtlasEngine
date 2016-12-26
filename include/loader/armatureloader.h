@@ -4,7 +4,7 @@
 #include <map>
 
 #include "openglincludes.h"
-#include "include/data/armature.h"
+#include "include/data/animation/armature.h"
 
 #include "lib/assimp/Importer.hpp"
 #include "lib/assimp/scene.h"

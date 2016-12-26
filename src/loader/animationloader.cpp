@@ -1,5 +1,5 @@
 #include "include/loader/animationloader.h"
-#include "include/data/animation.h"
+#include "include/data/animation/animation.h"
 #include "include/data/scene.h"
 #include "include/data/model.h"
 

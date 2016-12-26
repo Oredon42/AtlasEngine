@@ -23,8 +23,8 @@
 
 #include "shader.h"
 #include "mesh.h"
+#include "model.h"
 
-class Model;
 class Material;
 class AnimatedModel;
 class Camera;
@@ -44,14 +44,15 @@ class SceneGraphNode
 {
     friend class Scene;
 public:
-    SceneGraphNode();
-    SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform);
+    SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform, const std::string &name);
     SceneGraphNode(SceneGraphNode *parent, const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform);
+    SceneGraphNode(const std::string &name, glm::mat4 transform = glm::mat4(1.f));
     virtual ~SceneGraphNode();
 
     void spreadTransform(const glm::mat4 &parent_transform);
-    inline void insertModel(Model *model, const GLuint &shader_index){m_models[shader_index].push_back(model);}
-    inline void addChild(SceneGraphNode *child){m_children.push_back(child);}
+    inline void insertModel(Model *model){m_models[model->getShaderTypeIndex()].push_back(model);}
+    inline void addChild(Model *model, const std::string &name){m_children.push_back(new SceneGraphNode(m_path, m_global_inverse_transform, name)); m_children.back()->insertModel(model);}
+    void addChild(SceneGraphNode *child);
     void calculateTransform(const glm::mat4 &parent_transform);
 
     //  Getters

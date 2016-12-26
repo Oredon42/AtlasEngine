@@ -34,12 +34,12 @@ class FileLoader
 public:
     FileLoader();
 
-    GLboolean load(const std::string path, Scene *scene, Flags flags = aeNoFlag);
+    GLboolean load(const std::string path, Scene *scene, int flags = aeNoFlag);
     void loadLights(const aiScene *ai_scene, Scene *scene);
     void loadCameras(const aiScene *ai_scene, Scene *scene);
 
 private:
-    void processFlags(const Flags &flags);
+    void processFlags(const int &flags);
 
     MeshLoader m_meshloader;
     AnimationLoader m_animationloader;

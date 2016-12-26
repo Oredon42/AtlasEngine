@@ -1,10 +1,10 @@
 #include "include/data/model.h"
 #include "include/data/camera.h"
-#include "include/data/dirlight.h"
-#include "include/data/spotlight.h"
-#include "include/data/pointlight.h"
-#include "include/data/armature.h"
-#include "include/data/animation.h"
+#include "include/data/lighting/dirlight.h"
+#include "include/data/lighting/spotlight.h"
+#include "include/data/lighting/pointlight.h"
+#include "include/data/animation/armature.h"
+#include "include/data/animation/animation.h"
 
 Model::Model() :
     m_armature(0),
@@ -33,7 +33,7 @@ Model::~Model()
     delete m_material;
 }
 
-void Model::draw(const Shader &shader, const GLfloat &render_time)
+void Model::draw(const Shader &shader, const GLfloat &render_time) const
 {
     glUniformMatrix4fv(glGetUniformLocation(shader.getProgram(), "model"), 1, GL_FALSE, glm::value_ptr(m_transform));
 

@@ -1,5 +1,5 @@
-#include "include/data/mesh.h"
-#include "include/data/armature.h"
+#include "include/data/geometry/mesh.h"
+#include "include/data/animation/armature.h"
 
 Mesh::Mesh() :
     m_VAO(0),
@@ -28,7 +28,7 @@ Mesh::~Mesh()
 
 }
 
-void Mesh::draw()
+void Mesh::draw() const
 {
     glBindVertexArray(m_VAO);
     glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);

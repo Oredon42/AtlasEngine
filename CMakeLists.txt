@@ -23,8 +23,6 @@ include_directories(${INCLUDE_DIRS})
 
 #aux_source_directory(${SOURCE_DIR} SRC_LIST)
 
-#include_directories(${INCLUDE_DIR})
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)

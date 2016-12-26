@@ -36,7 +36,7 @@ public:
     Model(Mesh *mesh, Material *material);
     virtual ~Model();
 
-    virtual void draw(const Shader &shader, const GLfloat &render_time);
+    virtual void draw(const Shader &shader, const GLfloat &render_time) const;
 
     void attachArmature(Armature *armature);
     void detachArmature();
@@ -44,6 +44,8 @@ public:
     //  Getters
     inline GLuint getShaderTypeIndex() const{return m_material->getShaderTypeIndex();}
     GLboolean hasBone(const std::string &bone_name) const;
+    Mesh *getMesh(const GLuint &index) const{return m_meshes[index];}
+    Material *getMaterial() const{return m_material;}
 
     //  Setters
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}

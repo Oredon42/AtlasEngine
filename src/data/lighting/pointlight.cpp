@@ -1,4 +1,4 @@
-#include "include/data/pointlight.h"
+#include "include/data/lighting/pointlight.h"
 #include "include/render/shader.h"
 
 PointLight::PointLight() :

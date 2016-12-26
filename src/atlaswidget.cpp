@@ -5,6 +5,7 @@
 
 #include "include/atlaswidget.h"
 #include "include/render/renderer.h"
+#include "include/data/model.h"
 
 AtlasWidget::AtlasWidget(QWidget * parent) :
     QOpenGLWidget(parent),
@@ -53,20 +54,23 @@ void AtlasWidget::initializeGL()
 
     addScene();
 
-    //m_current_scene->importFile("/obj/cube2/cube2.obj");
-    //m_current_scene->importFile("/obj/Astroboy/astroBoy_walk_Maya2.dae");
-    //m_current_scene->importFile("/obj/bras/bras2.dae");
-    //m_current_scene->importFile("/obj/astro/astro.fbx");
-    //m_current_scene->importAnimation("default", "/obj/astro/astro_pose1.fbx");
-    //m_current_scene->importFile("/obj/dabrovic-sponza/sponza.obj");
-    //m_current_scene->importFile("/obj/dragon/dragon.obj");
-    //m_current_scene->importFile("/obj/Models/3spheres.dae");
-    //m_current_scene->importFile("/obj/Sponza/sponza2.dae");
-    //m_current_scene->importFile("/obj/SimpleModel/demo.dae");
-    m_file_loader.load("/obj/test/test2.dae", m_current_scene);
+    m_file_loader.load("/obj/test/test.dae", m_current_scene);
+    //m_file_loader.load("/obj/suzanne/suzanne.obj", m_current_scene);
+
+    //m_file_loader.load("/obj/cube/cube.obj", m_current_scene);
+    /*Mesh *mesh = m_geometry_process.subdivide(m_current_scene->getModel(0, 0)->getMesh(0));
+    Model *model = new Model(mesh, new Material());
+    SceneGraphNode *scene_graph_node = new SceneGraphNode("Cube2");
+    scene_graph_node->insertModel(model);
+    m_current_scene->getLastRoot()->addChild(scene_graph_node);
+    m_current_scene->translate(glm::vec3(2, 0, 0), "Cube2");*/
+
+
+    //m_file_loader.load("/obj/SimpleModel/demo.dae", m_current_scene);
+    //m_file_loader.load("/obj/Astroboy/astroBoy_walk_Maya2.dae", m_current_scene, aeMissArmature | aeMissAnimation);
     //m_current_scene->importFile("/obj/test/test.dae");
 
-    m_current_scene->rotate(glm::vec3(0, 0, 270), "Scene");
+    m_current_scene->rotate(glm::vec3(90, 0, 0), "Scene");
 
     m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(1.0f), 1.f);
     m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(1.0f), 1.f);
@@ -157,15 +161,15 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
         break;
 
     case Qt::Key_H:
-        m_renderer.switchHDR();
+        //m_renderer.switchHDR();
         break;
 
     case Qt::Key_B:
-        m_renderer.switchBloom();
+        //m_renderer.switchBloom();
         break;
 
     case Qt::Key_N:
-        m_renderer.switchAdaptation();
+        //m_renderer.switchAdaptation();
         break;
 
     default:

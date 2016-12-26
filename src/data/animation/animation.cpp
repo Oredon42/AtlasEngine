@@ -1,4 +1,4 @@
-#include "include/data/animation.h"
+#include "include/data/animation/animation.h"
 
 Animation::Animation() :
     m_duration(0),

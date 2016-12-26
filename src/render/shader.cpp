@@ -106,7 +106,7 @@ void Shader::reload()
     compileSourceCode(vertex_code.c_str(), fragment_code.c_str());
 }
 
-void Shader::use()
+void Shader::use() const
 {
     if(m_initialised)
         glUseProgram(m_program);

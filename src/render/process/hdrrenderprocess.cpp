@@ -1,26 +1,17 @@
-#include "include/render/hdrpostprocess.h"
+#include "include/render/process/hdrrenderprocess.h"
 #include "include/data/scene.h"
 #include "include/data/quad.h"
 
 #include <QOpenGLFramebufferObject>
 
-HDRPostProcess::HDRPostProcess(Quad &quad) :
-    m_quad(quad),
-    m_activated(GL_TRUE),
+HDRRenderProcess::HDRRenderProcess(const GLuint &width, const GLuint &height) :
+    RenderProcess(width, height),
     m_HDR(GL_TRUE),
     m_adaptation(GL_TRUE),
     m_bloom(GL_TRUE),
     m_bloom_quality(8),
     m_buffer_index(0)
 {
-
-}
-
-void HDRPostProcess::init(const GLuint &width, const GLuint &height)
-{
-    m_width = width;
-    m_height = height;
-
     m_out_buffer.init(m_width, m_height);
     std::vector<FramebufferTextureDatas> out_textures_datas;
     out_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_BORDER));
@@ -71,13 +62,18 @@ void HDRPostProcess::init(const GLuint &width, const GLuint &height)
     glClear(GL_COLOR_BUFFER_BIT);
     glBindBuffer(GL_FRAMEBUFFER, 0);
 
-    m_out_texture = m_out_buffer.getTexture(0);
+    m_out_textures.push_back(m_out_buffer.getTexture(0));
+
+
+    m_HDR_location = glGetUniformLocation(m_HDR_shader.getProgram(), "hdr");
+    m_bloom_location = glGetUniformLocation(m_HDR_shader.getProgram(), "bloom");
+    m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
+    m_max_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_max");
 }
 
-void HDRPostProcess::resize(const GLuint &width, const GLuint &height)
+void HDRRenderProcess::resize(const GLuint &width, const GLuint &height)
 {
-    m_width = width;
-    m_height = height;
+    RenderProcess::resize(width, height);
 
     m_blur_buffers[0].resize(m_width, m_height);
     m_blur_buffers[1].resize(m_width, m_height);
@@ -89,44 +85,40 @@ void HDRPostProcess::resize(const GLuint &width, const GLuint &height)
     m_out_buffer.resize(m_width, m_height);
 }
 
-void HDRPostProcess::process(const Framebuffer &lighting_buffer)
+void HDRRenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
-    if(m_activated)
-    {
-        processAdaptation(lighting_buffer);
-        processBloom(lighting_buffer);
+    processAdaptation(quad);
+    processBloom(quad);
+    
+    // Compute out color + exposition
+    glViewport(0, 0, m_out_buffer.width(), m_out_buffer.height());
+    m_out_buffer.bind();
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    m_HDR_shader.use();
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(0));
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_blur_buffers[!m_buffer_index].getTexture(0));
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_exposure_buffer.getTexture(0));
+    
+    glUniform1i(m_HDR_location, m_HDR);
+    glUniform1i(m_bloom_location, m_bloom);
+    glUniform1f(m_max_lum_location, m_avg_max_luminances[0]);
+    glUniform1f(m_avg_lum_location, m_avg_max_luminances[1]);
 
-        // Compute out color + exposition
-        glViewport(0, 0, m_out_buffer.width(), m_out_buffer.height());
-        m_out_buffer.bind();
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        m_HDR_shader.use();
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, lighting_buffer.getTexture(0));
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[!m_buffer_index].getTexture(0));
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, m_exposure_buffer.getTexture(0));
-
-        glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "hdr"), m_HDR);
-        glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloom"), m_bloom);
-        glUniform1f(glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg"), m_avg_max_luminances[0]);
-        glUniform1f(glGetUniformLocation(m_HDR_shader.getProgram(), "L_max"), m_avg_max_luminances[1]);
-        m_quad.draw();
-
-        //  Update old exposition
-        m_out_buffer.bind(GL_READ_FRAMEBUFFER);
-        m_exposure_buffer.bind(GL_DRAW_FRAMEBUFFER);
-        glReadBuffer(GL_COLOR_ATTACHMENT1);
-        glBlitFramebuffer(0, 0, m_out_buffer.width(), m_out_buffer.height(), 0, 0, m_exposure_buffer.width(), m_exposure_buffer.height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    }
-    else
-        m_out_texture = lighting_buffer.getTexture(0);
+    quad.draw();
+    
+    //  Update old exposition
+    m_out_buffer.bind(GL_READ_FRAMEBUFFER);
+    m_exposure_buffer.bind(GL_DRAW_FRAMEBUFFER);
+    glReadBuffer(GL_COLOR_ATTACHMENT1);
+    glBlitFramebuffer(0, 0, m_out_buffer.width(), m_out_buffer.height(), 0, 0, m_exposure_buffer.width(), m_exposure_buffer.height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void HDRPostProcess::processAdaptation(const Framebuffer &lighting_buffer)
+void HDRRenderProcess::processAdaptation(const Quad &quad)
 {
     /*
      * Ping-Pong between 2 FBO would need to reallocate at each loop
@@ -141,9 +133,9 @@ void HDRPostProcess::processAdaptation(const Framebuffer &lighting_buffer)
 
     glActiveTexture(GL_TEXTURE0);
 
-    glBindTexture(GL_TEXTURE_2D, lighting_buffer.getTexture(2));
-    glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), lighting_buffer.width(), lighting_buffer.height());
-    m_quad.draw();
+    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(2));
+    glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), m_previous_process->width(), m_previous_process->height());
+    quad.draw();
 
 
     //  16x16 texture
@@ -157,7 +149,7 @@ void HDRPostProcess::processAdaptation(const Framebuffer &lighting_buffer)
 
     glBindTexture(GL_TEXTURE_2D, m_brightness_ping_buffer.getTexture(0));
     glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), 64.f, 64.f);
-    m_quad.draw();
+    quad.draw();
 
 
     //  4x4 texture
@@ -168,7 +160,7 @@ void HDRPostProcess::processAdaptation(const Framebuffer &lighting_buffer)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_brightness_pong_buffer.getTexture(0));
     glUniform2f(glGetUniformLocation(m_HDR_shader.getProgram(), "size"), 16.f, 16.f);
-    m_quad.draw();
+    quad.draw();
 
     //  1x1 texture
     glViewport(0, 0, 1, 1);
@@ -181,7 +173,7 @@ void HDRPostProcess::processAdaptation(const Framebuffer &lighting_buffer)
     glBindTexture(GL_TEXTURE_2D, m_brightness_ping_buffer2.getTexture(0));
 
     glUniform2f(glGetUniformLocation(m_HDR_shader.getProgram(), "size"), 4.f, 4.f);
-    m_quad.draw();
+    quad.draw();
 
     //  Get average & max luminances
     glBindTexture(GL_TEXTURE_2D, m_brightness_pong_buffer2.getTexture(0));
@@ -199,7 +191,7 @@ void HDRPostProcess::processAdaptation(const Framebuffer &lighting_buffer)
     }
 }
 
-void HDRPostProcess::processBloom(const Framebuffer &lighting_buffer)
+void HDRRenderProcess::processBloom(const Quad &quad)
 {
     //  Get hdr 2nd texture + horizontal blur
     glViewport(0, 0, m_width/8, m_height/8);
@@ -209,8 +201,8 @@ void HDRPostProcess::processBloom(const Framebuffer &lighting_buffer)
     m_blur_shaders[2].use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, lighting_buffer.getTexture(1));
-    m_quad.draw();
+    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(1));
+    quad.draw();
 
     GLuint i = m_bloom_quality;
     m_buffer_index = 0;
@@ -225,7 +217,7 @@ void HDRPostProcess::processBloom(const Framebuffer &lighting_buffer)
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_blur_buffers[m_buffer_index].getTexture(0));
-        m_quad.draw();
+        quad.draw();
 
         i>>=1;
 
@@ -241,7 +233,7 @@ void HDRPostProcess::processBloom(const Framebuffer &lighting_buffer)
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_blur_buffers[m_buffer_index].getTexture(0));
-        m_quad.draw();
+        quad.draw();
 
         m_buffer_index = !m_buffer_index;
     }
@@ -253,12 +245,12 @@ void HDRPostProcess::processBloom(const Framebuffer &lighting_buffer)
     glActiveTexture(GL_TEXTURE0);
 
     glBindTexture(GL_TEXTURE_2D, m_blur_buffers[m_buffer_index].getTexture(0));
-    m_quad.draw();
+    quad.draw();
 }
 
-void HDRPostProcess::setActivated(const GLboolean &activated)
+void HDRRenderProcess::setActivated(const GLboolean &activated)
 {
-    m_activated = activated;
+    RenderProcess::setActivated(activated);
 
-    m_out_texture = m_out_buffer.getTexture(0);
+    //m_out_texture = m_out_buffer.getTexture(0);
 }

@@ -10,7 +10,7 @@ Quad::Quad(const GLfloat &size) :
     m_vertices.push_back(Vertex(glm::vec3(m_size, -m_size, 0.f), glm::vec2(1.f, 0.f)));
 }
 
-void Quad::draw()
+void Quad::draw() const
 {
     glBindVertexArray(m_VAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

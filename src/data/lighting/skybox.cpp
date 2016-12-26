@@ -1,4 +1,4 @@
-#include "include/data/skybox.h"
+#include "include/data/lighting/skybox.h"
 
 Skybox::Skybox() :
 m_initialised(false)

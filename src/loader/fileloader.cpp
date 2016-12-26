@@ -11,7 +11,7 @@ FileLoader::FileLoader() :
 
 }
 
-GLboolean FileLoader::load(const std::string path, Scene *scene, Flags flags)
+GLboolean FileLoader::load(const std::string path, Scene *scene, int flags)
 {
     processFlags(flags);
 
@@ -31,7 +31,7 @@ GLboolean FileLoader::load(const std::string path, Scene *scene, Flags flags)
     new_path = new_path.substr(0, new_path.find_last_of('/'));
 
     if(m_process_meshes)
-        m_meshloader.load(ai_scene, scene);
+        m_meshloader.load(ai_scene, scene, m_process_armatures);
     if(m_process_animations)
         m_animationloader.load(ai_scene, scene);
     if(m_process_lights)
@@ -89,11 +89,11 @@ void FileLoader::loadCameras(const aiScene *ai_scene, Scene *scene)
     }
 }
 
-void FileLoader::processFlags(const Flags &flags)
+void FileLoader::processFlags(const int &flags)
 {
-        m_process_meshes = ((flags&aeMissMesh)==1)?GL_FALSE:GL_TRUE;
-        m_process_lights = ((flags&aeMissLight)==1)?GL_FALSE:GL_TRUE;
-        m_process_cameras = ((flags&aeMissCamera)==1)?GL_FALSE:GL_TRUE;
-        m_process_armatures = ((flags&aeMissArmature)==1)?GL_FALSE:GL_TRUE;
-        m_process_animations = ((flags&aeMissAnimation)==1)?GL_FALSE:GL_TRUE;
+    m_process_meshes = (flags&aeMissMesh)?GL_FALSE:GL_TRUE;
+    m_process_lights = (flags&aeMissLight)?GL_FALSE:GL_TRUE;
+    m_process_cameras = (flags&aeMissCamera)?GL_FALSE:GL_TRUE;
+    m_process_armatures = (flags&aeMissArmature)?GL_FALSE:GL_TRUE;
+    m_process_animations = (flags&aeMissAnimation)?GL_FALSE:GL_TRUE;
 }

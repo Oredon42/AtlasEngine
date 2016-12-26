@@ -1,6 +1,6 @@
 #include "include/data/scene.h"
 #include "include/data/model.h"
-#include "include/data/skybox.h"
+#include "include/data/lighting/skybox.h"
 
 Scene::Scene(const std::string &path, GLfloat &render_time) :
     m_path(path),
@@ -58,7 +58,7 @@ void Scene::clear()
  * Draw the scene using deferred rendering
  * with the shaders of the renderer
  * */
-void Scene::draw(const Shader (&shaders)[NB_SHADER_TYPES], GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height)
+void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
 {
     Camera *current_camera = m_cameras[m_current_camera];
     current_camera->orientate();
@@ -153,7 +153,7 @@ void Scene::buildKdTree()
     m_kdtree_built = true;*/
 }
 
-void Scene::sendViewSpacePointLightDatas(const Shader &shader)
+void Scene::sendViewSpacePointLightDatas(const Shader &shader) const
 {
     for(GLuint i = 0; i < m_pointlights.size(); ++i)
         m_pointlights[i].sendViewDatas(shader, m_cameras[m_current_camera]->getView());

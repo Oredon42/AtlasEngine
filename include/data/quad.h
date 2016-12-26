@@ -8,7 +8,7 @@ class Quad : public Mesh
 public:
     Quad(const GLfloat &size);
 
-    virtual void draw();
+    virtual void draw() const;
     virtual void setupBuffers();
 
 private:

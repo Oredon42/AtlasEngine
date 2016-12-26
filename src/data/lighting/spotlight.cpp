@@ -1,4 +1,4 @@
-#include "include/data/spotlight.h"
+#include "include/data/lighting/spotlight.h"
 #include "include/render/shader.h"
 
 SpotLight::SpotLight() :

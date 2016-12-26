@@ -1,4 +1,4 @@
-#include "include/data/dirlight.h"
+#include "include/data/lighting/dirlight.h"
 #include "include/render/shader.h"
 
 DirLight::DirLight() :

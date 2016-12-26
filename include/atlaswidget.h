@@ -15,9 +15,9 @@
 #include "include/render/renderer.h"
 #include "include/data/scene.h"
 #include "include/loader/fileloader.h"
+#include "include/data/geometry/geometrytransform.h"
 
 #include "include/menu.h"
-
 #include <QOpenGLWidget>
 
 class AtlasWidget : public QOpenGLWidget
@@ -68,6 +68,7 @@ private:
     Scene *m_current_scene;
 
     FileLoader m_file_loader;
+    GeometryTransform m_geometry_process;
 };
 
 #endif // RENDERINGWIDGET_H

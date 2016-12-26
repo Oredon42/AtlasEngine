@@ -1,40 +1,144 @@
-#include "include/data/geometryprocess.h"
-#include "include/data/mesh.h"
+#include "include/data/geometry/geometrytransform.h"
+#include "include/data/geometry/mesh.h"
 
 #include <OpenMesh/Core/Geometry/VectorT.hh>
 #include <OpenMesh/Core/Mesh/PolyConnectivity.hh>
 #include <OpenMesh/Core/Mesh/PolyMeshT.hh>
 #include <OpenMesh/Core/Mesh/IteratorsT.hh>
 #include <OpenMesh/Core/Mesh/TriMeshT.hh>
+#include <OpenMesh/Core/Mesh/Traits.hh>
 
 #include <unordered_map>
 
 using namespace OpenMesh;
 
-GeometryProcess::GeometryProcess()
+GeometryTransform::GeometryTransform()
 {
 
 }
 
-Mesh *GeometryProcess::subdivide(const Mesh *mesh)
+Mesh *GeometryTransform::subdivide(const Mesh *mesh)
 {
     TopologicalMesh *topological_mesh = TopologicalMeshFromMesh(mesh);
 
-    topological_mesh->request_face_status();
-    topological_mesh->request_edge_status();
-    topological_mesh->request_vertex_status();
+    typedef std::unordered_map<EdgeHandle, VertexHandle> oddMap;
+    oddMap odd_vertices_map;
 
-
-    for(TopologicalMesh::EdgeIter e_it=topological_mesh->edges_begin(); e_it!=topological_mesh->edges_end(); ++e_it)
+    /*
+     * Step 1
+     * Compute odd vertices
+     * and even vertices
+     * */
+    for(TopologicalMesh::EdgeIter e_it = topological_mesh->edges_begin(); e_it != topological_mesh->edges_end(); ++e_it)
     {
-        if (!topological_mesh->is_boundary( *e_it ));
+        HalfedgeHandle h_h0 = topological_mesh->halfedge_handle(*e_it, 0),
+                       h_h1 = topological_mesh->halfedge_handle(*e_it, 1);
+
+        VertexHandle v_h0 = topological_mesh->to_vertex_handle(h_h0),
+                     v_h1 = topological_mesh->to_vertex_handle(h_h1);
+
+        TopologicalMesh::Point p0 = topological_mesh->point(v_h0),
+                               p1 = topological_mesh->point(v_h1),
+                               p_odd,
+                               p_even;
+
+        if(topological_mesh->is_boundary(*e_it))
+        {
+            p_odd = 0.5f*p0 + 0.5f*p1;
+
+
+            p_even = topological_mesh->point(v_h0)*0.75f;
+            for(TopologicalMesh::VertexIHalfedgeIter vih_it = topological_mesh->vih_iter(v_h0); vih_it; ++vih_it)
+            {
+                VertexHandle v_h = topological_mesh->to_vertex_handle(*vih_it);
+
+                p_even += topological_mesh->point(v_h)*0.125f;
+            }
+        }
+        else
+        {
+            HalfedgeHandle h_h2 = topological_mesh->next_halfedge_handle(h_h0),
+                           h_h3 = topological_mesh->next_halfedge_handle(h_h1);
+
+            VertexHandle v_h2 = topological_mesh->to_vertex_handle(h_h2),
+                         v_h3 = topological_mesh->to_vertex_handle(h_h3);
+
+            TopologicalMesh::Point p2 = topological_mesh->point(v_h2),
+                                   p3 = topological_mesh->point(v_h3);
+
+            p_odd = 0.125f*p0 + 0.125f*p1 + 0.375f*p2 + 0.375f*p3;
+
+            float n = topological_mesh->valence(v_h0),
+                  beta = (n>3.f)?3.f/(8.f*n):3.f/16.f;
+
+
+            p_even = topological_mesh->point(v_h0)*(1.f-beta);
+            for(TopologicalMesh::VertexIHalfedgeIter vih_it = topological_mesh->vih_iter(v_h0); vih_it; ++vih_it)
+            {
+                VertexHandle v_h = topological_mesh->to_vertex_handle(*vih_it);
+
+                p_even += topological_mesh->point(v_h)*beta;
+            }
+        }
+
+        //  Add odd vertex to map
+        VertexHandle vh = topological_mesh->add_vertex(p_odd);
+        odd_vertices_map[*e_it] = vh;
+
+        //  Set even vertex
+        //topological_mesh->set_vertex(p_even);
     }
 
-    return 0;
+    /*
+     * Step 2
+     * Create new faces
+     * */
+    TopologicalMesh::FaceIter faces_end = topological_mesh->faces_end();
+    for(TopologicalMesh::FaceIter f_it = topological_mesh->faces_begin(); f_it != faces_end; ++f_it)
+    {
+        HalfedgeHandle h_h0 = topological_mesh->halfedge_handle(*f_it),
+                       h_h1 = topological_mesh->next_halfedge_handle(h_h0),
+                       h_h2 = topological_mesh->next_halfedge_handle(h_h1);
+
+        EdgeHandle e_h0 = topological_mesh->edge_handle(h_h0),
+                   e_h1 = topological_mesh->edge_handle(h_h1),
+                   e_h2 = topological_mesh->edge_handle(h_h2);
+
+        VertexHandle v_h0 = topological_mesh->to_vertex_handle(h_h0),
+                     v_h1 = topological_mesh->to_vertex_handle(h_h1),
+                     v_h2 = topological_mesh->to_vertex_handle(h_h2);
+
+        VertexHandle v_h3 = odd_vertices_map.at(e_h0),
+                     v_h4 = odd_vertices_map.at(e_h1),
+                     v_h5 = odd_vertices_map.at(e_h2);
+
+        topological_mesh->delete_face(*f_it);
+
+        std::vector<VertexHandle> face_0,
+                                  face_1,
+                                  face_2,
+                                  face_3;
+
+        face_0.push_back(v_h0); face_1.push_back(v_h1); face_2.push_back(v_h2); face_3.push_back(v_h3);
+        face_0.push_back(v_h3); face_1.push_back(v_h4); face_2.push_back(v_h5); face_3.push_back(v_h4);
+        face_0.push_back(v_h5); face_1.push_back(v_h5); face_2.push_back(v_h3); face_3.push_back(v_h5);
+
+        FaceHandle f_h0 = topological_mesh->add_face(face_0),
+                   f_h1 = topological_mesh->add_face(face_1),
+                   f_h2 = topological_mesh->add_face(face_2),
+                   f_h3 = topological_mesh->add_face(face_3);
+
+        face_0.clear();
+        face_1.clear();
+        face_2.clear();
+        face_3.clear();
+    }
+
+    return MeshFromTopologicalMesh(topological_mesh);
 }
 
 
-TopologicalMesh *GeometryProcess::TopologicalMeshFromMesh(const Mesh *mesh)
+TopologicalMesh *GeometryTransform::TopologicalMeshFromMesh(const Mesh *mesh)
 {
     TopologicalMesh *topological_mesh = new TopologicalMesh();
     topological_mesh->request_halfedge_normals();
@@ -103,9 +207,11 @@ TopologicalMesh *GeometryProcess::TopologicalMeshFromMesh(const Mesh *mesh)
 
     }
     assert(topological_mesh->n_faces() == mesh->numIndices() / 3);
+
+    return topological_mesh;
 }
 
-Mesh *GeometryProcess::MeshFromTopologicalMesh(TopologicalMesh *topological_mesh)
+Mesh *GeometryTransform::MeshFromTopologicalMesh(TopologicalMesh *topological_mesh)
 {
     struct comp_vec
     {

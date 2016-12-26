@@ -1,5 +1,5 @@
-#ifndef GEOMETRYPROCESS_H
-#define GEOMETRYPROCESS_H
+#ifndef GEOMETRYTRANSFORM_H
+#define GEOMETRYTRANSFORM_H
 
 #include "OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh"
 #include "OpenMesh/Core/Utils/Property.hh"
@@ -15,17 +15,17 @@ struct TopologicalMeshTraits : public OpenMesh::DefaultTraits
   VertexAttributes(OpenMesh::Attributes::Status | OpenMesh::Attributes::Normal);
   FaceAttributes(OpenMesh::Attributes::Status | OpenMesh::Attributes::Normal);
   EdgeAttributes(OpenMesh::Attributes::Status);
-  HalfedgeAttributes(OpenMesh::Attributes::Status| OpenMesh::Attributes::Normal);
+  HalfedgeAttributes(OpenMesh::Attributes::Status | OpenMesh::Attributes::Normal);
 };
 typedef OpenMesh::TriMesh_ArrayKernelT<TopologicalMeshTraits> TopologicalMesh;
 
 /*
- * GeometryProcess class
+ * GeometryTransform class
  * */
-class GeometryProcess
+class GeometryTransform
 {
 public:
-    GeometryProcess();
+    GeometryTransform();
 
     Mesh *subdivide(const Mesh *mesh);
 
@@ -34,4 +34,4 @@ private:
     Mesh *MeshFromTopologicalMesh(TopologicalMesh *topological_mesh);
 };
 
-#endif // GEOMETRYPROCESS_H
+#endif // GEOMETRYTRANSFORM_H

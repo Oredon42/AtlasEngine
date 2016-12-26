@@ -8,8 +8,10 @@ MeshLoader::MeshLoader()
 
 }
 
-void MeshLoader::load(const aiScene *ai_scene, Scene *scene)
+void MeshLoader::load(const aiScene *ai_scene, Scene *scene, const GLboolean &process_armatures)
 {
+    m_process_armatures = process_armatures;
+
     glm::mat4 global_inverse_transform = glm::inverse(assimpToGlmMat4(ai_scene->mRootNode->mTransformation));
 
     SceneGraphRoot *scene_graph_root = new SceneGraphRoot(ai_scene->mRootNode->mName.C_Str(), scene->getPath(), global_inverse_transform, assimpToGlmMat4(ai_scene->mRootNode->mTransformation));
@@ -22,9 +24,8 @@ void MeshLoader::load(const aiScene *ai_scene, Scene *scene)
     {
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
         Model *model = processMesh(ai_mesh, ai_scene, scene);
-        GLuint shader_index = model->getShaderTypeIndex();
-        scene->getLastRoot()->insertModel(model, shader_index);
-        scene->insertModel(model, shader_index);
+        scene->getLastRoot()->insertModel(model);
+        scene->insertModel(model);
     }
 
     //  Loop on every child
@@ -32,8 +33,10 @@ void MeshLoader::load(const aiScene *ai_scene, Scene *scene)
     {
         //  If child node has meshes (do not process light or bone nodes)
         if(ai_node->mChildren[i]->mNumMeshes > 0)
-            scene->getLastRoot()->addChild(processNode(scene->getLastRoot(), ai_node->mChildren[i], ai_scene, scene));
+            scene->getLastRoot()->addChild(processNode(ai_node->mChildren[i], ai_scene, scene));
     }
+
+    scene->getLastRoot()->spreadTransform(glm::mat4(1));
 }
 
 /*
@@ -42,18 +45,18 @@ void MeshLoader::load(const aiScene *ai_scene, Scene *scene)
  *  Loops over every mesh
  *  Loops over every node child
  * */
-SceneGraphNode *MeshLoader::processNode(SceneGraphNode *parent, aiNode *ai_node, const aiScene *ai_scene, Scene *scene)
+SceneGraphNode *MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene, Scene *scene)
 {
-    SceneGraphNode *scene_graph_node = new SceneGraphNode(parent, ai_node->mName.C_Str(), scene->getPath(), scene->getLastRoot()->getGlobalInverseTransform(), assimpToGlmMat4(ai_node->mTransformation));
+    std::string node_name = ai_node->mName.C_Str();
+    SceneGraphNode *scene_graph_node = new SceneGraphNode(node_name, assimpToGlmMat4(ai_node->mTransformation));
 
     //  Loop on every aiMesh
     for(GLuint i = 0; i < ai_node->mNumMeshes; ++i)
     {
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
         Model *model = processMesh(ai_mesh, ai_scene, scene);
-        GLuint shader_index = model->getShaderTypeIndex();
-        scene_graph_node->insertModel(model, shader_index);
-        scene->insertModel(model, shader_index);
+        scene_graph_node->insertModel(model);
+        scene->insertModel(model);
     }
 
     //  Loop on every child
@@ -61,7 +64,7 @@ SceneGraphNode *MeshLoader::processNode(SceneGraphNode *parent, aiNode *ai_node,
     {
         //  If child node has meshes (do not process light or bone nodes)
         if(ai_node->mChildren[i]->mNumMeshes > 0)
-            scene_graph_node->addChild(processNode(scene_graph_node, ai_node->mChildren[i], ai_scene, scene));
+            scene_graph_node->addChild(processNode(ai_node->mChildren[i], ai_scene, scene));
     }
     return scene_graph_node;
 }
@@ -89,7 +92,7 @@ Model *MeshLoader::processMesh(const aiMesh *ai_mesh, const aiScene *ai_scene, S
     Model *model = new Model(mesh, material);
 
     //  Bones
-    if(ai_mesh->HasBones())
+    if(m_process_armatures && ai_mesh->HasBones())
     {
         Armature *armature = m_armatureloader.load(ai_scene, ai_mesh);
         model->attachArmature(armature);
