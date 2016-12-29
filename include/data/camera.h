@@ -35,7 +35,6 @@ public:
     inline glm::vec3 getPosition() const{return m_position;}
     inline glm::vec3 getFront() const{return m_front;}
     inline glm::vec3 getUp() const{return m_up;}
-    inline glm::mat4 getModel() const{return m_model;}
     inline glm::mat4 getView() const{return m_view;}
     inline glm::mat4 getProjection() const{return m_projection;}
     inline GLboolean isInitialised() const{return m_initialised;}
@@ -68,7 +67,6 @@ private:
     glm::vec3 m_front;
     glm::vec3 m_up;
 
-    glm::mat4 m_model;
     glm::mat4 m_view;
     glm::mat4 m_projection;
 

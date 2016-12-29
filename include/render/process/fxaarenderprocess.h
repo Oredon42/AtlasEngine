@@ -6,7 +6,7 @@
 class FXAARenderProcess : public RenderProcess
 {
 public:
-    FXAARenderProcess(const GLuint &width, const GLuint &height);
+    FXAARenderProcess();
 };
 
 #endif // FXAAPROCESS_H

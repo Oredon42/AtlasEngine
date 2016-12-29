@@ -49,26 +49,26 @@ public:
     SceneGraphNode(const std::string &name, glm::mat4 transform = glm::mat4(1.f));
     virtual ~SceneGraphNode();
 
-    void spreadTransform(const glm::mat4 &parent_transform);
+    void spreadTransform();
     inline void insertModel(Model *model){m_models[model->getShaderTypeIndex()].push_back(model);}
-    inline void addChild(Model *model, const std::string &name){m_children.push_back(new SceneGraphNode(m_path, m_global_inverse_transform, name)); m_children.back()->insertModel(model);}
     void addChild(SceneGraphNode *child);
-    void calculateTransform(const glm::mat4 &parent_transform);
+    virtual void calculateTransform();
 
     //  Getters
     SceneGraphNode *getNode(const std::string &name);
     inline std::string getName() const{return m_name;}
     inline GLuint numberOfMeshes() const{return m_number_of_models;}
     inline glm::mat4 getGlobalInverseTransform() const{return m_global_inverse_transform;}
+    inline glm::mat4 getTransform() const{return m_transform;}
 
     //  Setters
     void setMaterial(const Material& material, const std::string &name);
     inline void setParent(SceneGraphNode *parent){m_parent = parent;}
     inline void setName(const std::string &name){m_name = name;}
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}
-    inline void setPosition(const glm::vec3 &position){m_position = position;spreadTransform(glm::mat4());}
-    inline void setRotation(const glm::quat &rotation){m_rotation = rotation;spreadTransform(glm::mat4());}
-    inline void setScale(const glm::vec3 &scale){m_scale = scale;spreadTransform(glm::mat4());}
+    inline void setPosition(const glm::vec3 &position){m_position = position;spreadTransform();}
+    inline void setRotation(const glm::quat &rotation){m_rotation = rotation;spreadTransform();}
+    inline void setScale(const glm::vec3 &scale){m_scale = scale;spreadTransform();}
 
 protected:
     std::string m_path;
@@ -105,6 +105,8 @@ public:
     void translate(const glm::vec3 &t, const std::string &name);
     void rotate(const glm::vec3 &r, const std::string &name);
     void scale(const glm::vec3 &s, const std::string &name);
+
+    virtual void calculateTransform();
 
 private:
     std::vector<Animation *> m_animations;

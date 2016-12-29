@@ -4,6 +4,9 @@
 
 Scene::Scene(const std::string &path, GLfloat &render_time) :
     m_path(path),
+    m_nb_pointlights(0),
+    m_nb_dirlights(0),
+    m_nb_spotlights(0),
     m_skybox(0),
     m_background_color(glm::vec3(0.f, 0.f, 0.f)),
     m_current_camera(0),
@@ -22,33 +25,9 @@ Scene::~Scene()
         delete m_cameras[i];
     m_cameras.clear();
 
-    if(m_skybox != 0)
-        delete m_skybox;
-}
-
-void Scene::init(const std::string &path)
-{
-    m_path = path;
-
-}
-
-void Scene::clear()
-{
-    m_pointlights.clear();
-    m_spotlights.clear();
-    m_dirlights.clear();
-
-    for(GLuint i = m_roots.size(); i > 0; --i)
-    {
-        delete m_roots[i - 1];
-        m_roots.pop_back();
-    }
-
-    for(GLuint i = m_cameras.size(); i > 0; --i)
-    {
-        delete m_cameras[i - 1];
-        m_cameras.pop_back();
-    }
+    for(GLuint i = 0; i < (GLuint)(m_lights.size()); ++i)
+        delete m_lights[i];
+    m_lights.clear();
 
     if(m_skybox != 0)
         delete m_skybox;
@@ -73,8 +52,8 @@ void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GL
             glUseProgram(shaders[i].getProgram());
             current_camera->sendDatas(shaders[i], window_width, window_height);
 
-            for(GLuint j = 0; j < m_pointlights.size(); ++j)
-                sendPointLightDatas(j, shaders[i]);
+            for(GLuint j = 0; j < m_lights.size(); ++j)
+                m_lights[j]->sendDatas(shaders[i]);
 
             for(GLuint j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->draw(shaders[i], render_time);
@@ -93,6 +72,34 @@ void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GL
 
     m_camera->sendDatas(m_kdshader, screen_width, screen_height);
     m_kdtree.Draw(m_kdshader);*/
+}
+
+/*
+ * Draw the scene using deferred rendering
+ * with one shader
+ * */
+void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
+{
+    Camera *current_camera = m_cameras[m_current_camera];
+    current_camera->orientate();
+    current_camera->move(keys, render_time);
+
+    //  Loop on every shader type
+    //  Loop and draw every mesh that uses this shader
+    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    {
+        if(m_models[i].size() > 0)
+        {
+            shader.use();
+            current_camera->sendDatas(shader, window_width, window_height);
+
+            for(GLuint j = 0; j < m_lights.size(); ++j)
+                m_lights[j]->sendDatas(shader);
+
+            for(GLuint j = 0; j < m_models[i].size(); ++j)
+                m_models[i][j]->draw(shader, render_time);
+        }
+    }
 }
 
 void Scene::buildKdTree()
@@ -155,6 +162,14 @@ void Scene::buildKdTree()
 
 void Scene::sendViewSpacePointLightDatas(const Shader &shader) const
 {
-    for(GLuint i = 0; i < m_pointlights.size(); ++i)
-        m_pointlights[i].sendViewDatas(shader, m_cameras[m_current_camera]->getView());
+    for(GLuint i = 0; i < m_lights.size(); ++i)
+        m_lights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
+}
+
+void Scene::addSceneGraphNode(const std::string name, Model *model)
+{
+    SceneGraphNode *scene_graph_node = new SceneGraphNode(name);
+    scene_graph_node->insertModel(model);
+    m_roots.back()->addChild(scene_graph_node);
+    m_models[model->getMaterial()->getShaderTypeIndex()].push_back(model);
 }

@@ -1,9 +1,15 @@
 #include "include/render/process/geometryrenderprocess.h"
 #include "include/data/scene.h"
 
-GeometryRenderProcess::GeometryRenderProcess(const GLuint &width, const GLuint &height) :
-    RenderProcess(width, height)
+GeometryRenderProcess::GeometryRenderProcess()
 {
+
+}
+
+void GeometryRenderProcess::init(const GLuint &width, const GLuint &height)
+{
+    RenderProcess::init(width, height);
+
     m_shader_types[0].setValues(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, 0);
     m_shader_types[1].setValues(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE, 1);
     m_shader_types[2].setValues(GL_FALSE, GL_TRUE, GL_FALSE, GL_FALSE, 2);
@@ -27,6 +33,7 @@ GeometryRenderProcess::GeometryRenderProcess(const GLuint &width, const GLuint &
     gTexture_datas.push_back(FramebufferTextureDatas(GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_CLAMP_TO_EDGE));
     gTexture_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_EDGE));
     gTexture_datas.push_back(FramebufferTextureDatas(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE));
+    gTexture_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_EDGE));
     m_gBuffer.attachTextures(gTexture_datas);
     std::vector<FramebufferRenderbufferDatas> gRenderbuffer_datas;
     gRenderbuffer_datas.push_back(FramebufferRenderbufferDatas(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT));
@@ -39,6 +46,7 @@ GeometryRenderProcess::GeometryRenderProcess(const GLuint &width, const GLuint &
     m_out_textures.push_back(m_gBuffer.getTexture(0));
     m_out_textures.push_back(m_gBuffer.getTexture(1));
     m_out_textures.push_back(m_gBuffer.getTexture(2));
+    m_out_textures.push_back(m_gBuffer.getTexture(3));
 }
 
 void GeometryRenderProcess::resize(const GLuint &width, const GLuint &height)
@@ -48,7 +56,7 @@ void GeometryRenderProcess::resize(const GLuint &width, const GLuint &height)
 
 void GeometryRenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer.getBuffer());
+    m_gBuffer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     scene.draw(m_shaders, keys, render_time, m_width, m_height);

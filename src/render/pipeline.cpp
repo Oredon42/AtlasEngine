@@ -25,6 +25,8 @@ void Pipeline::process(const Quad &quad, const Scene &scene, const GLfloat &rend
 
 void Pipeline::addProcess(RenderProcess *process)
 {
+    process->init(m_width, m_height);
+
     if(m_processes.size() > 0)
         process->connect(m_processes.back());
     else

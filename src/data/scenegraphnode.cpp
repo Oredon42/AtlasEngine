@@ -109,12 +109,12 @@ SceneGraphNode *SceneGraphNode::getNode(const std::string &name)
     return 0;
 }
 
-void SceneGraphNode::spreadTransform(const glm::mat4 &parent_transform)
+void SceneGraphNode::spreadTransform()
 {
-    calculateTransform(parent_transform);
+    calculateTransform();
 
     for(GLuint i = 0; i < m_children.size(); ++i)
-        m_children[i]->spreadTransform(m_transform);
+        m_children[i]->spreadTransform();
 };
 
 /*
@@ -123,14 +123,14 @@ void SceneGraphNode::spreadTransform(const glm::mat4 &parent_transform)
  * saved rotation, saved scale and saved translation
  * And set every models of this node transforms
  * */
-void SceneGraphNode::calculateTransform(const glm::mat4 &parent_transform)
+void SceneGraphNode::calculateTransform()
 {
     m_transform = m_node_transform;
     m_transform *= glm::mat4_cast(m_rotation);
     m_transform = glm::translate(m_transform, m_position);
     m_transform = glm::scale(m_transform, m_scale);
 
-    m_transform *= parent_transform;
+    m_transform *= m_parent->getTransform();
 
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
         for(GLuint j = 0; j < m_models[i].size(); ++j)
@@ -193,4 +193,16 @@ void SceneGraphRoot::scale(const glm::vec3 &s, const std::string &name)
 
     if(node != 0)
         node->setScale(s);
+}
+
+void SceneGraphRoot::calculateTransform()
+{
+    m_transform = m_node_transform;
+    m_transform *= glm::mat4_cast(m_rotation);
+    m_transform = glm::translate(m_transform, m_position);
+    m_transform = glm::scale(m_transform, m_scale);
+
+    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+        for(GLuint j = 0; j < m_models[i].size(); ++j)
+            m_models[i][j]->setTransform(m_transform);
 }

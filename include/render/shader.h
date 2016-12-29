@@ -18,6 +18,16 @@ struct ShaderType
     GLboolean animated;
     GLuint index;
 
+    ShaderType(GLboolean t = GL_FALSE, GLboolean n = GL_FALSE, GLboolean s = GL_FALSE, GLboolean a = GL_FALSE, GLuint i = GL_FALSE) :
+        texture(t),
+        normal(n),
+        specular(s),
+        animated(a),
+        index(i)
+    {
+
+    }
+
     void setValues(const GLboolean &t, const GLboolean &n, const GLboolean &s, const GLboolean &a, const GLuint &i)
     {
         texture = t;

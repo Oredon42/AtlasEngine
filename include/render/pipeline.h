@@ -4,10 +4,8 @@
 #include <openglincludes.h>
 #include <vector>
 
-#include "include/render/process/geometryrenderprocess.h"
-#include "include/render/process/lightingrenderprocess.h"
+#include "include/render/process/renderprocess.h"
 
-class RenderProcess;
 class Quad;
 class Scene;
 

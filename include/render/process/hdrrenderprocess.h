@@ -13,7 +13,9 @@ class Quad;
 class HDRRenderProcess : public RenderProcess
 {
 public:
-    HDRRenderProcess(const GLuint &width, const GLuint &height);
+    HDRRenderProcess();
+
+    virtual void init(const GLuint &width, const GLuint &height);
 
     virtual void resize(const GLuint &width, const GLuint &height);
 

@@ -14,7 +14,9 @@ class Quad;
 class SSAORenderProcess : public RenderProcess
 {
 public:
-    SSAORenderProcess(const GLuint &width, const GLuint &height);
+    SSAORenderProcess();
+
+    virtual void init(const GLuint &width, const GLuint &height);
 
     virtual void resize(const GLuint &width, const GLuint &height);
 

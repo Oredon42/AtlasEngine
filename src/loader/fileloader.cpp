@@ -17,7 +17,7 @@ GLboolean FileLoader::load(const std::string path, Scene *scene, int flags)
 
     std::string new_path = scene->getPath() + path;
     Assimp::Importer importer;
-    const aiScene* ai_scene = importer.ReadFile(new_path,  aiProcess_Triangulate |
+    const aiScene* ai_scene = importer.ReadFile(new_path,   aiProcess_Triangulate |
                                                             aiProcess_ImproveCacheLocality |
                                                             aiProcess_OptimizeMeshes |
                                                             aiProcess_FlipUVs |
@@ -39,7 +39,7 @@ GLboolean FileLoader::load(const std::string path, Scene *scene, int flags)
     if(m_process_cameras)
         loadCameras(ai_scene, scene);
 
-    scene->getLastRoot()->spreadTransform(glm::mat4(1.f));
+    scene->getLastRoot()->spreadTransform();
 
     return GL_TRUE;
 }
@@ -64,8 +64,9 @@ void FileLoader::loadLights(const aiScene *ai_scene, Scene *scene)
                 glm::vec4 position = glm_transform * glm::vec4(current_light->mPosition.x, current_light->mPosition.y, current_light->mPosition.z, 1.f);
 
 
-                scene->addPointLight(PointLight(scene->numberOfPointLights(), glm::vec3(position.x / position.w, position.y / position.w, position.z / position.w),
-                                               glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b), 1.f));
+                scene->addPointLight(new PointLight(glm::vec3(current_light->mColorDiffuse.r, current_light->mColorDiffuse.g, current_light->mColorDiffuse.b),
+                                                    1.f,
+                                                    glm::vec3(position.x / position.w, position.y / position.w, position.z / position.w)));
             }
                 break;
 

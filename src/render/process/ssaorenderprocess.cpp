@@ -3,10 +3,16 @@
 #include "include/data/quad.h"
 #include "include/data/scene.h"
 
-SSAORenderProcess::SSAORenderProcess(const GLuint &width, const GLuint &height) :
-    RenderProcess(width, height),
+SSAORenderProcess::SSAORenderProcess() :
     m_num_samples(64)
 {    
+
+}
+
+void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
+{
+    RenderProcess::init(width, height);
+
     m_SSAO_shader.init("shaders/ssao.vert", "shaders/ssao.frag");
     m_SSAO_blur_shader.init("shaders/ssao.vert", "shaders/ssaoblur.frag");
     m_SSAO_shader.use();
@@ -45,7 +51,7 @@ void SSAORenderProcess::resize(const GLuint &width, const GLuint &height)
 void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
     glViewport(0, 0, m_SSAO_buffer.width(), m_SSAO_buffer.height());
-    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_buffer.getBuffer());
+    m_SSAO_buffer.bind();
     glClear(GL_COLOR_BUFFER_BIT);
 
     m_SSAO_shader.use();
@@ -65,7 +71,7 @@ void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfl
 
 
     glViewport(0, 0, m_SSAO_blur_buffer.width(), m_SSAO_blur_buffer.height());
-    glBindFramebuffer(GL_FRAMEBUFFER, m_SSAO_blur_buffer.getBuffer());
+    m_SSAO_blur_buffer.bind();
     glClear(GL_COLOR_BUFFER_BIT);
 
     m_SSAO_blur_shader.use();
@@ -112,6 +118,7 @@ void SSAORenderProcess::connect(RenderProcess *previous_process)
     m_out_textures.push_back(m_previous_process->getOutTexture(0));
     m_out_textures.push_back(m_previous_process->getOutTexture(1));
     m_out_textures.push_back(m_previous_process->getOutTexture(2));
+    m_out_textures.push_back(m_previous_process->getOutTexture(3));
     m_out_textures.push_back(m_SSAO_blur_buffer.getTexture(0));
 }
 

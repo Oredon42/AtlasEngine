@@ -4,14 +4,20 @@
 
 #include <QOpenGLFramebufferObject>
 
-HDRRenderProcess::HDRRenderProcess(const GLuint &width, const GLuint &height) :
-    RenderProcess(width, height),
+HDRRenderProcess::HDRRenderProcess() :
     m_HDR(GL_TRUE),
     m_adaptation(GL_TRUE),
     m_bloom(GL_TRUE),
     m_bloom_quality(8),
     m_buffer_index(0)
 {
+
+}
+
+void HDRRenderProcess::init(const GLuint &width, const GLuint &height)
+{
+    RenderProcess::init(width, height);
+
     m_out_buffer.init(m_width, m_height);
     std::vector<FramebufferTextureDatas> out_textures_datas;
     out_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_BORDER));
@@ -63,7 +69,6 @@ HDRRenderProcess::HDRRenderProcess(const GLuint &width, const GLuint &height) :
     glBindBuffer(GL_FRAMEBUFFER, 0);
 
     m_out_textures.push_back(m_out_buffer.getTexture(0));
-
 
     m_HDR_location = glGetUniformLocation(m_HDR_shader.getProgram(), "hdr");
     m_bloom_location = glGetUniformLocation(m_HDR_shader.getProgram(), "bloom");

@@ -25,7 +25,7 @@ void MeshLoader::load(const aiScene *ai_scene, Scene *scene, const GLboolean &pr
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
         Model *model = processMesh(ai_mesh, ai_scene, scene);
         scene->getLastRoot()->insertModel(model);
-        scene->insertModel(model);
+        scene->addModel(model);
     }
 
     //  Loop on every child
@@ -36,7 +36,7 @@ void MeshLoader::load(const aiScene *ai_scene, Scene *scene, const GLboolean &pr
             scene->getLastRoot()->addChild(processNode(ai_node->mChildren[i], ai_scene, scene));
     }
 
-    scene->getLastRoot()->spreadTransform(glm::mat4(1));
+    scene->getLastRoot()->spreadTransform();
 }
 
 /*
@@ -56,7 +56,7 @@ SceneGraphNode *MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
         Model *model = processMesh(ai_mesh, ai_scene, scene);
         scene_graph_node->insertModel(model);
-        scene->insertModel(model);
+        scene->addModel(model);
     }
 
     //  Loop on every child

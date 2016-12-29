@@ -3,8 +3,7 @@
 #include "include/data/material.h"
 
 Material::Material() :
-    m_diffuse(glm::vec3(1.0, 0.0, 1.0)),
-    m_specular(glm::vec3(1.0, 1.0, 1.0)),
+    m_color(glm::vec3(1.0, 0.0, 1.0)),
     m_roughness(0.1f),
     m_metalness(1.f),
     m_refraction(1.2f),
@@ -18,15 +17,14 @@ Material::Material(const aiMaterial *ai_material, const GLboolean &animated, con
     //  Attributes
     aiColor3D color;
     ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-    m_diffuse = glm::vec3(color.r, color.g, color.b);
-    ai_material->Get(AI_MATKEY_COLOR_SPECULAR, color);
-    m_specular = glm::vec3(color.r, color.g, color.b);
-    /*ai_material->Get(AI_MATKEY_OPACITY, m_opacity);
-    ai_material->Get(AI_MATKEY_SHININESS, m_shininess);
-    ai_material->Get(AI_MATKEY_SHININESS_STRENGTH, m_metalness);
-    ai_material->Get(AI_MATKEY_REFRACTI, m_refraction);*/
-
-    //m_roughness = 1.f;
+    m_color = glm::vec3(color.r, color.g, color.b);
+    ai_material->Get(AI_MATKEY_OPACITY, m_opacity);
+    aiColor3D specular;
+    ai_material->Get(AI_MATKEY_COLOR_SPECULAR, specular);
+    m_metalness = 1-specular.r;
+    ai_material->Get(AI_MATKEY_SHININESS, m_roughness);
+    m_roughness = 1.f - fmin(0.99f, (m_roughness * specular.r));
+    ai_material->Get(AI_MATKEY_REFRACTI, m_refraction);
 
     //  Textures
     std::vector<Texture *> diffuseMaps = loadMaterialTextures(ai_material, aiTextureType_DIFFUSE, "texture_diffuse", path, textures_loaded);
@@ -42,6 +40,19 @@ Material::Material(const aiMaterial *ai_material, const GLboolean &animated, con
     m_has_normal_map = GL_FALSE;
     if(normalMaps.size() > 0)
         m_has_normal_map = GL_TRUE;
+}
+
+Material::Material(const glm::vec3 &diffuse, const GLfloat &roughness, const GLfloat &metalness, const GLfloat &refraction, const GLfloat &opacity, GLboolean has_normal_map, std::vector<Texture *> textures, ShaderType shader_type) :
+    m_color(diffuse),
+    m_roughness(roughness),
+    m_metalness(metalness),
+    m_refraction(refraction),
+    m_opacity(opacity),
+    m_has_normal_map(has_normal_map),
+    m_textures(textures),
+    m_shader_type(shader_type)
+{
+
 }
 
 /*
@@ -101,11 +112,8 @@ Texture *Material::textureFromFile(const std::string &directory, const GLchar *p
 void Material::sendDatas(const Shader &shader) const
 {
     if(m_textures.size() == 0)
-    {
         //  No texture
-        glUniform3f(glGetUniformLocation(shader.getProgram(), "material.diffuse"), m_diffuse.x, m_diffuse.y, m_diffuse.z);
-        glUniform3f(glGetUniformLocation(shader.getProgram(), "material.specular"), m_specular.x, m_specular.y, m_specular.z);
-    }
+        glUniform3f(glGetUniformLocation(shader.getProgram(), "material.color"), m_color.x, m_color.y, m_color.z);
     else
     {
         GLuint diffuseNr = 1;
@@ -131,7 +139,6 @@ void Material::sendDatas(const Shader &shader) const
         }
     }
 
-    glUniform1f(glGetUniformLocation(shader.getProgram(), "material.shininess"), m_shininess);
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.roughness"), m_roughness);
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.metalness"), m_metalness);
     glUniform1f(glGetUniformLocation(shader.getProgram(), "material.refraction"), m_refraction);
@@ -139,9 +146,7 @@ void Material::sendDatas(const Shader &shader) const
 
 void Material::copy(const Material &material)
 {
-    m_diffuse = material.m_diffuse;
-    m_specular = material.m_specular;
-    m_shininess = material.m_shininess;
+    m_color = material.m_color;
     m_roughness = material.m_roughness;
     m_metalness = material.m_metalness;
     m_refraction = material.m_refraction;

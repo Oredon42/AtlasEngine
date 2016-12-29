@@ -20,7 +20,7 @@ class Material
 public:
     Material();
     Material(const aiMaterial *ai_material, const GLboolean &animated, const std::string &path, std::vector<Texture *> &textures_loaded);
-
+    Material(const glm::vec3 &color, const GLfloat &roughness, const GLfloat &metalness, const GLfloat &refraction, const GLfloat &opacity, GLboolean has_normal_map = GL_FALSE, std::vector<Texture *> textures = std::vector<Texture *>(), ShaderType shader_type = ShaderType());
     std::vector<Texture *> loadMaterialTextures(const aiMaterial *ai_material, const aiTextureType &type, const std::string &type_name, const std::string &path, std::vector<Texture *> &textures_loaded);
     Texture *textureFromFile(const std::string &directory, const GLchar *path, const std::string &shading_type) const;
 
@@ -34,9 +34,7 @@ public:
     void copy(const Material &material);
 
 private:
-    glm::vec3 m_diffuse;
-    glm::vec3 m_specular;
-    GLfloat m_shininess;
+    glm::vec3 m_color;
     GLfloat m_roughness;
     GLfloat m_metalness;
     GLfloat m_refraction;

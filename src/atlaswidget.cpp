@@ -7,16 +7,18 @@
 #include "include/render/renderer.h"
 #include "include/data/model.h"
 
+#include "include/render/process/geometryrenderprocess.h"
+#include "include/render/process/lightingrenderprocess.h"
+#include "include/render/process/hdrrenderprocess.h"
+#include "include/render/process/ssaorenderprocess.h"
+#include "include/render/process/wireframerenderprocess.h"
+
 AtlasWidget::AtlasWidget(QWidget * parent) :
     QOpenGLWidget(parent),
     m_menu(this, Qt::FramelessWindowHint),
     m_paused(false),
-    m_yaw(0.0f),
-    m_pitch(0.0f),
-    angle(0),
     m_last_frame(0.0),
     m_fullscreen(false),
-    m_num_scenes(0),
     m_current_scene(0)
 {
     setFocus();
@@ -50,20 +52,29 @@ void AtlasWidget::initializeGL()
     std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 
+    m_renderer.init(window()->width(), window()->height());
+
+
     /*  SCENES MODIFICATION */
 
     addScene();
 
-    m_file_loader.load("/obj/test/test.dae", m_current_scene);
-    //m_file_loader.load("/obj/suzanne/suzanne.obj", m_current_scene);
+    //m_file_loader.load("/obj/test/test.dae", m_current_scene);
+    //Material tmp(glm::vec3(1.f), 0.f, 1.f, 0.f, 1.f);
+    //m_current_scene->setMaterial(tmp, "Suzanne");
 
-    //m_file_loader.load("/obj/cube/cube.obj", m_current_scene);
-    /*Mesh *mesh = m_geometry_process.subdivide(m_current_scene->getModel(0, 0)->getMesh(0));
+    //m_file_loader.load("/obj/suzanne/suzanne.obj", m_current_scene);
+    //m_current_scene->scale(glm::vec3(2, 2, 2), "Suzanne");
+    /*Mesh *mesh = m_geometry_process.getSubdividedMesh(m_current_scene->getModel(0, 0)->getMesh(0), 1);
     Model *model = new Model(mesh, new Material());
-    SceneGraphNode *scene_graph_node = new SceneGraphNode("Cube2");
-    scene_graph_node->insertModel(model);
-    m_current_scene->getLastRoot()->addChild(scene_graph_node);
-    m_current_scene->translate(glm::vec3(2, 0, 0), "Cube2");*/
+    m_current_scene->addSceneGraphNode("Suzanne2", model);
+    m_current_scene->translate(glm::vec3(3, 0, 0), "Suzanne");*/
+
+    m_file_loader.load("/obj/cube/cube2.obj", m_current_scene);
+    Mesh *mesh = m_geometry_process.getSubdividedMesh(m_current_scene->getModel(0, 0)->getMesh(0), 1);
+    Model *model = new Model(mesh, new Material());
+    m_current_scene->addSceneGraphNode("Cube2", model);
+    m_current_scene->translate(glm::vec3(3, 0, 0), "Cube2");
 
 
     //m_file_loader.load("/obj/SimpleModel/demo.dae", m_current_scene);
@@ -72,9 +83,9 @@ void AtlasWidget::initializeGL()
 
     m_current_scene->rotate(glm::vec3(90, 0, 0), "Scene");
 
-    m_current_scene->addPointLight(glm::vec3(3.f), glm::vec3(1.0f), 1.f);
-    m_current_scene->addPointLight(glm::vec3(3.f,3.f,-3.f), glm::vec3(1.0f), 1.f);
-    m_current_scene->addPointLight(glm::vec3(-3.f), glm::vec3(1.0f), 1.f);
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(3.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.0f), 1.f, glm::vec3(3.f,3.f,-3.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.0f), 1.f, glm::vec3(-3.f)));
     //m_current_scene->addDirLight(glm::normalize(glm::vec3(-1.f, -1.f, -1.f)),glm::vec3(0.2),glm::vec3(0.8),glm::vec3(1));
     //m_current_scene->addSpotLight(glm::vec3(0,3,0),glm::vec3(0,0,-1),glm::cos(glm::radians(12.5f)),glm::cos(glm::radians(15.0f)),glm::vec3(0.1f),glm::vec3(0.5),glm::vec3(1.f),1.f,0.7f,1.8f);
 
@@ -82,7 +93,24 @@ void AtlasWidget::initializeGL()
 
     /*  END OF SCENES MODIFICATION */
 
-    m_renderer.init(m_path, window()->width(), window()->height(), m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
+
+    /*  PIPELINES MODIFICATIONS */
+
+    Pipeline *default_pipeline = new Pipeline(window()->width(), window()->height());
+    default_pipeline->addProcess(new GeometryRenderProcess());
+    default_pipeline->addProcess(new SSAORenderProcess());
+    default_pipeline->addProcess(new LightingRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights()));
+    default_pipeline->addProcess(new HDRRenderProcess());
+    m_renderer.addPipeline(default_pipeline, "default");
+
+    Pipeline *wireframe_pipeline = new Pipeline(window()->width(), window()->height());
+    wireframe_pipeline->addProcess(new WireframeRenderProcess());
+    m_renderer.addPipeline(wireframe_pipeline, "wireframe");
+
+
+    m_renderer.setCurrentPipeline("default");
+
+    /*  END OF PIPELINES MODIFICATION */
 
     //m_renderer.resize(800, 600);
 

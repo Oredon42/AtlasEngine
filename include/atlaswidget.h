@@ -40,14 +40,12 @@ protected slots:
     void unPause();
 
 private:
-    inline void addScene(){m_scenes.push_back(Scene(m_path, m_render_time)); m_current_scene = &m_scenes[m_num_scenes++];}
+    inline void addScene(){m_scenes.push_back(Scene(m_path, m_render_time)); m_current_scene = &m_scenes.back();}
     void pause();
 
     Menu m_menu;
     GLboolean m_paused;
 
-    GLfloat m_yaw;
-    GLfloat m_pitch;
     GLfloat m_mouse_saved_x;
     GLfloat m_mouse_saved_y;
     GLfloat m_mouse_last_x;
@@ -55,13 +53,11 @@ private:
     QTime m_time;
     GLboolean m_keys[1024];
     std::string m_path;
-    GLfloat angle;
     GLuint m_last_frame;
     GLuint m_window_width;
     GLuint m_window_height;
     GLboolean m_fullscreen;
     QTimer m_timer;
-    GLuint m_num_scenes;
     std::vector<Scene> m_scenes;
     Renderer m_renderer;
     GLfloat m_render_time;
