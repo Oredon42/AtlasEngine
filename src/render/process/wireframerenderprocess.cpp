@@ -26,6 +26,11 @@ void WireframeRenderProcess::init(const GLuint &width, const GLuint &height)
     m_out_textures.push_back(m_out_buffer.getTexture(0));
 }
 
+void WireframeRenderProcess::initMenuElement()
+{
+
+}
+
 void WireframeRenderProcess::resize(const GLuint &width, const GLuint &height)
 {
     /*RenderProcess::resize(width, height);

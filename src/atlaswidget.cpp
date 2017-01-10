@@ -19,7 +19,8 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
     m_paused(false),
     m_last_frame(0.0),
     m_fullscreen(false),
-    m_current_scene(0)
+    m_current_scene(0),
+    m_current_scene_index(-1)
 {
     setFocus();
 
@@ -35,7 +36,10 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
 
 AtlasWidget::~AtlasWidget()
 {
+    for(GLuint i = 0; i < m_scenes.size(); ++i)
+        delete m_scenes[i];
 
+    m_scenes.clear();
 }
 
 void AtlasWidget::initializeGL()
@@ -54,45 +58,30 @@ void AtlasWidget::initializeGL()
 
     m_renderer.init(window()->width(), window()->height());
 
+    /*  MATERIALS MODIFICATION */
+
+    m_material_library.addMaterial(new Material(glm::vec3(1.f), 0.2f, 1.f, 1.f, 1.f), "default");
+    m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 1.f), 1.f, 0.f, 1.f, 1.f), "white");
+    m_material_library.addMaterial(new Material(glm::vec3(0.8f, 0.8f, 0.8f), 1.f, 0.f, 1.f, 1.f), "grey");
+    m_material_library.addMaterial(new Material(glm::vec3(1.f, 0.f, 0.f), 1.f, 0.f, 1.f, 1.f), "red");
+    m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 0.f), 0.2f, 0.f, 1.f, 1.f), "yellow");
+    m_material_library.addMaterial(new Material(glm::vec3(0.5f, 0.5f, 0.5f), 0.05f, 1.f, 1.f, 1.f), "glossy");
+
+    /*  END OF MATERIALS MODIFICATION */
+
 
     /*  SCENES MODIFICATION */
 
-    addScene();
-
-    //m_file_loader.load("/obj/test/test.dae", m_current_scene);
-    //Material tmp(glm::vec3(1.f), 0.f, 1.f, 0.f, 1.f);
-    //m_current_scene->setMaterial(tmp, "Suzanne");
-
-    //m_file_loader.load("/obj/suzanne/suzanne.obj", m_current_scene);
-    //m_current_scene->scale(glm::vec3(2, 2, 2), "Suzanne");
-    /*Mesh *mesh = m_geometry_process.getSubdividedMesh(m_current_scene->getModel(0, 0)->getMesh(0), 1);
-    Model *model = new Model(mesh, new Material());
-    m_current_scene->addSceneGraphNode("Suzanne2", model);
-    m_current_scene->translate(glm::vec3(3, 0, 0), "Suzanne");*/
-
-    m_file_loader.load("/obj/cube/cube2.obj", m_current_scene);
-    Mesh *mesh = m_geometry_process.getSubdividedMesh(m_current_scene->getModel(0, 0)->getMesh(0), 1);
-    Model *model = new Model(mesh, new Material());
-    m_current_scene->addSceneGraphNode("Cube2", model);
-    m_current_scene->translate(glm::vec3(3, 0, 0), "Cube2");
-
-
-    //m_file_loader.load("/obj/SimpleModel/demo.dae", m_current_scene);
-    //m_file_loader.load("/obj/Astroboy/astroBoy_walk_Maya2.dae", m_current_scene, aeMissArmature | aeMissAnimation);
-    //m_current_scene->importFile("/obj/test/test.dae");
-
-    m_current_scene->rotate(glm::vec3(90, 0, 0), "Scene");
-
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(3.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.0f), 1.f, glm::vec3(3.f,3.f,-3.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.0f), 1.f, glm::vec3(-3.f)));
-    //m_current_scene->addDirLight(glm::normalize(glm::vec3(-1.f, -1.f, -1.f)),glm::vec3(0.2),glm::vec3(0.8),glm::vec3(1));
-    //m_current_scene->addSpotLight(glm::vec3(0,3,0),glm::vec3(0,0,-1),glm::cos(glm::radians(12.5f)),glm::cos(glm::radians(15.0f)),glm::vec3(0.1f),glm::vec3(0.5),glm::vec3(1.f),1.f,0.7f,1.8f);
-
-    m_current_scene->addCamera(new Camera());
+    createGeometryScene();
+    createRenderScene();
 
     /*  END OF SCENES MODIFICATION */
 
+    for(GLuint i = 0; i < m_scenes.size(); ++i)
+    {
+        m_scenes[i]->buildModelList();
+        //m_scenes[i]->buildKdTree();
+    }
 
     /*  PIPELINES MODIFICATIONS */
 
@@ -107,12 +96,13 @@ void AtlasWidget::initializeGL()
     wireframe_pipeline->addProcess(new WireframeRenderProcess());
     m_renderer.addPipeline(wireframe_pipeline, "wireframe");
 
-
-    m_renderer.setCurrentPipeline("default");
+    setCurrentPipeline("default");
 
     /*  END OF PIPELINES MODIFICATION */
 
     //m_renderer.resize(800, 600);
+
+    //m_menu.init();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -157,11 +147,13 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
         break;
 
     case Qt::Key_Right:
-        //m_current_scene = (++m_current_scene == m_num_scenes)?0:m_current_scene;
+        m_current_scene_index = (++m_current_scene_index == m_scenes.size())?0:m_current_scene_index;
+        m_current_scene = m_scenes[m_current_scene_index];
         break;
 
     case Qt::Key_Left:
-        //m_current_scene = (m_current_scene == 0)?m_current_scene:m_num_scenes - 1;
+        m_current_scene_index = (m_current_scene_index == 0)?m_scenes.size() - 1:--m_current_scene_index;
+        m_current_scene = m_scenes[m_current_scene_index];
         break;
 
     case Qt::Key_R:
@@ -236,6 +228,13 @@ void AtlasWidget::setPath(const std::string &path)
 #endif
 }
 
+void AtlasWidget::setCurrentPipeline(const std::string &pipeline_name)
+{
+    m_renderer.setCurrentPipeline(pipeline_name);
+
+    m_menu.setGraphicsMenuElements(m_renderer.getGraphicsMenuElements());
+}
+
 void AtlasWidget::unPause()
 {
     if(m_paused == true)
@@ -255,4 +254,56 @@ void AtlasWidget::pause()
         QApplication::setOverrideCursor(Qt::ArrowCursor);
         m_menu.exec();
     }
+}
+
+void AtlasWidget::createRenderScene()
+{
+    addScene();
+
+    SceneGraphRoot *r1 = new SceneGraphRoot("root", m_path);
+
+    m_file_loader.load("/obj/testscenes/hdr.obj", r1, m_material_library);
+
+    r1->setMaterial(m_material_library.getMaterial("white"), "Plane");
+    r1->setMaterial(m_material_library.getMaterial("grey"), "Suzanne");
+    r1->setMaterial(m_material_library.getMaterial("red"), "Cube");
+    r1->setMaterial(m_material_library.getMaterial("yellow"), "Cone");
+    r1->setMaterial(m_material_library.getMaterial("glossy"), "Sphere");
+
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(3.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(3.f,3.f,-3.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(-3.f)));
+    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f, 0.f, 0.f), 10.f, glm::normalize(glm::vec3(-1.f))));
+
+    m_current_scene->addSceneGraphRoot(r1);
+
+    m_current_scene->addCamera(new Camera());
+}
+
+
+void AtlasWidget::createGeometryScene()
+{
+    addScene();
+
+    SceneGraphRoot *r1 = new SceneGraphRoot("root", m_path);
+    m_file_loader.load("/obj/testscenes/subdiv.obj", r1, m_material_library);
+    SceneGraphNode *n1 = r1->getChild(0);
+    n1->getModel(0, 0)->setMaterial(m_material_library.getMaterial("default"));
+
+    SceneGraphNode *n12 = new SceneGraphNode("n12", m_path);
+    n1->addChild(n12);
+    n12->addModel(new Model(m_geometry_process.getSubdividedMesh(n1->getModel(0, 0)->getMesh(0), 1), m_material_library.getMaterial("default")));
+    //n12->addModel(new Model(m_geometry_process.getDecimatedMesh(n1->getModel(0, 0)->getMesh(0), 0.9f), m_material_library.getMaterial("default")));
+    n12->translate(glm::vec3(0, 0, 5));
+
+    m_current_scene->addSceneGraphRoot(r1);
+
+    m_current_scene->scale(glm::vec3(0.05f), "root");
+
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(5.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(5.f,5.f,-5.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(-5.f)));
+    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f, 0.f, 0.f), 10.f, glm::normalize(glm::vec3(-1.f))));
+
+    m_current_scene->addCamera(new Camera());
 }

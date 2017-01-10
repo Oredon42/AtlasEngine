@@ -11,6 +11,8 @@
 #include "lib/glm/gtc/matrix_transform.hpp"
 #include "lib/glm/gtc/type_ptr.hpp"
 
+#include "include/ray.h"
+
 class Shader;
 
 class Camera
@@ -38,6 +40,7 @@ public:
     inline glm::mat4 getView() const{return m_view;}
     inline glm::mat4 getProjection() const{return m_projection;}
     inline GLboolean isInitialised() const{return m_initialised;}
+    inline Ray getRay() const{return m_ray;}
 
     //  Setters
     inline void setFov(const GLfloat &fov){m_fov = fov;}
@@ -46,6 +49,7 @@ public:
     inline void setFront(const glm::vec3 &front){m_front = front;}
     inline void setUp(const glm::vec3 &up){m_up = up;}
     inline void setOffset(const GLfloat &xoffset, const GLfloat &yoffset){m_current_offset_x = xoffset;m_current_offset_y = yoffset;}
+    inline void setNear(const GLfloat &near){m_near = fmin(m_far, near);}
 
 private:
     GLuint m_viewPosLoc;
@@ -70,7 +74,12 @@ private:
     glm::mat4 m_view;
     glm::mat4 m_projection;
 
+    GLfloat m_near;
+    GLfloat m_far;
+
     GLboolean m_initialised;
+
+    Ray m_ray;
 };
 
 #endif // CAMERA_H

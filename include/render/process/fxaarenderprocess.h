@@ -7,6 +7,8 @@ class FXAARenderProcess : public RenderProcess
 {
 public:
     FXAARenderProcess();
+
+    virtual void initMenuElement();
 };
 
 #endif // FXAAPROCESS_H

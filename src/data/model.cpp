@@ -29,8 +29,6 @@ Model::~Model()
     m_meshes.clear();
 
     delete m_armature;
-
-    delete m_material;
 }
 
 void Model::draw(const Shader &shader, const GLfloat &render_time) const

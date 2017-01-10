@@ -1,4 +1,3 @@
-#version 330 core
 out float FragColor;
 in vec2 TexCoords;
 
@@ -7,19 +6,20 @@ uniform sampler2D gNormal;
 uniform sampler2D texNoise;
 
 uniform vec3 samples[64];
+uniform vec2 window_size;
 
-int kernelSize = 32;
+int kernelSize = 64;
 float radius = 1.0;
 
-const vec2 windowSize = vec2(800.0, 600.0);
 const vec2 noiseSize = vec2(4.0, 4.0);
 
-const vec2 noiseScale = normalize(windowSize / noiseSize);
+vec2 noiseScale = window_size / noiseSize;
 
 uniform mat4 projection;
 
 void main()
 {
+#ifdef SSAO
     vec3 fragPos = texture(gPositionDepth, TexCoords).xyz;
     vec3 normal = normalize(texture(gNormal, TexCoords).rgb);
     vec3 randomVec = normalize(texture(texNoise, TexCoords * noiseScale).xyz);
@@ -41,10 +41,13 @@ void main()
         
         float sampleDepth = -texture(gPositionDepth, offset.xy).w;
         
-        float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth ));
+        float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion += (sampleDepth >= sample.z ? 1.0 : 0.0) * rangeCheck;
     }
     occlusion = 1.0 - (occlusion / kernelSize);
     
     FragColor = occlusion;
+#else
+	FragColor = 1;
+#endif
 }

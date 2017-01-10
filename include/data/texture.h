@@ -13,11 +13,12 @@ class Texture
 public:
     Texture();
     Texture(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp = GL_FALSE, GLuint filter_min = GL_NEAREST, GLuint filter_max = GL_NEAREST, std::string path = "", std::string shading_type = "");
+    Texture(const std::string &directory, const GLchar *path, const std::string &shading_type);
     void init(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp = GL_FALSE, GLuint filter_min = GL_NEAREST, GLuint filter_max = GL_NEAREST, std::string path = "", std::string shading_type = "");
 
     void generateTexture(const GLvoid *data);
     void updateDimensions(const GLsizei width, const GLsizei height);
-    inline void generateMipmaps(){glBindTexture(GL_TEXTURE_2D, m_id);glGenerateMipmap(GL_TEXTURE_2D);glBindTexture(GL_TEXTURE_2D, 0);}
+    inline void generateMipmaps() const{glBindTexture(GL_TEXTURE_2D, m_id);glGenerateMipmap(GL_TEXTURE_2D);glBindTexture(GL_TEXTURE_2D, 0);}
 
     //  Getters
     inline GLuint getId()const {return m_id;}

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <unordered_map>
 
 #define NB_SHADER_TYPES 16
 
@@ -53,6 +54,19 @@ struct ShaderTypes
     }
 };
 
+struct Define
+{
+    std::string text;
+    GLboolean defined;
+
+    Define(const std::string &t, const GLboolean &d) :
+        text(t),
+        defined(d)
+    {
+
+    }
+};
+
 ShaderType getShaderType(const GLboolean &is_animated, const GLuint &diffuse_size, const GLuint &specular_size, const GLuint &normal_size);
 
 class Shader
@@ -65,9 +79,11 @@ public:
     void initForward(const ShaderType &shader_type, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
     void initGeometry(const ShaderType &shader_type);
     void initLighting(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
+    inline void initDefine(const std::string &index, const Define &define){m_defines.insert({index, define});}
 
     void reload();
     void use() const;
+
 
     //  Getters
     inline GLuint getProgram() const{return m_program;}
@@ -76,6 +92,7 @@ public:
     inline void setNbDirLights(const GLuint &nb_dirlights){m_nb_dirlights = nb_dirlights;}
     inline void setNbPointLights(const GLuint &nb_pointlights){m_nb_pointlights = nb_pointlights;}
     inline void setNbSpotLights(const GLuint &nb_spotlights){m_nb_spotlights = nb_spotlights;}
+    inline void setDefined(const std::string &index, const GLboolean &defined){m_defines.at(index).defined = defined;}
 
 private:
     GLboolean compileSourceCode(const GLchar *v_shader_code, const GLchar *f_shader_code);
@@ -94,6 +111,8 @@ private:
     GLuint m_nb_spotlights;
 
     GLboolean m_initialised;
+
+    std::unordered_map<std::string,Define> m_defines;
 };
 
 struct Shaders

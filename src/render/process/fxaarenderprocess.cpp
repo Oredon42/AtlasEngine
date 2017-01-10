@@ -4,3 +4,8 @@ FXAARenderProcess::FXAARenderProcess()
 {
 
 }
+
+void FXAARenderProcess::initMenuElement()
+{
+
+}

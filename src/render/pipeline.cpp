@@ -26,11 +26,13 @@ void Pipeline::process(const Quad &quad, const Scene &scene, const GLfloat &rend
 void Pipeline::addProcess(RenderProcess *process)
 {
     process->init(m_width, m_height);
+    process->initMenuElement();
 
     if(m_processes.size() > 0)
-        process->connect(m_processes.back());
+        process->connectPrevious(m_processes.back());
     else
-        process->connect(0);
+        process->connectPrevious(0);
 
     m_processes.push_back(process);
+    m_menu_elements.push_back(process->getMenuElement());
 }

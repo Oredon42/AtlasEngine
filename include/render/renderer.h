@@ -13,6 +13,8 @@
 
 #include "pipeline.h"
 
+#include "include/ray.h"
+
 class Scene;
 
 class Renderer
@@ -29,6 +31,9 @@ public:
     void drawScene(const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) const;
 
     void reloadShaders();
+
+    //  Getter
+    inline std::vector<MenuElement *> getGraphicsMenuElements() const{return m_current_pipeline->getMenuElements();}
 
     //  Setters
     inline void setDimensions(const GLuint &width, const GLuint &height) {m_width = width; m_height = height;}

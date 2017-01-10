@@ -31,6 +31,11 @@ void LightingRenderProcess::init(const GLuint &width, const GLuint &height)
     m_out_textures.push_back(m_buffer.getTexture(2));
 }
 
+void LightingRenderProcess::initMenuElement()
+{
+
+}
+
 void LightingRenderProcess::resize(const GLuint &width, const GLuint &height)
 {
 

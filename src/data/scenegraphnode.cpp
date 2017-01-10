@@ -17,7 +17,29 @@ SceneGraphNode::SceneGraphNode(const std::string &name, glm::mat4 transform) :
 
 }
 
-SceneGraphNode::SceneGraphNode(std::string &path, glm::mat4 &global_inverse_transform, const std::string &name) :
+SceneGraphNode::SceneGraphNode(const std::string &name, Model *model) :
+    m_name(name),
+    m_transform(glm::mat4(1)),
+    m_position(0.f),
+    m_rotation(0.f, 0.f, 0.f, 0.f),
+    m_scale(1.f)
+{
+    m_models[model->getShaderTypeIndex()].push_back(model);
+}
+
+SceneGraphNode::SceneGraphNode(const std::string &name, const std::string &path, glm::mat4 global_inverse_transform) :
+    m_path(path),
+    m_name(name),
+    m_parent(0),
+    m_global_inverse_transform(global_inverse_transform),
+    m_position(0.f),
+    m_rotation(0.f, 0.f, 0.f, 0.f),
+    m_scale(1.f)
+{
+
+}
+
+SceneGraphNode::SceneGraphNode(const std::string &path, const glm::mat4 &global_inverse_transform, const std::string &name) :
     m_path(path),
     m_name(name),
     m_parent(0),
@@ -54,13 +76,6 @@ SceneGraphNode::~SceneGraphNode()
 
     m_models->clear();
 
-    //  Texture loaded suppression
-    for(GLuint i = 0; i < m_textures_loaded.size(); ++i)
-        delete m_textures_loaded[i];
-
-    m_textures_loaded.clear();
-
-
     //  Children array suppression
     for(GLuint i = 0; i < m_children.size(); ++i)
         delete m_children[i];
@@ -77,7 +92,7 @@ void SceneGraphNode::addChild(SceneGraphNode *child)
     m_children.push_back(child);
 }
 
-void SceneGraphNode::setMaterial(const Material& material, const std::string &name)
+void SceneGraphNode::setMaterial(Material* material, const std::string &name)
 {
     if(m_name == name)
     {
@@ -137,12 +152,21 @@ void SceneGraphNode::calculateTransform()
             m_models[i][j]->setTransform(m_transform);
 }
 
+void SceneGraphNode::extractModels(std::vector<Model *> models[NB_SHADER_TYPES])
+{
+    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+        for(GLuint j = 0; j < m_models[i].size(); ++j)
+            models[i].push_back(m_models[i][j]);
+
+    for(GLuint i = 0; i < m_children.size(); ++i)
+        m_children[i]->extractModels(models);
+}
 
 /*****************
  * SCENEGRAPHROOT
  * ************* */
 
-SceneGraphRoot::SceneGraphRoot(const std::string &name, const std::string &path, const glm::mat4 &global_inverse_transform, const glm::mat4 &transform) :
+SceneGraphRoot::SceneGraphRoot(const std::string &name, const std::string &path, glm::mat4 global_inverse_transform, glm::mat4 transform) :
     SceneGraphNode(0, name, path, global_inverse_transform, transform)
 {
 
@@ -167,7 +191,7 @@ void SceneGraphRoot::translate(const glm::vec3 &t, const std::string &name)
     SceneGraphNode *node = getNode(name);
 
     if(node != 0)
-        node->setPosition(t);
+        node->translate(t);
 }
 
 /*
@@ -179,7 +203,7 @@ void SceneGraphRoot::rotate(const glm::vec3 &r, const std::string &name)
 {
     SceneGraphNode *node = getNode(name);
     if(node != 0)
-        node->setRotation(glm::quat(r));
+        node->rotate(glm::quat(r));
 }
 
 /*
@@ -192,7 +216,7 @@ void SceneGraphRoot::scale(const glm::vec3 &s, const std::string &name)
     SceneGraphNode *node = getNode(name);
 
     if(node != 0)
-        node->setScale(s);
+        node->scale(s);
 }
 
 void SceneGraphRoot::calculateTransform()

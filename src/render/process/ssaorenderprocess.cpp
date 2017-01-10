@@ -3,7 +3,10 @@
 #include "include/data/quad.h"
 #include "include/data/scene.h"
 
+#include <QtWidgets>
+
 SSAORenderProcess::SSAORenderProcess() :
+    m_SSAO(GL_FALSE),
     m_num_samples(64)
 {    
 
@@ -13,16 +16,18 @@ void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
 {
     RenderProcess::init(width, height);
 
+    m_SSAO_shader.initDefine("SSAO", Define("#define SSAO", m_SSAO));
     m_SSAO_shader.init("shaders/ssao.vert", "shaders/ssao.frag");
     m_SSAO_blur_shader.init("shaders/ssao.vert", "shaders/ssaoblur.frag");
     m_SSAO_shader.use();
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gPositionDepth"), 0);
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gNormal"), 1);
     glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
+    glUseProgram(0);
 
     std::vector<FramebufferTextureDatas> SSAO_texture_datas;
     SSAO_texture_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT));
-    m_SSAO_buffer.init(width, height);
+    m_SSAO_buffer.init(width/2, height/2);
     m_SSAO_buffer.attachTextures(SSAO_texture_datas);
     m_SSAO_blur_buffer.init(width, height);
     m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas);
@@ -36,8 +41,23 @@ void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
     m_projection_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "projection");
     m_window_size_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "window_size");
 
-
     generateNoise();
+}
+
+void SSAORenderProcess::initMenuElement()
+{
+    QLabel *SSAO_label = new QLabel("SSAO");
+
+    QCheckBox *SSAO_checkbox = new QCheckBox;
+
+    QHBoxLayout *SSAO_horizontal_layout = new QHBoxLayout;
+
+    SSAO_horizontal_layout->addWidget(SSAO_label);
+    SSAO_horizontal_layout->addWidget(SSAO_checkbox);
+
+    MenuElement::connect(SSAO_checkbox, SIGNAL(clicked()), this, SLOT(switchSSAO()));
+
+    m_menu_element->setLayout(SSAO_horizontal_layout);
 }
 
 void SSAORenderProcess::resize(const GLuint &width, const GLuint &height)
@@ -111,9 +131,9 @@ void SSAORenderProcess::generateNoise()
     m_noise_texture.init(GL_RGB16F, 4, 4, GL_RGB, GL_FLOAT, &ssao_noise[0], GL_REPEAT, GL_NEAREST, GL_NEAREST);
 }
 
-void SSAORenderProcess::connect(RenderProcess *previous_process)
+void SSAORenderProcess::connectPrevious(RenderProcess *previous_process)
 {
-    RenderProcess::connect(previous_process);
+    RenderProcess::connectPrevious(previous_process);
 
     m_out_textures.push_back(m_previous_process->getOutTexture(0));
     m_out_textures.push_back(m_previous_process->getOutTexture(1));
@@ -135,3 +155,24 @@ void SSAORenderProcess::setActivated(const GLboolean &activated)
     glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+void SSAORenderProcess::switchSSAO()
+{
+    m_SSAO = !m_SSAO;
+    m_SSAO_shader.setDefined("SSAO", m_SSAO);
+    m_SSAO_shader.reload();
+
+    m_SSAO_shader.use();
+    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gPositionDepth"), 0);
+    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "gNormal"), 1);
+    glUniform1i(glGetUniformLocation(m_SSAO_shader.getProgram(), "texNoise"), 2);
+    glUseProgram(0);
+
+    m_samples_locations = new GLint[m_num_samples];
+    for (GLuint i = 0; i < m_num_samples; ++i)
+        m_samples_locations[i] = glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str());
+
+    m_projection_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "projection");
+    m_window_size_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "window_size");
+}
+

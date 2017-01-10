@@ -20,6 +20,36 @@ Texture::Texture(const GLint &internal_format, const GLsizei &width, const GLsiz
     generateTexture(data);
 }
 
+/*
+ *  Load texture from a file
+ *  Returns the id of the texture
+ * */
+Texture::Texture(const std::string &directory, const GLchar *path, const std::string &shading_type) :
+    m_internal_format(GL_RGBA),
+    m_format(GL_RGBA),
+    m_type(GL_UNSIGNED_BYTE),
+    m_clamp(GL_REPEAT),
+    m_filter_min(GL_LINEAR_MIPMAP_LINEAR),
+    m_filter_max(GL_LINEAR),
+    m_path(path),
+    m_shading_type(shading_type)
+{
+    //  Concatenate directory path to filename
+    std::string filename;
+    if(path[0] == '/')
+        filename = path;
+    else
+        filename = directory + '/' + std::string(path);
+
+    QImage image_container(filename.c_str());
+
+    m_width = image_container.width();
+    m_height = image_container.height();
+    generateTexture(image_container.bits());
+
+    generateMipmaps();
+}
+
 void Texture::init(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp, GLuint filter_min, GLuint filter_max, std::string path, std::string shading_type)
 {
     m_internal_format = internal_format;

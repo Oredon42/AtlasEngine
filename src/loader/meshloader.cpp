@@ -1,5 +1,5 @@
 #include "include/loader/meshloader.h"
-#include "include/data/scene.h"
+#include "include/data/scenegraphnode.h"
 #include "include/data/model.h"
 #include "include/data/scenegraphnode.h"
 
@@ -8,35 +8,20 @@ MeshLoader::MeshLoader()
 
 }
 
-void MeshLoader::load(const aiScene *ai_scene, Scene *scene, const GLboolean &process_armatures)
+/*
+ * Load aiScene and build
+ * SceneGraph with scene_graph_node
+ * as root
+ * */
+void MeshLoader::load(const aiScene *ai_scene, SceneGraphNode *scene_graph_node, MaterialLibrary &material_library, const GLboolean &process_armatures)
 {
     m_process_armatures = process_armatures;
 
-    glm::mat4 global_inverse_transform = glm::inverse(assimpToGlmMat4(ai_scene->mRootNode->mTransformation));
-
-    SceneGraphRoot *scene_graph_root = new SceneGraphRoot(ai_scene->mRootNode->mName.C_Str(), scene->getPath(), global_inverse_transform, assimpToGlmMat4(ai_scene->mRootNode->mTransformation));
-    scene->addSceneGraphRoot(scene_graph_root);
-
     aiNode *ai_node = ai_scene->mRootNode;
 
-    //  Loop on every aiMesh
-    for(GLuint i = 0; i < ai_node->mNumMeshes; ++i)
-    {
-        aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
-        Model *model = processMesh(ai_mesh, ai_scene, scene);
-        scene->getLastRoot()->insertModel(model);
-        scene->addModel(model);
-    }
+    processNode(ai_node, ai_scene, scene_graph_node, material_library);
 
-    //  Loop on every child
-    for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
-    {
-        //  If child node has meshes (do not process light or bone nodes)
-        if(ai_node->mChildren[i]->mNumMeshes > 0)
-            scene->getLastRoot()->addChild(processNode(ai_node->mChildren[i], ai_scene, scene));
-    }
-
-    scene->getLastRoot()->spreadTransform();
+    scene_graph_node->spreadTransform();
 }
 
 /*
@@ -45,18 +30,18 @@ void MeshLoader::load(const aiScene *ai_scene, Scene *scene, const GLboolean &pr
  *  Loops over every mesh
  *  Loops over every node child
  * */
-SceneGraphNode *MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene, Scene *scene)
+void MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene, SceneGraphNode *scene_graph_node, MaterialLibrary &material_library)
 {
-    std::string node_name = ai_node->mName.C_Str();
-    SceneGraphNode *scene_graph_node = new SceneGraphNode(node_name, assimpToGlmMat4(ai_node->mTransformation));
+    //std::string node_name = ai_node->mName.C_Str();
+    //SceneGraphNode *scene_graph_node = new SceneGraphNode(node_name, assimpToGlmMat4(ai_node->mTransformation));
+    scene_graph_node->transform(assimpToGlmMat4(ai_node->mTransformation));
 
     //  Loop on every aiMesh
     for(GLuint i = 0; i < ai_node->mNumMeshes; ++i)
     {
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
-        Model *model = processMesh(ai_mesh, ai_scene, scene);
-        scene_graph_node->insertModel(model);
-        scene->addModel(model);
+        Model *model = processMesh(ai_mesh, ai_scene, scene_graph_node->getPath(), material_library);
+        scene_graph_node->addModel(model);
     }
 
     //  Loop on every child
@@ -64,9 +49,12 @@ SceneGraphNode *MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene
     {
         //  If child node has meshes (do not process light or bone nodes)
         if(ai_node->mChildren[i]->mNumMeshes > 0)
-            scene_graph_node->addChild(processNode(ai_node->mChildren[i], ai_scene, scene));
+        {
+            SceneGraphNode *child = new SceneGraphNode(scene_graph_node->getPath(), scene_graph_node->getGlobalInverseTransform(), ai_node->mChildren[i]->mName.C_Str());
+            processNode(ai_node->mChildren[i], ai_scene, child, material_library);
+            scene_graph_node->addChild(child);
+        }
     }
-    return scene_graph_node;
 }
 
 /*
@@ -74,7 +62,7 @@ SceneGraphNode *MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene
  *  Return a Model that contains Vertices, Indexes,
  *  Materials and eventually Armature from an aiMesh
  * */
-Model *MeshLoader::processMesh(const aiMesh *ai_mesh, const aiScene *ai_scene, Scene *scene)
+Model *MeshLoader::processMesh(const aiMesh *ai_mesh, const aiScene *ai_scene, const std::string &path, MaterialLibrary &material_library)
 {
     //  Geometry
     std::vector<Vertex> vertices;
@@ -84,7 +72,13 @@ Model *MeshLoader::processMesh(const aiMesh *ai_mesh, const aiScene *ai_scene, S
 
     //  Material
     aiMaterial* ai_material = ai_scene->mMaterials[ai_mesh->mMaterialIndex];
-    Material *material = new Material(ai_material, ai_mesh->HasBones(), scene->getPath(), m_textures_loaded);
+
+    const void * address = static_cast<const void*>(ai_material);
+    std::stringstream ss;
+    ss << address;
+    std::string material_name = ss.str();
+
+    Material *material = material_library.getMaterial(material_name);
 
     //  Mesh
     Mesh *mesh = new Mesh(vertices, indices, material->hasNormalMap());

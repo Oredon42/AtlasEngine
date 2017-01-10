@@ -2,12 +2,12 @@
 #include <QtWidgets>
 #include <QApplication>
 
+#include "menuelement.h"
+
 Menu::Menu(QWidget * parent, Qt::WindowFlags f) :
     QDialog(parent, f)
 {
     connect(this, SIGNAL(rejected()), this->parent(), SLOT(unPause()));
-
-    m_stacked_widget = new QStackedWidget;
 
     QPushButton *resume_button = new QPushButton(tr("Resume"));
     QPushButton *graphics_button = new QPushButton(tr("Graphics"));
@@ -18,6 +18,7 @@ Menu::Menu(QWidget * parent, Qt::WindowFlags f) :
     connect(graphics_button, SIGNAL(clicked()), this, SLOT(graphicsMenu()));
     connect(quit_button, SIGNAL(clicked()), qApp, SLOT(quit()));
 
+    m_stacked_widget = new QStackedWidget;
 
     QVBoxLayout *vertical_layout = new QVBoxLayout;
     vertical_layout->addWidget(resume_button);
@@ -26,9 +27,8 @@ Menu::Menu(QWidget * parent, Qt::WindowFlags f) :
     QWidget *menu_widget = new QWidget;
     menu_widget->setLayout(vertical_layout);
 
+    //  Menu widgets
     m_stacked_widget->addWidget(menu_widget);
-
-    setGraphicsMenu();
 
     QHBoxLayout *horizontal_layout = new QHBoxLayout;
     horizontal_layout->addWidget(m_stacked_widget);
@@ -38,15 +38,24 @@ Menu::Menu(QWidget * parent, Qt::WindowFlags f) :
 
 void Menu::setGraphicsMenu()
 {
+    QVBoxLayout *vertical_layout = new QVBoxLayout;
+
     QPushButton *apply_button = new QPushButton(tr("Apply"));
     QPushButton *discard_button = new QPushButton(tr("Discard"));
 
     connect(apply_button, SIGNAL(clicked()), this, SLOT(exitGraphicsApply()));
     connect(discard_button, SIGNAL(clicked()), this, SLOT(exitGraphicsDiscard()));
 
-    QVBoxLayout *vertical_layout = new QVBoxLayout;
-    vertical_layout->addWidget(apply_button);
-    vertical_layout->addWidget(discard_button);
+    QHBoxLayout *horizontal_buttons_layout = new QHBoxLayout;
+    horizontal_buttons_layout->addWidget(apply_button);
+    horizontal_buttons_layout->addWidget(discard_button);
+
+    QFrame *buttons_frame = new QFrame;
+    buttons_frame->setLayout(horizontal_buttons_layout);
+
+    for(GLuint i = 0; i < m_graphics_elements.size(); ++i)
+        vertical_layout->addWidget(m_graphics_elements[i]);
+    vertical_layout->addWidget(buttons_frame);
     QWidget *graphics_widget = new QWidget;
     graphics_widget->setLayout(vertical_layout);
 

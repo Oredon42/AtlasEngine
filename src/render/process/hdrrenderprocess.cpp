@@ -3,11 +3,13 @@
 #include "include/data/quad.h"
 
 #include <QOpenGLFramebufferObject>
+#include <QtWidgets>
 
 HDRRenderProcess::HDRRenderProcess() :
-    m_HDR(GL_TRUE),
-    m_adaptation(GL_TRUE),
-    m_bloom(GL_TRUE),
+    m_HDR(GL_FALSE),
+    m_adaptation(GL_FALSE),
+    m_bloom(GL_FALSE),
+    m_chromatic_aberration(GL_FALSE),
     m_bloom_quality(8),
     m_buffer_index(0)
 {
@@ -27,6 +29,10 @@ void HDRRenderProcess::init(const GLuint &width, const GLuint &height)
     /*
      * HDR
      * */
+    m_HDR_shader.initDefine("hdr", Define("#define HDR", m_HDR));
+    m_HDR_shader.initDefine("bloom", Define("#define BLOOM", m_bloom));
+    m_HDR_shader.initDefine("adaptation", Define("#define ADAPTATION", m_adaptation));
+    m_HDR_shader.initDefine("chromatic_aberration", Define("#define CHROMATIC_ABERRATION", m_chromatic_aberration));
     m_HDR_shader.init("shaders/hdr.vert", "shaders/hdr.frag");
     m_HDR_shader.use();
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
@@ -70,10 +76,61 @@ void HDRRenderProcess::init(const GLuint &width, const GLuint &height)
 
     m_out_textures.push_back(m_out_buffer.getTexture(0));
 
-    m_HDR_location = glGetUniformLocation(m_HDR_shader.getProgram(), "hdr");
-    m_bloom_location = glGetUniformLocation(m_HDR_shader.getProgram(), "bloom");
     m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
     m_max_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_max");
+}
+
+void HDRRenderProcess::initMenuElement()
+{
+    QLabel *HDR_label = new QLabel("HDR");
+    QLabel *bloom_label = new QLabel("Bloom");
+    QLabel *adaptation_label = new QLabel("Eye adaptation");
+    QLabel *chromatic_aberration_label = new QLabel("Chromatic Aberration");
+
+    QCheckBox *HDR_checkbox = new QCheckBox;
+    QCheckBox *bloom_checkbox = new QCheckBox;
+    QCheckBox *adaptation_checkbox = new QCheckBox;
+    QCheckBox *chromatic_aberration_checkbox = new QCheckBox;
+
+    MenuElement::connect(HDR_checkbox, SIGNAL(clicked()), this, SLOT(switchHDR()));
+    MenuElement::connect(bloom_checkbox, SIGNAL(clicked()), this, SLOT(switchbloom()));
+    MenuElement::connect(adaptation_checkbox, SIGNAL(clicked()), this, SLOT(switchAdaptation()));
+    MenuElement::connect(chromatic_aberration_checkbox, SIGNAL(clicked()), this, SLOT(switchChromaticAberration()));
+
+    QHBoxLayout *HDR_horizontal_layout = new QHBoxLayout;
+    QHBoxLayout *bloom_horizontal_layout = new QHBoxLayout;
+    QHBoxLayout *adaptation_horizontal_layout = new QHBoxLayout;
+    QHBoxLayout *chromatic_aberration_layout = new QHBoxLayout;
+
+    HDR_horizontal_layout->addWidget(HDR_label);
+    HDR_horizontal_layout->addWidget(HDR_checkbox);
+
+    bloom_horizontal_layout->addWidget(bloom_label);
+    bloom_horizontal_layout->addWidget(bloom_checkbox);
+
+    adaptation_horizontal_layout->addWidget(adaptation_label);
+    adaptation_horizontal_layout->addWidget(adaptation_checkbox);
+
+    chromatic_aberration_layout->addWidget(chromatic_aberration_label);
+    chromatic_aberration_layout->addWidget(chromatic_aberration_checkbox);
+
+    QWidget *HDR_widget = new QWidget;
+    QWidget *bloom_widget = new QWidget;
+    QWidget *adaptation_widget = new QWidget;
+    QWidget *chromatic_aberration_widget = new QWidget;
+
+    HDR_widget->setLayout(HDR_horizontal_layout);
+    bloom_widget->setLayout(bloom_horizontal_layout);
+    adaptation_widget->setLayout(adaptation_horizontal_layout);
+    chromatic_aberration_widget->setLayout(chromatic_aberration_layout);
+
+    QVBoxLayout *vertical_layout = new QVBoxLayout;
+    vertical_layout->addWidget(HDR_widget);
+    vertical_layout->addWidget(bloom_widget);
+    vertical_layout->addWidget(adaptation_widget);
+    vertical_layout->addWidget(chromatic_aberration_widget);
+
+    m_menu_element->setLayout(vertical_layout);
 }
 
 void HDRRenderProcess::resize(const GLuint &width, const GLuint &height)
@@ -109,8 +166,6 @@ void HDRRenderProcess::process(const Quad &quad, const Scene &scene, const GLflo
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_exposure_buffer.getTexture(0));
     
-    glUniform1i(m_HDR_location, m_HDR);
-    glUniform1i(m_bloom_location, m_bloom);
     glUniform1f(m_max_lum_location, m_avg_max_luminances[0]);
     glUniform1f(m_avg_lum_location, m_avg_max_luminances[1]);
 
@@ -258,4 +313,48 @@ void HDRRenderProcess::setActivated(const GLboolean &activated)
     RenderProcess::setActivated(activated);
 
     //m_out_texture = m_out_buffer.getTexture(0);
+}
+
+
+void HDRRenderProcess::switchHDR()
+{
+    m_HDR = !m_HDR;
+    m_HDR_shader.setDefined("hdr", m_HDR);
+    m_HDR_shader.reload();
+}
+
+void HDRRenderProcess::switchbloom()
+{
+    m_bloom = !m_bloom;
+    m_HDR_shader.setDefined("bloom", m_bloom);
+    m_HDR_shader.reload();
+
+    m_HDR_shader.use();
+    glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
+    glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloomBlur"), 1);
+    glUseProgram(0);
+}
+
+void HDRRenderProcess::switchAdaptation()
+{
+    m_adaptation = !m_adaptation;
+    m_HDR_shader.setDefined("adaptation", m_adaptation);
+    m_HDR_shader.reload();
+
+    m_HDR_shader.use();
+    glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
+    glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloomBlur"), 1);
+    glUseProgram(0);
+}
+
+void HDRRenderProcess::switchChromaticAberration()
+{
+    m_chromatic_aberration = !m_chromatic_aberration;
+    m_HDR_shader.setDefined("chromatic_aberration", m_chromatic_aberration);
+    m_HDR_shader.reload();
+
+    m_HDR_shader.use();
+    glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
+    glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloomBlur"), 1);
+    glUseProgram(0);
 }

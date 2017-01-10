@@ -15,10 +15,12 @@ public:
     WireframeRenderProcess();
 
     virtual void init(const GLuint &width, const GLuint &height);
+    virtual void initMenuElement();
+
     virtual void resize(const GLuint &width, const GLuint &height);
     void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]);
 
-    //  Setterss
+    //  Setters
     virtual void setActivated(const GLboolean &activated);
 
 private:

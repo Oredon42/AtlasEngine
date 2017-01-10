@@ -13,6 +13,7 @@ public:
     GeometryRenderProcess();
 
     virtual void init(const GLuint &width, const GLuint &height);
+    virtual void initMenuElement();
 
     virtual void resize(const GLuint &width, const GLuint &height);
     virtual void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]);

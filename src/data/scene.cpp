@@ -43,6 +43,12 @@ void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GL
     current_camera->orientate();
     current_camera->move(keys, render_time);
 
+    /*Ray r = current_camera->getRay();
+    Intersection i;
+    Triangle t;
+    r.intersectKdTree(m_kdtree, i, t);
+    current_camera->setNear(i.t);*/
+
     //  Loop on every shader type
     //  Loop and draw every mesh that uses this shader
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
@@ -84,6 +90,12 @@ void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfl
     current_camera->orientate();
     current_camera->move(keys, render_time);
 
+    /*Ray r = current_camera->getRay();
+    Intersection i;
+    Triangle t;
+    r.intersectKdTree(m_kdtree, i, t);
+    current_camera->setNear(i.t);*/
+
     //  Loop on every shader type
     //  Loop and draw every mesh that uses this shader
     for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
@@ -102,62 +114,62 @@ void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfl
     }
 }
 
+void Scene::buildModelList()
+{
+    for(GLuint i = 0; i < m_roots.size(); ++i)
+        m_roots[i]->extractModels(m_models);
+}
+
 void Scene::buildKdTree()
 {
-    /*glm::vec3   v_min = m_models[0].m_m->m_vertices[0].Position,
-                v_max = v_min;
+    std::vector<Triangle *> T;
 
-    std::vector<Triangle *> T; //  vecteur de tous les triangles de la scène
-
-    //  Ajout de tous les triangles de la scène dans la racine (m_root)
-    //  Pour chaque model
-    for(GLuint i = 0, l = 0; i < m_models.size(); ++i)
+    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
     {
-        Model* actual_model = m_models[i];
-
-        //  Pour tous les meshes du model
-        for(GLuint j = 0; j < actual_model->numberOfMeshes(); ++j)
+        for(GLuint j = 0, m = 0; j < m_models[i].size(); ++j)
         {
-            Mesh* actual_mesh = actual_model->getMesh(j);
-            GLuint number_of_triangles = actual_mesh->m_indices.size();
+            Model* actual_model = m_models[i][j];
 
-            //  Pour tous les triangles du mesh
-            for(GLuint k = 0; k < number_of_triangles; k += 3, ++l)
+            //  Pour tous les meshes du model
+            for(GLuint k = 0; k < actual_model->numberOfMeshes(); ++k)
             {
-                Triangle *t = new Triangle(&actual_mesh->m_vertices[actual_mesh->m_indices[k]], &actual_mesh->m_vertices[actual_mesh->m_indices[k + 1]], &actual_mesh->m_vertices[actual_mesh->m_indices[k + 2]], i, j, k);
+                Mesh* actual_mesh = actual_model->getMesh(k);
+                GLuint number_of_triangles = actual_mesh->numIndices();
 
-                //  Ajout du triangle
-                m_kdtree.m_T.push_back(t);
+                //  Pour tous les triangles du mesh
+                for(GLuint l = 0; l < number_of_triangles; l += 3, ++m)
+                {
+                    Triangle *t = actual_mesh->getTriangle(k, k+1, k+2);
+                    t->mesh = j;
+                    t->model = k;
+                    t->side = l;
 
-                //  Recherche des extrémités de la bounding box de la scène
-                boxMinMax(v_min, v_max, t->v1->Position);
-                boxMinMax(v_min, v_max, t->v2->Position);
-                boxMinMax(v_min, v_max, t->v3->Position);
+                    //  Ajout du triangle
+                    m_kdtree.addTriangle(t);
+                    T.push_back(t);
+
+                    //  Recherche des extrémités de la bounding box de la scène
+                    m_box.clipPoint(t->v1->Position);
+                    m_box.clipPoint(t->v2->Position);
+                    m_box.clipPoint(t->v3->Position);
+                }
             }
         }
     }
-    //  Strockage des adresses
-    for(GLuint i = 0; i < m_kdtree.m_T.size(); ++i)
-        T.push_back(m_kdtree.m_T[i]);
-
-    //  Boîte englobante de la scène
-    Box B;
-    B.V[0] = v_min;
-    B.V[1] = v_max;
 
     //  Création de la liste des évènements
     std::vector<Event> E;
     GLuint E_size;
-    createEventList(E_size, E, m_kdtree.m_T);
+    m_kdtree.createEventList(E_size, E);
     //  Construction de l'arbre
-    m_kdtree.m_root = m_kdtree.RecBuild(T, B, E_size, E);
+    m_kdtree.m_root = m_kdtree.RecBuild(T, m_box, E_size, E);
     //m_kdtree.m_root = m_kdtree.medbuild(T, B, 4);
 
-    m_kdtree.setRootBox(B);
+    m_kdtree.setRootBox(m_box);
 
-    m_kdtree.setupMesh();   //  Affichage
+    //m_kdtree.setupMesh();   //  Affichage
 
-    m_kdtree_built = true;*/
+    //m_kdtree_built = true;
 }
 
 void Scene::sendViewSpacePointLightDatas(const Shader &shader) const
@@ -166,10 +178,12 @@ void Scene::sendViewSpacePointLightDatas(const Shader &shader) const
         m_lights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
 }
 
-void Scene::addSceneGraphNode(const std::string name, Model *model)
+SceneGraphNode *Scene::addSceneGraphNode(const std::string name, Model *model)
 {
     SceneGraphNode *scene_graph_node = new SceneGraphNode(name);
-    scene_graph_node->insertModel(model);
+    scene_graph_node->addModel(model);
     m_roots.back()->addChild(scene_graph_node);
     m_models[model->getMaterial()->getShaderTypeIndex()].push_back(model);
+
+    return scene_graph_node;
 }

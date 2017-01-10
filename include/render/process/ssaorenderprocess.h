@@ -11,24 +11,29 @@ GLfloat lerp(GLfloat a, GLfloat b, GLfloat f);
 
 class Quad;
 
-class SSAORenderProcess : public RenderProcess
+class SSAORenderProcess : public QObject, public RenderProcess
 {
+    Q_OBJECT
 public:
     SSAORenderProcess();
 
     virtual void init(const GLuint &width, const GLuint &height);
+    virtual void initMenuElement();
 
     virtual void resize(const GLuint &width, const GLuint &height);
-
     void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]);
-
-    virtual void connect(RenderProcess *previous_process);
+    virtual void connectPrevious(RenderProcess *previous_process);
 
     //  Setters
     virtual void setActivated(const GLboolean &activated);
 
+private slots:
+    void switchSSAO();
+
 private:
     void generateNoise();
+
+    GLboolean m_SSAO;
 
     Framebuffer m_SSAO_buffer;
     Framebuffer m_SSAO_blur_buffer;

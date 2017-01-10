@@ -157,8 +157,9 @@ GLboolean Shader::compileSourceCode(const GLchar *v_shader_code, const GLchar *f
     /*
      * Program linking
      * */
-    if(!m_initialised)
-        m_program = glCreateProgram();
+    if(m_initialised)
+        glDeleteProgram(m_program);
+    m_program = glCreateProgram();
     glAttachShader(m_program, vertex);
     glAttachShader(m_program, fragment);
     glLinkProgram(m_program);
@@ -195,6 +196,14 @@ GLboolean Shader::loadSourceFromFiles(std::string &vertex_code, std::string &fra
         f_shader_file.open(m_fragment_saved_path.c_str());
 
         std::stringstream v_shader_stream, f_shader_stream;
+
+        if(m_defines.size() > 0)
+        {
+            f_shader_stream << "#version 330 core\n";
+            for(std::unordered_map<std::string,Define>::iterator it = m_defines.begin(); it != m_defines.end(); it++)
+                if(it->second.defined)
+                    f_shader_stream << it->second.text << "\n";
+        }
 
         v_shader_stream << v_shader_file.rdbuf();
         f_shader_stream << f_shader_file.rdbuf();
@@ -338,6 +347,8 @@ void Shader::generateLightingCode(std::string &vertex_code, std::string &fragmen
 
         if(m_nb_pointlights > 0)
             f_shader_stream << "#define POINTLIGHT " << m_nb_pointlights << "\n";
+        if(m_nb_dirlights > 0)
+            f_shader_stream << "#define DIRLIGHT " << m_nb_dirlights << "\n";
 
         v_shader_file.open("shaders/metalighting.vert");
         f_shader_file.open("shaders/metalighting.frag");

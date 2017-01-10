@@ -1,9 +1,9 @@
-#include "include/data/geometry/geometrytransform.h"
+#include "include/data/geometry/process/geometrytransform.h"
 #include "include/data/geometry/mesh.h"
 
 #include <unordered_map>
 
-#include "include/data/geometry/topologicalmesh.h"
+#include "include/data/geometry/process/topologicalmesh.h"
 
 using namespace OpenMesh;
 
@@ -28,6 +28,26 @@ void GeometryTransform::subdivideMesh(Mesh *mesh, const unsigned int  &num_itera
     delete mesh;
 
     m_subdivider.subdivide(topological_mesh, num_iterations);
+
+    mesh = MeshFromTopologicalMesh(topological_mesh);
+}
+
+Mesh *GeometryTransform::getDecimatedMesh(const Mesh *mesh, const float &percentage)
+{
+    TopologicalMesh *topological_mesh = TopologicalMeshFromMesh(mesh);
+
+    m_decimater.decimate(topological_mesh, percentage);
+
+    return MeshFromTopologicalMesh(topological_mesh);
+}
+
+void GeometryTransform::decimateMesh(Mesh *mesh, const float &percentage)
+{
+    TopologicalMesh *topological_mesh = TopologicalMeshFromMesh(mesh);
+
+    delete mesh;
+
+    m_decimater.decimate(topological_mesh, percentage);
 
     mesh = MeshFromTopologicalMesh(topological_mesh);
 }
@@ -62,8 +82,8 @@ TopologicalMesh *GeometryTransform::TopologicalMeshFromMesh(const Mesh *mesh)
         VertexHandle vh;
         if(vtr == vertexHandles.end())
         {
-            vh = topological_mesh->add_vertex( Point(p.x, p.y, p.z));
-            vertexHandles.insert( vtr, vMap::value_type(p, vh) );
+            vh = topological_mesh->add_vertex(Point(p.x, p.y, p.z));
+            vertexHandles.insert(vtr, vMap::value_type(p, vh));
         }
         else
             vh = vtr->second;
@@ -76,7 +96,7 @@ TopologicalMesh *GeometryTransform::TopologicalMeshFromMesh(const Mesh *mesh)
             HalfedgeHandle hh = topological_mesh->halfedge_handle(fh);
             glm::vec3 n;
 
-            n = mesh->getVertex(mesh->getIndex(i-2)).Normal;;
+            n = mesh->getVertex(mesh->getIndex(i-2)).Normal;
             topological_mesh->set_normal(hh, Normal(n.x, n.y, n.z));
 
             hh = topological_mesh->next_halfedge_handle(hh);

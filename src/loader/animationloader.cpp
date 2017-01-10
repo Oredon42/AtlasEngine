@@ -82,7 +82,7 @@ void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const Sc
     current_channel.time = time;
 
     //  Loop over every model
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    /*for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
     {
         for(GLuint j = 0; j < scene->numberOfModels(i); ++j)
         {
@@ -93,7 +93,7 @@ void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const Sc
                     model->setChannel(animation_name, bone_name, current_tick, current_channel);
             }
         }
-    }
+    }*/
 
     //  Loop over children bones
     for(GLuint i = 0 ; i < ai_node->mNumChildren ; ++i)

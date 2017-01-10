@@ -20,6 +20,8 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<GLuint> &indic
     m_vertices = vertices;
     m_indices = indices;
 
+    computeAABB();
+
     setupBuffers();
 }
 
@@ -101,4 +103,10 @@ void Mesh::detachArmature()
         glDeleteBuffers(1, &m_bone_buffer);
         m_bone_buffer = 0;
     }
+}
+
+void Mesh::computeAABB()
+{
+    for(GLuint i = 0; i < m_vertices.size(); ++i)
+        m_box.clipPoint(m_vertices[i].Position);
 }

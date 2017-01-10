@@ -1,4 +1,4 @@
-#include "include/data/geometry/subdivider.h"
+#include "include/data/geometry/process/subdivider.h"
 
 #include <OpenMesh/Core/Geometry/VectorT.hh>
 #include <OpenMesh/Core/Mesh/PolyConnectivity.hh>
@@ -73,26 +73,20 @@ void Subdivider::subdivide(TopologicalMesh *topological_mesh, const unsigned int
         {
             Point p_even = Point(0);
 
-            if(topological_mesh->is_boundary(*v_it))
+            for(VertexOHalfedgeIter voh_it = topological_mesh->voh_iter(*v_it); voh_it; ++voh_it)
             {
-                for(VertexIHalfedgeIter vih_it = topological_mesh->vih_iter(*v_it); vih_it; ++vih_it)
-                {
-                    VertexHandle v_h = topological_mesh->to_vertex_handle(*vih_it);
-                    p_even += topological_mesh->point(v_h);
-                }
-                p_even = p_even * 0.125f + topological_mesh->point(*v_it)*0.75f;
+                VertexHandle v_h = topological_mesh->to_vertex_handle(*voh_it);
+                p_even += topological_mesh->point(v_h);
             }
+
+            if(topological_mesh->is_boundary(*v_it))
+                p_even = p_even*0.125f + topological_mesh->point(*v_it)*0.75f;
             else
             {
                 int n = topological_mesh->valence(*v_it);
                 float beta = (n>3)? 3.f/(8.f*n) : 0.1875f;
 
-                for(TopologicalMesh::VertexOHalfedgeIter vih_it = topological_mesh->voh_iter(*v_it); vih_it; ++vih_it)
-                {
-                    VertexHandle v_h = topological_mesh->to_vertex_handle(*vih_it);
-                    p_even += topological_mesh->point(v_h);
-                }
-                p_even = p_even * beta + topological_mesh->point(*v_it)*(1.f-n*beta);
+                p_even = p_even*beta + topological_mesh->point(*v_it)*(1.f-n*beta);
             }
 
             //  Set even vertex

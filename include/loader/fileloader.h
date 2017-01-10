@@ -34,9 +34,11 @@ class FileLoader
 public:
     FileLoader();
 
-    GLboolean load(const std::string path, Scene *scene, int flags = aeNoFlag);
+    GLboolean load(const std::string path, Scene *scene, MaterialLibrary &material_library, int flags = aeNoFlag);
+    GLboolean load(const std::string path, SceneGraphNode *scene_graph_node, MaterialLibrary &material_library, int flags = aeNoFlag);
     void loadLights(const aiScene *ai_scene, Scene *scene);
     void loadCameras(const aiScene *ai_scene, Scene *scene);
+    void loadMaterials(const aiScene *ai_scene, MaterialLibrary &material_library, const std::string &path);
 
 private:
     void processFlags(const int &flags);

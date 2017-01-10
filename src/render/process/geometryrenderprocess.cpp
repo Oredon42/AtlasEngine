@@ -49,6 +49,11 @@ void GeometryRenderProcess::init(const GLuint &width, const GLuint &height)
     m_out_textures.push_back(m_gBuffer.getTexture(3));
 }
 
+void GeometryRenderProcess::initMenuElement()
+{
+
+}
+
 void GeometryRenderProcess::resize(const GLuint &width, const GLuint &height)
 {
 

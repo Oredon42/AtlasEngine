@@ -1,6 +1,8 @@
 #ifndef HDRPROCESS_H
 #define HDRPROCESS_H
 
+#include <QObject>
+
 #include "openglincludes.h"
 
 #include "renderprocess.h"
@@ -10,22 +12,26 @@
 class Scene;
 class Quad;
 
-class HDRRenderProcess : public RenderProcess
+class HDRRenderProcess : public QObject, public RenderProcess
 {
+    Q_OBJECT
 public:
     HDRRenderProcess();
 
     virtual void init(const GLuint &width, const GLuint &height);
+    virtual void initMenuElement();
 
     virtual void resize(const GLuint &width, const GLuint &height);
-
     void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]);
 
     //  Setters
     virtual void setActivated(const GLboolean &activated);
-    inline void switchHDR(){m_HDR = !m_HDR;}
-    inline void switchAdaptation(){m_adaptation = !m_adaptation;}
-    inline void switchBloom(){m_bloom = !m_bloom;}
+
+private slots:
+    void switchHDR();
+    void switchbloom();
+    void switchAdaptation();
+    void switchChromaticAberration();
 
 private:
     void processAdaptation(const Quad &quad);
@@ -34,6 +40,7 @@ private:
     Shader m_HDR_shader;
     GLboolean m_HDR;
     GLboolean m_adaptation;
+    GLboolean m_chromatic_aberration;
 
     //  BLOOM
     Framebuffer m_blur_buffers[2];
@@ -53,8 +60,6 @@ private:
 
     Framebuffer m_out_buffer;
 
-    GLint m_HDR_location;
-    GLint m_bloom_location;
     GLint m_avg_lum_location;
     GLint m_max_lum_location;
 };

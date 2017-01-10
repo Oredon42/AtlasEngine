@@ -15,7 +15,7 @@
 #include "include/render/renderer.h"
 #include "include/data/scene.h"
 #include "include/loader/fileloader.h"
-#include "include/data/geometry/geometrytransform.h"
+#include "include/data/geometry/process/geometrytransform.h"
 
 #include "include/menu.h"
 #include <QOpenGLWidget>
@@ -40,8 +40,12 @@ protected slots:
     void unPause();
 
 private:
-    inline void addScene(){m_scenes.push_back(Scene(m_path, m_render_time)); m_current_scene = &m_scenes.back();}
+    inline void addScene(){m_scenes.push_back(new Scene(m_path, m_render_time)); m_current_scene = m_scenes[++m_current_scene_index];}
+    void setCurrentPipeline(const std::string &pipeline_name);
     void pause();
+
+    void createRenderScene();
+    void createGeometryScene();
 
     Menu m_menu;
     GLboolean m_paused;
@@ -58,13 +62,15 @@ private:
     GLuint m_window_height;
     GLboolean m_fullscreen;
     QTimer m_timer;
-    std::vector<Scene> m_scenes;
+    std::vector<Scene *> m_scenes;
     Renderer m_renderer;
     GLfloat m_render_time;
     Scene *m_current_scene;
+    GLuint m_current_scene_index;
 
     FileLoader m_file_loader;
     GeometryTransform m_geometry_process;
+    MaterialLibrary m_material_library;
 };
 
 #endif // RENDERINGWIDGET_H

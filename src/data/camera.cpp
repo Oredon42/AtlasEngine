@@ -12,7 +12,10 @@ Camera::Camera() :
     m_speed(0.005f),
     m_position(glm::vec3(0.0f, 0.0f,  0.0f)),
     m_front(glm::vec3(1.0f, 0.0f, 0.0f)),
-    m_up(glm::vec3(0.0f, 1.0f,  0.0f))
+    m_up(glm::vec3(0.0f, 1.0f,  0.0f)),
+    m_near(1.f),
+    m_far(100.f),
+    m_ray(m_position, m_front)
 {
 
 }
@@ -28,7 +31,10 @@ Camera::Camera(const glm::vec3& pos, const glm::vec3& front, const glm::vec3& up
     m_speed(speed),
     m_position(pos),
     m_front(front),
-    m_up(up)
+    m_up(up),
+    m_near(1.f),
+    m_far(100.f),
+    m_ray(m_position, m_front)
 {
 
 }
@@ -94,6 +100,9 @@ void Camera::orientate()
         m_saved_offset_x = m_current_offset_x;
         m_saved_offset_y = m_current_offset_y;
     }
+
+    m_ray.setDirection(m_front);
+    m_ray.setOrigin(m_position);
 }
 
 void Camera::sendDatas(const Shader& shader, const GLfloat& screen_width, const GLfloat& screen_height)

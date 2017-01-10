@@ -18,7 +18,8 @@ struct TopologicalMeshTraits : public OpenMesh::DefaultTraits
 
 typedef OpenMesh::TriMesh_ArrayKernelT<TopologicalMeshTraits> TopologicalMesh;
 typedef TopologicalMesh::VertexIter VertexIter;
-typedef TopologicalMesh::VertexIHalfedgeIter VertexIHalfedgeIter;
+typedef TopologicalMesh::VertexOHalfedgeIter VertexOHalfedgeIter;
+typedef TopologicalMesh::HalfedgeIter HalfedgeIter;
 typedef TopologicalMesh::EdgeIter EdgeIter;
 typedef TopologicalMesh::FaceIter FaceIter;
 typedef TopologicalMesh::FaceHalfedgeIter FaceHalfedgeIter;

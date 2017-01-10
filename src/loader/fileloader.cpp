@@ -11,7 +11,7 @@ FileLoader::FileLoader() :
 
 }
 
-GLboolean FileLoader::load(const std::string path, Scene *scene, int flags)
+GLboolean FileLoader::load(const std::string path, Scene *scene, MaterialLibrary &material_library, int flags)
 {
     processFlags(flags);
 
@@ -30,8 +30,15 @@ GLboolean FileLoader::load(const std::string path, Scene *scene, int flags)
     }
     new_path = new_path.substr(0, new_path.find_last_of('/'));
 
+    loadMaterials(ai_scene, material_library, new_path);
+
     if(m_process_meshes)
-        m_meshloader.load(ai_scene, scene, m_process_armatures);
+    {
+        glm::mat4 global_inverse_transform = glm::inverse(assimpToGlmMat4(ai_scene->mRootNode->mTransformation));
+        SceneGraphRoot *scene_graph_root = new SceneGraphRoot(ai_scene->mRootNode->mName.C_Str(), scene->getPath(), global_inverse_transform, assimpToGlmMat4(ai_scene->mRootNode->mTransformation));
+        m_meshloader.load(ai_scene, scene_graph_root, material_library, m_process_armatures);
+        scene->addSceneGraphRoot(scene_graph_root);
+    }
     if(m_process_animations)
         m_animationloader.load(ai_scene, scene);
     if(m_process_lights)
@@ -42,6 +49,34 @@ GLboolean FileLoader::load(const std::string path, Scene *scene, int flags)
     scene->getLastRoot()->spreadTransform();
 
     return GL_TRUE;
+}
+
+GLboolean FileLoader::load(const std::string path, SceneGraphNode *scene_graph_node, MaterialLibrary &material_library, int flags)
+{
+    processFlags(flags);
+
+    std::string new_path = scene_graph_node->getPath() + path;
+    Assimp::Importer importer;
+    const aiScene* ai_scene = importer.ReadFile(new_path,   aiProcess_Triangulate |
+                                                            aiProcess_ImproveCacheLocality |
+                                                            aiProcess_GenNormals |
+                                                            aiProcess_OptimizeMeshes |
+                                                            aiProcess_FlipUVs |
+                                                            aiProcess_CalcTangentSpace);
+
+    if(!ai_scene || ai_scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !ai_scene->mRootNode)
+    {
+        std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+        return GL_FALSE;
+    }
+    new_path = new_path.substr(0, new_path.find_last_of('/'));
+
+    loadMaterials(ai_scene, material_library, new_path);
+
+    if(m_process_meshes)
+        m_meshloader.load(ai_scene, scene_graph_node, material_library, m_process_armatures);
+    //if(m_process_animations)
+    //    m_animationloader.load(ai_scene, scene);
 }
 
 void FileLoader::loadLights(const aiScene *ai_scene, Scene *scene)
@@ -87,6 +122,21 @@ void FileLoader::loadCameras(const aiScene *ai_scene, Scene *scene)
                                         glm::vec3(ai_scene->mCameras[i]->mUp.x, ai_scene->mCameras[i]->mUp.y, ai_scene->mCameras[i]->mUp.z),
                                         0.005f,
                                         ai_scene->mCameras[i]->mHorizontalFOV));
+    }
+}
+
+void FileLoader::loadMaterials(const aiScene *ai_scene, MaterialLibrary &material_library, const std::string &path)
+{
+    for(GLuint i = 0; i < ai_scene->mNumMaterials; ++i)
+    {
+        aiMaterial* ai_material = ai_scene->mMaterials[i];
+
+        const void * address = static_cast<const void*>(ai_material);
+        std::stringstream ss;
+        ss << address;
+        std::string name = ss.str();
+
+        material_library.addMaterial(ai_material, name, GL_FALSE, path);
     }
 }
 

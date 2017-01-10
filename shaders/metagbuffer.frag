@@ -1,6 +1,7 @@
 layout (location = 0) out vec4 gPositionDepth;
 layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gAlbedoSpec;
+layout (location = 3) out vec3 gMaterial;
 
 in vec3 FragPos;
 in vec3 Normal;
@@ -11,7 +12,7 @@ struct Material
 #ifdef TEXTURE
     sampler2D texture_diffuse1;
 #else
-    vec3 diffuse;
+    vec3 color;
 #endif
 #ifdef SPECULAR
     sampler2D texture_specular1;
@@ -34,7 +35,7 @@ vec3 getDiffuse()
 #ifdef TEXTURE
     return vec3(texture(material.texture_diffuse1, TexCoords));
 #else
-    return material.diffuse;
+    return material.color;
 #endif
 }
 vec3 getSpecular()
@@ -85,4 +86,5 @@ void main()
     gNormal = normalize(getNormal());
     gAlbedoSpec.rgb = getDiffuse();
     gAlbedoSpec.a = getSpecular().x;
+    gMaterial = vec3(material.roughness, material.refraction, material.metalness);
 }
