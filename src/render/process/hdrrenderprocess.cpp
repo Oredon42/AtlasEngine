@@ -11,7 +11,8 @@ HDRRenderProcess::HDRRenderProcess() :
     m_bloom(GL_FALSE),
     m_chromatic_aberration(GL_FALSE),
     m_bloom_quality(8),
-    m_buffer_index(0)
+    m_buffer_index(0),
+    m_saved_avg_luminance(1)
 {
 
 }
@@ -61,23 +62,15 @@ void HDRRenderProcess::init(const GLuint &width, const GLuint &height)
     m_brightness_ping_buffer2.init(4, 4);
     m_brightness_pong_buffer2.init(1, 1);
     std::vector<FramebufferTextureDatas> adaptation_texture_datas;
-    adaptation_texture_datas.push_back(FramebufferTextureDatas(GL_RG16F, GL_RG, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR, GL_LINEAR));
+    adaptation_texture_datas.push_back(FramebufferTextureDatas(GL_R16F, GL_RED, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR, GL_LINEAR));
     m_brightness_ping_buffer.attachTextures(adaptation_texture_datas);
     m_brightness_pong_buffer.attachTextures(adaptation_texture_datas);
     m_brightness_ping_buffer2.attachTextures(adaptation_texture_datas);
     m_brightness_pong_buffer2.attachTextures(adaptation_texture_datas);
-    m_exposure_buffer.init(m_width, m_height);
-    std::vector<FramebufferTextureDatas> exposure_texture_datas;
-    exposure_texture_datas.push_back(FramebufferTextureDatas(GL_R16F, GL_RED, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR, GL_LINEAR));
-    m_exposure_buffer.attachTextures(exposure_texture_datas);
-    m_exposure_buffer.bind();
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBindBuffer(GL_FRAMEBUFFER, 0);
 
     m_out_textures.push_back(m_out_buffer.getTexture(0));
 
     m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
-    m_max_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_max");
 }
 
 void HDRRenderProcess::initMenuElement()
@@ -143,13 +136,12 @@ void HDRRenderProcess::resize(const GLuint &width, const GLuint &height)
     m_brightness_ping_buffer2.resize(m_width, m_height);
     m_brightness_pong_buffer.resize(m_width, m_height);
     m_brightness_pong_buffer2.resize(m_width, m_height);
-    m_exposure_buffer.resize(m_width, m_height);
     m_out_buffer.resize(m_width, m_height);
 }
 
 void HDRRenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
-    processAdaptation(quad);
+    processAdaptation(quad, render_time);
     processBloom(quad);
     
     // Compute out color + exposition
@@ -163,22 +155,13 @@ void HDRRenderProcess::process(const Quad &quad, const Scene &scene, const GLflo
     glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(0));
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_blur_buffers[!m_buffer_index].getTexture(0));
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_exposure_buffer.getTexture(0));
     
-    glUniform1f(m_max_lum_location, m_avg_max_luminances[0]);
-    glUniform1f(m_avg_lum_location, m_avg_max_luminances[1]);
+    glUniform1f(m_avg_lum_location, m_saved_avg_luminance);
 
     quad.draw();
-    
-    //  Update old exposition
-    m_out_buffer.bind(GL_READ_FRAMEBUFFER);
-    m_exposure_buffer.bind(GL_DRAW_FRAMEBUFFER);
-    glReadBuffer(GL_COLOR_ATTACHMENT1);
-    glBlitFramebuffer(0, 0, m_out_buffer.width(), m_out_buffer.height(), 0, 0, m_exposure_buffer.width(), m_exposure_buffer.height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void HDRRenderProcess::processAdaptation(const Quad &quad)
+void HDRRenderProcess::processAdaptation(const Quad &quad, const GLfloat &render_time)
 {
     /*
      * Ping-Pong between 2 FBO would need to reallocate at each loop
@@ -235,19 +218,15 @@ void HDRRenderProcess::processAdaptation(const Quad &quad)
     glUniform2f(glGetUniformLocation(m_HDR_shader.getProgram(), "size"), 4.f, 4.f);
     quad.draw();
 
-    //  Get average & max luminances
+    //  Get average luminance
+    GLfloat average_luminance[1];
     glBindTexture(GL_TEXTURE_2D, m_brightness_pong_buffer2.getTexture(0));
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, m_avg_max_luminances);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, average_luminance);
 
     if(m_adaptation)
     {
-        m_avg_max_luminances[0] = fmax(0.05f, m_avg_max_luminances[0]);
-        m_avg_max_luminances[1] = fmax(0.05f, m_avg_max_luminances[1]);
-    }
-    else
-    {
-        m_avg_max_luminances[0] = 1.f;
-        m_avg_max_luminances[1] = 1.f;
+        m_saved_avg_luminance += (average_luminance[0] - m_saved_avg_luminance) * 10.f / render_time;
+        m_saved_avg_luminance = fmax(0.05f, m_saved_avg_luminance);
     }
 }
 
@@ -333,6 +312,8 @@ void HDRRenderProcess::switchbloom()
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloomBlur"), 1);
     glUseProgram(0);
+
+    m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
 }
 
 void HDRRenderProcess::switchAdaptation()
@@ -345,6 +326,8 @@ void HDRRenderProcess::switchAdaptation()
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloomBlur"), 1);
     glUseProgram(0);
+
+    m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
 }
 
 void HDRRenderProcess::switchChromaticAberration()
@@ -357,4 +340,6 @@ void HDRRenderProcess::switchChromaticAberration()
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "scene"), 0);
     glUniform1i(glGetUniformLocation(m_HDR_shader.getProgram(), "bloomBlur"), 1);
     glUseProgram(0);
+
+    m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
 }

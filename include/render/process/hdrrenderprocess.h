@@ -34,7 +34,7 @@ private slots:
     void switchChromaticAberration();
 
 private:
-    void processAdaptation(const Quad &quad);
+    void processAdaptation(const Quad &quad, const GLfloat &render_time);
     void processBloom(const Quad &quad);
 
     Shader m_HDR_shader;
@@ -55,8 +55,7 @@ private:
     Framebuffer m_brightness_pong_buffer;
     Framebuffer m_brightness_pong_buffer2;
     Shader m_downscaling_shader;
-    Framebuffer m_exposure_buffer;
-    GLfloat m_avg_max_luminances[2];
+    GLfloat m_saved_avg_luminance;
 
     Framebuffer m_out_buffer;
 
