@@ -24,3 +24,14 @@ void DirLight::sendDatas(const Shader &shader) const
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("dirLights[" + index + "].intensity").c_str()), m_intensity);
     glUniform3f(glGetUniformLocation(shader.getProgram(), ("dirLights[" + index + "].direction").c_str()), m_direction.x, m_direction.y, m_direction.z);
 }
+
+void DirLight::sendViewDatas(const Shader &shader, const glm::mat4 &view) const
+{
+    std::ostringstream oss;
+    oss << m_index;
+    std::string index = oss.str();
+    glm::vec3 direction = glm::transpose(glm::inverse(glm::mat3(view))) * m_direction;
+    glUniform3f(glGetUniformLocation(shader.getProgram(), ("dirLights[" + index + "].color").c_str()), m_color.x, m_color.y, m_color.z);
+    glUniform1f(glGetUniformLocation(shader.getProgram(), ("dirLights[" + index + "].intensity").c_str()), m_intensity);
+    glUniform3f(glGetUniformLocation(shader.getProgram(), ("dirLights[" + index + "].direction").c_str()), direction.x, direction.y, direction.z);
+}

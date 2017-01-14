@@ -36,6 +36,8 @@ Scene::~Scene()
 /*
  * Draw the scene using deferred rendering
  * with the shaders of the renderer
+ * each Model will be drawn using
+ * its Material shader
  * */
 void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
 {

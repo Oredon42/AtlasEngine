@@ -349,6 +349,8 @@ void Shader::generateLightingCode(std::string &vertex_code, std::string &fragmen
             f_shader_stream << "#define POINTLIGHT " << m_nb_pointlights << "\n";
         if(m_nb_dirlights > 0)
             f_shader_stream << "#define DIRLIGHT " << m_nb_dirlights << "\n";
+        if(m_nb_spotlights > 0)
+            f_shader_stream << "#define SPOTLIGHT " << m_nb_spotlights << "\n";
 
         v_shader_file.open("shaders/metalighting.vert");
         f_shader_file.open("shaders/metalighting.frag");

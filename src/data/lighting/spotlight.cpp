@@ -26,13 +26,14 @@ void SpotLight::sendViewDatas(const Shader &shader, const glm::mat4 &view) const
     oss << m_index;
     std::string index = oss.str();
     glm::vec4 position = glm::vec4(view * glm::vec4(m_position, 1));
+    glm::vec3 direction = glm::transpose(glm::inverse(glm::mat3(view))) * m_direction;
     glUniform3f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].position").c_str()), position.x, position.y, position.z);
     glUniform3f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].color").c_str()), m_color.x, m_color.y, m_color.z);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].constant").c_str()), m_constant);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].linear").c_str()), m_linear);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].quadratic").c_str()), m_quadratic);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].intensity").c_str()), m_intensity);
-    glUniform3f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].direction").c_str()), m_direction.x, m_direction.y, m_direction.z);
+    glUniform3f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].direction").c_str()), direction.x, direction.y, direction.z);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].cut_off").c_str()), m_cut_off);
     glUniform1f(glGetUniformLocation(shader.getProgram(), ("spotLights[" + index + "].outer_cut_off").c_str()), m_outer_cut_off);
 }

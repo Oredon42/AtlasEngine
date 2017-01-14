@@ -18,8 +18,8 @@ public:
 
     void init(const glm::vec3 &color, const GLfloat &intensity, const glm::vec3 &direction);
 
-    inline virtual void sendViewDatas(const Shader &shader, const glm::mat4 &view) const{sendDatas(shader);}
     virtual void sendDatas(const Shader &shader) const;
+    virtual void sendViewDatas(const Shader &shader, const glm::mat4 &view) const;
 
     //  Getters
     inline glm::vec3 getDirection() const{return m_direction;}

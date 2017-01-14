@@ -65,7 +65,7 @@ void AtlasWidget::initializeGL()
     m_material_library.addMaterial(new Material(glm::vec3(0.8f, 0.8f, 0.8f), 1.f, 0.f, 1.f, 1.f), "grey");
     m_material_library.addMaterial(new Material(glm::vec3(1.f, 0.f, 0.f), 1.f, 0.f, 1.f, 1.f), "red");
     m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 0.f), 0.2f, 0.f, 1.f, 1.f), "yellow");
-    m_material_library.addMaterial(new Material(glm::vec3(0.5f, 0.5f, 0.5f), 0.05f, 1.f, 1.f, 1.f), "glossy");
+    m_material_library.addMaterial(new Material(glm::vec3(0.5f, 0.5f, 0.5f), 0.01f, 1.f, 1.f, 1.f), "glossy");
 
     /*  END OF MATERIALS MODIFICATION */
 
@@ -265,15 +265,16 @@ void AtlasWidget::createRenderScene()
     m_file_loader.load("/obj/testscenes/hdr.obj", r1, m_material_library);
 
     r1->setMaterial(m_material_library.getMaterial("white"), "Plane");
-    r1->setMaterial(m_material_library.getMaterial("grey"), "Suzanne");
+    r1->setMaterial(m_material_library.getMaterial("glossy"), "Suzanne");
     r1->setMaterial(m_material_library.getMaterial("red"), "Cube");
     r1->setMaterial(m_material_library.getMaterial("yellow"), "Cone");
-    r1->setMaterial(m_material_library.getMaterial("glossy"), "Sphere");
+    r1->setMaterial(m_material_library.getMaterial("red"), "Sphere");
 
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(3.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(3.f,3.f,-3.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(-3.f)));
-    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f, 0.f, 0.f), 10.f, glm::normalize(glm::vec3(-1.f))));
+    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(3.f)));
+    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 20.f, glm::vec3(2.f,2.f,-2.f)));
+    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(-3.f)));
+    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f))));
+    m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 10.f, glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, -1.f, 0.f), glm::cos(glm::radians(30.f)), glm::cos(glm::radians(50.0f))));
 
     m_current_scene->addSceneGraphRoot(r1);
 
