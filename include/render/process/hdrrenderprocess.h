@@ -12,6 +12,15 @@
 class Scene;
 class Quad;
 
+/*
+ * IN:
+ * -RGB  : ldr color
+ * -RGB  : bright color
+ * -RED  : brightness
+ *
+ * OUT:
+ * -RGB  : hdr color
+ * */
 class HDRRenderProcess : public QObject, public RenderProcess
 {
     Q_OBJECT

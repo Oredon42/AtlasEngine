@@ -2,8 +2,9 @@
 #include "include/data/quad.h"
 #include "include/data/scene.h"
 
-WireframeRenderProcess::WireframeRenderProcess()
-{    
+WireframeRenderProcess::WireframeRenderProcess() :
+    RenderProcess::RenderProcess(1)
+{
 
 }
 

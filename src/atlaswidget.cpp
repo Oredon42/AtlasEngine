@@ -11,6 +11,7 @@
 #include "include/render/process/lightingrenderprocess.h"
 #include "include/render/process/hdrrenderprocess.h"
 #include "include/render/process/ssaorenderprocess.h"
+#include "include/render/process/shadowmaprenderprocess.h"
 #include "include/render/process/wireframerenderprocess.h"
 
 AtlasWidget::AtlasWidget(QWidget * parent) :
@@ -72,7 +73,7 @@ void AtlasWidget::initializeGL()
 
     /*  SCENES MODIFICATION */
 
-    createGeometryScene();
+    //createGeometryScene();
     createRenderScene();
 
     /*  END OF SCENES MODIFICATION */
@@ -85,16 +86,25 @@ void AtlasWidget::initializeGL()
 
     /*  PIPELINES MODIFICATIONS */
 
+    GeometryRenderProcess *geometry_render_process = new GeometryRenderProcess();
+    SSAORenderProcess *ssao_render_process = new SSAORenderProcess();
+    LightingRenderProcess *lighting_render_process = new LightingRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
+    HDRRenderProcess *hdr_render_process = new HDRRenderProcess();
+
+    connectProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
+    connectProcesses(geometry_render_process, lighting_render_process, {0, 1, 2, 3}, {0, 1, 2, 3});
+    connectProcesses(ssao_render_process, lighting_render_process, {0}, {4});
+    connectProcesses(lighting_render_process, hdr_render_process, {0, 1, 2}, {0, 1, 2});
+
     Pipeline *default_pipeline = new Pipeline(window()->width(), window()->height());
-    default_pipeline->addProcess(new GeometryRenderProcess());
-    default_pipeline->addProcess(new SSAORenderProcess());
-    default_pipeline->addProcess(new LightingRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights()));
-    default_pipeline->addProcess(new HDRRenderProcess());
+
+    default_pipeline->setLastProcess(hdr_render_process);
+
     m_renderer.addPipeline(default_pipeline, "default");
 
-    Pipeline *wireframe_pipeline = new Pipeline(window()->width(), window()->height());
+    /*Pipeline *wireframe_pipeline = new Pipeline(window()->width(), window()->height());
     wireframe_pipeline->addProcess(new WireframeRenderProcess());
-    m_renderer.addPipeline(wireframe_pipeline, "wireframe");
+    m_renderer.addPipeline(wireframe_pipeline, "wireframe");*/
 
     setCurrentPipeline("default");
 
@@ -170,12 +180,13 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
         }
         else
         {
-            parentWidget()->parentWidget()->setWindowState(Qt::WindowFullScreen);
+            //parentWidget()->parentWidget()->setWindowState(Qt::WindowFullScreen);
             GLuint width = QApplication::desktop()->width(),
                    height = QApplication::desktop()->height();
-            m_renderer.setDimensions(width, height);
+
+            std::cout << width << " " << height << std::endl;
+            //m_renderer.setDimensions(width, height);
             resize(width, height);
-            glViewport(0, 0, width, height);
         }
         m_fullscreen = !m_fullscreen;
         break;
@@ -270,10 +281,10 @@ void AtlasWidget::createRenderScene()
     r1->setMaterial(m_material_library.getMaterial("yellow"), "Cone");
     r1->setMaterial(m_material_library.getMaterial("red"), "Sphere");
 
-    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(3.f)));
-    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 20.f, glm::vec3(2.f,2.f,-2.f)));
-    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(-3.f)));
-    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f))));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f,2.f,-2.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(-2.f)));
+    m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f))));
     m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 10.f, glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, -1.f, 0.f), glm::cos(glm::radians(30.f)), glm::cos(glm::radians(50.0f))));
 
     m_current_scene->addSceneGraphRoot(r1);

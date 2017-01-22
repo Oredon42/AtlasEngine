@@ -11,6 +11,15 @@ GLfloat lerp(GLfloat a, GLfloat b, GLfloat f);
 
 class Quad;
 
+/*
+ * IN:
+ * -RGBA : position + depth
+ * -RGB  : normal
+ *
+ * OUT:
+ * -RED  : ambient occlusion
+ * */
+
 class SSAORenderProcess : public QObject, public RenderProcess
 {
     Q_OBJECT
@@ -22,7 +31,6 @@ public:
 
     virtual void resize(const GLuint &width, const GLuint &height);
     void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]);
-    virtual void connectPrevious(RenderProcess *previous_process);
 
     //  Setters
     virtual void setActivated(const GLboolean &activated);

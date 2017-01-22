@@ -6,6 +6,7 @@
 #include <QtWidgets>
 
 SSAORenderProcess::SSAORenderProcess() :
+    RenderProcess::RenderProcess(1),
     m_SSAO(GL_FALSE),
     m_num_samples(64)
 {    
@@ -26,7 +27,7 @@ void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
     glUseProgram(0);
 
     std::vector<FramebufferTextureDatas> SSAO_texture_datas;
-    SSAO_texture_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT));
+    SSAO_texture_datas.push_back(FramebufferTextureDatas(GL_R16F, GL_RED, GL_FLOAT));
     m_SSAO_buffer.init(width/2, height/2);
     m_SSAO_buffer.attachTextures(SSAO_texture_datas);
     m_SSAO_blur_buffer.init(width, height);
@@ -42,6 +43,8 @@ void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
     m_window_size_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "window_size");
 
     generateNoise();
+
+    m_out_textures.push_back(m_SSAO_blur_buffer.getTexture(0));
 }
 
 void SSAORenderProcess::initMenuElement()
@@ -77,11 +80,11 @@ void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfl
     m_SSAO_shader.use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(0));
+    bindPreviousTexture(0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(1));
+    bindPreviousTexture(1);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_noise_texture.getId());
+    m_noise_texture.bind();
 
     for (GLuint i = 0; i < m_num_samples; ++i)
         glUniform3fv(m_samples_locations[i], 1, &m_SSAO_kernel[i][0]);
@@ -97,7 +100,7 @@ void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfl
     m_SSAO_blur_shader.use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_SSAO_buffer.getTexture(0));
+    m_SSAO_buffer.getTexture(0)->bind();
     quad.draw();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -129,17 +132,6 @@ void SSAORenderProcess::generateNoise()
         ssao_noise.push_back(noise);
     }
     m_noise_texture.init(GL_RGB16F, 4, 4, GL_RGB, GL_FLOAT, &ssao_noise[0], GL_REPEAT, GL_NEAREST, GL_NEAREST);
-}
-
-void SSAORenderProcess::connectPrevious(RenderProcess *previous_process)
-{
-    RenderProcess::connectPrevious(previous_process);
-
-    m_out_textures.push_back(m_previous_process->getOutTexture(0));
-    m_out_textures.push_back(m_previous_process->getOutTexture(1));
-    m_out_textures.push_back(m_previous_process->getOutTexture(2));
-    m_out_textures.push_back(m_previous_process->getOutTexture(3));
-    m_out_textures.push_back(m_SSAO_blur_buffer.getTexture(0));
 }
 
 GLfloat lerp(GLfloat a, GLfloat b, GLfloat f)

@@ -6,9 +6,10 @@
 #include <QtWidgets>
 
 HDRRenderProcess::HDRRenderProcess() :
-    m_HDR(GL_FALSE),
+    RenderProcess::RenderProcess(3),
+    m_HDR(GL_TRUE),
     m_adaptation(GL_FALSE),
-    m_bloom(GL_FALSE),
+    m_bloom(GL_TRUE),
     m_chromatic_aberration(GL_FALSE),
     m_bloom_quality(8),
     m_buffer_index(0),
@@ -152,9 +153,9 @@ void HDRRenderProcess::process(const Quad &quad, const Scene &scene, const GLflo
     m_HDR_shader.use();
     
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(0));
+    bindPreviousTexture(0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_blur_buffers[!m_buffer_index].getTexture(0));
+    m_blur_buffers[!m_buffer_index].getTexture(0)->bind();
     
     glUniform1f(m_avg_lum_location, m_saved_avg_luminance);
 
@@ -171,13 +172,10 @@ void HDRRenderProcess::processAdaptation(const Quad &quad, const GLfloat &render
     glViewport(0, 0, 64, 64);
     m_brightness_ping_buffer.bind();
     glClear(GL_COLOR_BUFFER_BIT);
-
     m_downscaling_shader.use();
-
     glActiveTexture(GL_TEXTURE0);
-
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(2));
-    glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), m_previous_process->width(), m_previous_process->height());
+    bindPreviousTexture(2);
+    glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), m_previous_processes[0]->width(), m_previous_processes[0]->height());
     quad.draw();
 
 
@@ -185,12 +183,9 @@ void HDRRenderProcess::processAdaptation(const Quad &quad, const GLfloat &render
     glViewport(0, 0, 16, 16);
     m_brightness_pong_buffer.bind();
     glClear(GL_COLOR_BUFFER_BIT);
-
     m_downscaling_shader.use();
-
     glActiveTexture(GL_TEXTURE0);
-
-    glBindTexture(GL_TEXTURE_2D, m_brightness_ping_buffer.getTexture(0));
+    m_brightness_ping_buffer.getTexture(0)->bind();
     glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), 64.f, 64.f);
     quad.draw();
 
@@ -201,7 +196,7 @@ void HDRRenderProcess::processAdaptation(const Quad &quad, const GLfloat &render
     glClear(GL_COLOR_BUFFER_BIT);
     m_downscaling_shader.use();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_brightness_pong_buffer.getTexture(0));
+    m_brightness_pong_buffer.getTexture(0)->bind();
     glUniform2f(glGetUniformLocation(m_HDR_shader.getProgram(), "size"), 16.f, 16.f);
     quad.draw();
 
@@ -209,19 +204,16 @@ void HDRRenderProcess::processAdaptation(const Quad &quad, const GLfloat &render
     glViewport(0, 0, 1, 1);
     m_brightness_pong_buffer2.bind();
     glClear(GL_COLOR_BUFFER_BIT);
-
     m_downscaling_shader.use();
-
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_brightness_ping_buffer2.getTexture(0));
-
+    m_brightness_ping_buffer2.getTexture(0)->bind();
     glUniform2f(glGetUniformLocation(m_HDR_shader.getProgram(), "size"), 4.f, 4.f);
     quad.draw();
 
     //  Get average luminance
     GLfloat average_luminance[1];
-    glBindTexture(GL_TEXTURE_2D, m_brightness_pong_buffer2.getTexture(0));
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, average_luminance);
+    m_brightness_pong_buffer2.getTexture(0)->bind();
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, average_luminance);
 
     if(m_adaptation)
     {
@@ -234,13 +226,13 @@ void HDRRenderProcess::processBloom(const Quad &quad)
 {
     //  Get hdr 2nd texture + horizontal blur
     glViewport(0, 0, m_width/8, m_height/8);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[0].getBuffer());
+    m_blur_buffers[0].bind();
     glClear(GL_COLOR_BUFFER_BIT);
 
     m_blur_shaders[2].use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(1));
+    bindPreviousTexture(1);
     quad.draw();
 
     GLuint i = m_bloom_quality;
@@ -250,40 +242,40 @@ void HDRRenderProcess::processBloom(const Quad &quad)
     while(i > 1)
     {
         //  Vertical blur
-        glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!m_buffer_index].getBuffer());
+        m_blur_buffers[!m_buffer_index].bind();
 
         m_blur_shaders[0].use();
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[m_buffer_index].getTexture(0));
+        m_blur_buffers[m_buffer_index].getTexture(0)->bind();
         quad.draw();
 
         i>>=1;
 
         //  Bilinear interpolation to size*2
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_blur_buffers[!m_buffer_index].getBuffer());
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_blur_buffers[m_buffer_index].getBuffer());
+        m_blur_buffers[!m_buffer_index].bind(GL_READ_FRAMEBUFFER);
+        m_blur_buffers[m_buffer_index].bind(GL_DRAW_FRAMEBUFFER);
         glBlitFramebuffer(0, 0, m_width/(i*2), m_height/(i*2), 0, 0, m_width/i, m_height/i, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
         //  Horizontal blur
-        glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!m_buffer_index].getBuffer());
+        m_blur_buffers[!m_buffer_index].bind();
 
         m_blur_shaders[1].use();
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_blur_buffers[m_buffer_index].getTexture(0));
+        m_blur_buffers[m_buffer_index].getTexture(0)->bind();
         quad.draw();
 
         m_buffer_index = !m_buffer_index;
     }
 
     //  Last vertical blur
-    glBindFramebuffer(GL_FRAMEBUFFER, m_blur_buffers[!m_buffer_index].getBuffer());
+    m_blur_buffers[!m_buffer_index].bind();
 
     m_blur_shaders[0].use();
     glActiveTexture(GL_TEXTURE0);
+    m_blur_buffers[m_buffer_index].getTexture(0)->bind();
 
-    glBindTexture(GL_TEXTURE_2D, m_blur_buffers[m_buffer_index].getTexture(0));
     quad.draw();
 }
 

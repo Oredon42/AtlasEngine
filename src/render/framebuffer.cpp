@@ -11,7 +11,8 @@ Framebuffer::Framebuffer() :
 
 Framebuffer::~Framebuffer()
 {
-
+    for(size_t i = 0; i < m_textures.size(); ++i)
+        delete m_textures[i];
 }
 
 void Framebuffer::init(const GLuint &width, const GLuint &height)
@@ -30,8 +31,8 @@ void Framebuffer::resize(const GLuint &width, const GLuint &height)
 
     for(GLuint i = 0; i < m_num_textures; ++i)
     {
-        m_textures[i].init(m_texture_datas[i].internal_format, m_width, m_height, m_texture_datas[i].format, m_texture_datas[i].type, NULL, m_texture_datas[i].clamp, m_texture_datas[i].filter_max, m_texture_datas[i].filter_min);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i].getId(), 0);
+        m_textures[i]->init(m_texture_datas[i].internal_format, m_width, m_height, m_texture_datas[i].format, m_texture_datas[i].type, NULL, m_texture_datas[i].clamp, m_texture_datas[i].filter_max, m_texture_datas[i].filter_min);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i]->getId(), 0);
     }
 
     for(GLuint i = 0; i < m_num_renderbuffers; ++i)
@@ -52,7 +53,7 @@ void Framebuffer::attachTextures(const std::vector<FramebufferTextureDatas> &tex
     if(texture_datas.size() > 0)
     {
         m_num_textures = texture_datas.size();
-        m_textures = new Texture[m_num_textures];
+        //m_textures = new Texture[m_num_textures];
         m_texture_datas = texture_datas;
 
         GLuint *attachments;
@@ -62,7 +63,7 @@ void Framebuffer::attachTextures(const std::vector<FramebufferTextureDatas> &tex
 
         glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 
-        for(GLuint i = 0; i < m_num_textures; ++i)
+        for(GLuint i = 0, color_index = 0; i < m_num_textures; ++i)
         {
             GLuint width, height;
             if(custom_widths == 0 || custom_heights == 0)
@@ -75,11 +76,22 @@ void Framebuffer::attachTextures(const std::vector<FramebufferTextureDatas> &tex
                 width = custom_widths[i];
                 height = custom_heights[i];
             }
-            m_textures[i].init(texture_datas[i].internal_format, width, height, texture_datas[i].format, texture_datas[i].type, NULL, texture_datas[i].clamp, texture_datas[i].filter_max, texture_datas[i].filter_min);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i].getId(), 0);
+            //m_textures[i].init(texture_datas[i].internal_format, width, height, texture_datas[i].format, texture_datas[i].type, NULL, texture_datas[i].clamp, texture_datas[i].filter_max, texture_datas[i].filter_min);
+            m_textures.push_back(new Texture(texture_datas[i].internal_format, width, height, texture_datas[i].format, texture_datas[i].type, NULL, texture_datas[i].clamp, texture_datas[i].filter_max, texture_datas[i].filter_min));
 
-            if(m_num_textures > 1)
-                attachments[i] = GL_COLOR_ATTACHMENT0 + i;
+            if(texture_datas[i].is_depth)
+            {
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_textures[i]->getId(), 0);
+                glDrawBuffer(GL_NONE);
+                glReadBuffer(GL_NONE);
+            }
+            else
+            {
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + color_index, GL_TEXTURE_2D, m_textures[i]->getId(), 0);
+
+                if(m_num_textures > 1)
+                    attachments[color_index++] = GL_COLOR_ATTACHMENT0 + color_index;
+            }
         }
 
         if(m_num_textures > 1)

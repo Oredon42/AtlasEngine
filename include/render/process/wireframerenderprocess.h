@@ -9,6 +9,10 @@
 
 class Quad;
 
+/*
+ * OUT:
+ * -RGBA  : fragment color
+ * */
 class WireframeRenderProcess : public RenderProcess
 {
 public:

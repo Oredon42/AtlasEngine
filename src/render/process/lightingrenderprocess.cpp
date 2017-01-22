@@ -2,7 +2,8 @@
 #include "include/data/scene.h"
 #include "include/data/quad.h"
 
-LightingRenderProcess::LightingRenderProcess(const GLuint nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights)
+LightingRenderProcess::LightingRenderProcess(const GLuint nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights) :
+    RenderProcess::RenderProcess(5)
 {
     m_shader.initLighting(nb_dirlights, nb_pointlights, nb_spotlights);
 }
@@ -15,7 +16,7 @@ void LightingRenderProcess::init(const GLuint &width, const GLuint &height)
     std::vector<FramebufferTextureDatas> lighting_textures_datas;
     lighting_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_BORDER));
     lighting_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RGB, GL_FLOAT, GL_CLAMP_TO_BORDER));
-    lighting_textures_datas.push_back(FramebufferTextureDatas(GL_RGB16F, GL_RG, GL_FLOAT, GL_CLAMP_TO_BORDER));
+    lighting_textures_datas.push_back(FramebufferTextureDatas(GL_R16F, GL_RED, GL_FLOAT, GL_CLAMP_TO_BORDER));
     m_buffer.attachTextures(lighting_textures_datas);
 
     m_shader.use();
@@ -48,15 +49,15 @@ void LightingRenderProcess::process(const Quad &quad, const Scene &scene, const 
     m_shader.use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(0));
+    bindPreviousTexture(0);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(1));
+    bindPreviousTexture(1);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(2));
+    bindPreviousTexture(2);
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(3));
+    bindPreviousTexture(3);
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, m_previous_process->getOutTexture(4));
+    bindPreviousTexture(4);
 
     scene.sendViewSpacePointLightDatas(m_shader);
     scene.sendCameraToShader(m_shader, m_buffer.width(), m_buffer.height());

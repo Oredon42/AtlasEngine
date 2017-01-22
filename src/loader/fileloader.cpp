@@ -25,7 +25,7 @@ GLboolean FileLoader::load(const std::string path, Scene *scene, MaterialLibrary
 
     if(!ai_scene || ai_scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !ai_scene->mRootNode)
     {
-        std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+        std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
         return GL_FALSE;
     }
     new_path = new_path.substr(0, new_path.find_last_of('/'));
@@ -66,7 +66,7 @@ GLboolean FileLoader::load(const std::string path, SceneGraphNode *scene_graph_n
 
     if(!ai_scene || ai_scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !ai_scene->mRootNode)
     {
-        std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+        std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
         return GL_FALSE;
     }
     new_path = new_path.substr(0, new_path.find_last_of('/'));

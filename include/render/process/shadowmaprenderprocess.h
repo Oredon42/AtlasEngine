@@ -1,5 +1,5 @@
-#ifndef LIGHTINGPROCESS_H
-#define LIGHTINGPROCESS_H
+#ifndef SHADOWMAPPROCESS_H
+#define SHADOWMAPPROCESS_H
 
 #include "renderprocess.h"
 #include "framebuffer.h"
@@ -8,23 +8,14 @@
 class Scene;
 
 /*
- * IN:
- * -RGBA : position + depth
- * -RGB  : normal
- * -RGBA : albedo + spec
- * -RGB  : material (roughness + ior + metalness)
- * -RED  : ambient occlusion
- *
  * OUT:
- * -RGB  : fragment color
- * -RGB  : bright color
- * -RED  : brightness
+ * -RGB  : hdr color
  * */
 
-class LightingRenderProcess : public RenderProcess
+class ShadowMapRenderProcess : public RenderProcess
 {
 public:
-    LightingRenderProcess(const GLuint nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
+    ShadowMapRenderProcess(const GLuint nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
 
     virtual void init(const GLuint &width, const GLuint &height);
     virtual void initMenuElement();
@@ -36,8 +27,15 @@ public:
     inline Shader getShader() const{return m_shader;}
 
 private:
-    Framebuffer m_buffer;
+    GLuint m_shadow_width;
+    GLuint m_shadow_height;
+
+    GLfloat m_near_plane;
+    GLfloat m_far_plane;
+
     Shader m_shader;
+
+    Framebuffer m_dirlights_depth_maps_buffer;
 };
 
-#endif // LIGHTINGPROCESS_H
+#endif // SHADOWMAPPROCESS_H

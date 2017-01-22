@@ -15,15 +15,16 @@ public:
     Pipeline(const GLuint &width, const GLuint &height);
     ~Pipeline();
 
-    void init(const GLuint &width, const GLuint &height);
+    void resize(const GLuint &width, const GLuint &height);
 
     void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) const;
 
-    void addProcess(RenderProcess *process);
-
     //  Getter
-    inline GLuint getOutTexture() const{return m_processes.back()->getOutTexture(0);}
+    inline Texture *getOutTexture() const{return m_processes.back()->getOutTexture(0);}
     std::vector<MenuElement *> getMenuElements() const{return m_menu_elements;}
+
+    //  Setter
+    void setLastProcess(RenderProcess *render_process);
 
 private:
     GLuint m_width;

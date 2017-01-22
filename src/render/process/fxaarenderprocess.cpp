@@ -1,6 +1,7 @@
 #include "include/render/process/fxaarenderprocess.h"
 
-FXAARenderProcess::FXAARenderProcess()
+FXAARenderProcess::FXAARenderProcess() :
+    RenderProcess::RenderProcess(0)
 {
 
 }

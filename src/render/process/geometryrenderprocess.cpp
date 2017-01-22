@@ -1,7 +1,8 @@
 #include "include/render/process/geometryrenderprocess.h"
 #include "include/data/scene.h"
 
-GeometryRenderProcess::GeometryRenderProcess()
+GeometryRenderProcess::GeometryRenderProcess() :
+    RenderProcess::RenderProcess(0)
 {
 
 }

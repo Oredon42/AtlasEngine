@@ -7,6 +7,13 @@
 
 class Scene;
 
+/*
+ * OUT:
+ * -RGBA : position + depth
+ * -RGB  : normal
+ * -RGBA : albedo + specular
+ * -RGB  : material (roughness + ior + metalness)
+ * */
 class GeometryRenderProcess : public RenderProcess
 {
 public:

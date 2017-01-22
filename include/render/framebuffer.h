@@ -12,15 +12,22 @@ struct FramebufferTextureDatas
     GLint clamp;
     GLuint filter_min;
     GLuint filter_max;
+    GLfloat border_color[4];
+    GLboolean is_depth;
 
-    FramebufferTextureDatas(const GLint &i_f, const GLenum &f, const GLenum &t, GLint c = GL_FALSE, GLuint f_min = GL_NEAREST, GLuint f_max = GL_NEAREST) :
+    FramebufferTextureDatas(const GLint &i_f, const GLenum &f, const GLenum &t, GLint c = GL_FALSE, GLuint f_min = GL_NEAREST, GLuint f_max = GL_NEAREST, glm::vec4 b_c = glm::vec4(0.f), GLboolean i_d = GL_FALSE) :
         internal_format(i_f),
         format(f),
         type(t),
         clamp(c),
         filter_min(f_min),
-        filter_max(f_max)
+        filter_max(f_max),
+        is_depth(i_d)
     {
+        border_color[0] = b_c.x;
+        border_color[1] = b_c.y;
+        border_color[2] = b_c.z;
+        border_color[3] = b_c.w;
     }
 };
 
@@ -54,11 +61,11 @@ public:
     inline GLuint width() const{return m_width;}
     inline GLuint height() const{return m_height;}
     inline GLuint getBuffer() const{return m_buffer;}
-    inline GLuint getTexture(const GLuint &i) const{return m_textures[i].getId();}
+    inline Texture *getTexture(const GLuint &i) const{return m_textures[i];}
 
 private:
     GLuint m_buffer;
-    Texture *m_textures;
+    std::vector<Texture *> m_textures;
     GLuint *m_renderbuffers;
 
     GLuint m_num_textures;

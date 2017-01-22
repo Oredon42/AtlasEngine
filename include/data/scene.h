@@ -48,6 +48,7 @@ public:
     inline std::string getPath() const{return m_path;}
     inline Camera *getCurrentCamera() const{return m_cameras[m_current_camera];}
     inline KdTree getKdTree() const{return m_kdtree;}
+    inline Light *getLight(const GLuint &i) const{return m_lights[i];}
 
     inline GLuint numberOfPointLights() const{return m_nb_pointlights;}
     inline GLuint numberOfDirights() const{return m_nb_dirlights;}

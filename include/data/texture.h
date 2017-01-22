@@ -12,13 +12,14 @@ class Texture
 {
 public:
     Texture();
-    Texture(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp = GL_FALSE, GLuint filter_min = GL_NEAREST, GLuint filter_max = GL_NEAREST, std::string path = "", std::string shading_type = "");
+    Texture(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp = GL_FALSE, GLuint filter_min = GL_NEAREST, GLuint filter_max = GL_NEAREST, std::string path = "", std::string shading_type = "", glm::vec4 border_color = glm::vec4(0.f), GLenum target = GL_TEXTURE_2D);
     Texture(const std::string &directory, const GLchar *path, const std::string &shading_type);
-    void init(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp = GL_FALSE, GLuint filter_min = GL_NEAREST, GLuint filter_max = GL_NEAREST, std::string path = "", std::string shading_type = "");
+    void init(const GLint &internal_format, const GLsizei &width, const GLsizei &height, const GLenum &format, const GLenum &type, const GLvoid *data, GLuint clamp = GL_FALSE, GLuint filter_min = GL_NEAREST, GLuint filter_max = GL_NEAREST, std::string path = "", std::string shading_type = "", glm::vec4 border_color = glm::vec4(0.f), GLenum target = GL_TEXTURE_2D);
 
     void generateTexture(const GLvoid *data);
     void updateDimensions(const GLsizei width, const GLsizei height);
-    inline void generateMipmaps() const{glBindTexture(GL_TEXTURE_2D, m_id);glGenerateMipmap(GL_TEXTURE_2D);glBindTexture(GL_TEXTURE_2D, 0);}
+    void generateMipmaps() const;
+    inline void bind() const{glBindTexture(m_target, m_id);}
 
     //  Getters
     inline GLuint getId()const {return m_id;}
@@ -26,6 +27,7 @@ public:
     inline std::string getPath()const {return m_path;}
 
 private:
+    GLenum m_target;
     GLuint m_id;
     GLint m_internal_format;
     GLsizei m_width;
@@ -35,6 +37,7 @@ private:
     GLuint m_filter_min;
     GLuint m_filter_max;
     GLuint m_clamp;
+    GLfloat m_border_color[4];
     std::string m_shading_type;
     std::string m_path;
 };
