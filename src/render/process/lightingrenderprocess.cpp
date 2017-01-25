@@ -39,12 +39,15 @@ void LightingRenderProcess::initMenuElement()
 
 void LightingRenderProcess::resize(const GLuint &width, const GLuint &height)
 {
+    RenderProcess::resize(width, height);
 
+    m_buffer.resize(width, height);
 }
 
 void LightingRenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
     m_buffer.bind();
+    glViewport(0, 0, m_buffer.width(), m_buffer.height());
     glClear(GL_COLOR_BUFFER_BIT);
     m_shader.use();
 
@@ -59,8 +62,19 @@ void LightingRenderProcess::process(const Quad &quad, const Scene &scene, const 
     glActiveTexture(GL_TEXTURE4);
     bindPreviousTexture(4);
 
-    scene.sendViewSpacePointLightDatas(m_shader);
+
+    scene.sendViewSpaceLightDatas(m_shader);
     scene.sendCameraToShader(m_shader, m_buffer.width(), m_buffer.height());
+
+    glm::mat4 lightProjection, lightView;
+    glm::mat4 lightSpaceMatrix;
+    GLfloat near_plane = 1.0f, far_plane = 20.0f;
+    lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    //lightProjection = glm::perspective(45.0f, (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane);
+    lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+    lightSpaceMatrix = lightProjection * lightView * glm::inverse(scene.getCurrentCamera()->getView());
+
+    glUniformMatrix4fv(glGetUniformLocation(m_shader.getProgram(), "light_space_matrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
 
     quad.draw();
 }

@@ -95,7 +95,7 @@ public:
     inline void setDefined(const std::string &index, const GLboolean &defined){m_defines.at(index).defined = defined;}
 
 private:
-    GLboolean compileSourceCode(const GLchar *v_shader_code, const GLchar *f_shader_code);
+    GLboolean compileSourceCode(const std::string &v_shader_string, const std::string &f_shader_string);
     GLboolean loadSourceFromFiles(std::string &vertex_code, std::string &fragment_code);
     void generateForwardCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
     void generateGeometryCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);

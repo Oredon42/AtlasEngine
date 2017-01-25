@@ -23,7 +23,8 @@ public:
     Renderer();
     ~Renderer();
 
-    void init(const GLuint &width, const GLuint &height);
+    void init();
+
     void resize(const GLuint &width, const GLuint &height);
 
     void addPipeline(Pipeline *pipeline, const std::string &pipeline_name);
@@ -36,8 +37,8 @@ public:
     inline std::vector<MenuElement *> getGraphicsMenuElements() const{return m_current_pipeline->getMenuElements();}
 
     //  Setters
-    inline void setDimensions(const GLuint &width, const GLuint &height) {m_width = width; m_height = height;}
     void setCurrentPipeline(std::string pipeline_name);
+    void setResolution(const GLuint &width, const GLuint &height);
 
 private:
     void initQuad();

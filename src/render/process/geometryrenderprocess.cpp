@@ -57,11 +57,14 @@ void GeometryRenderProcess::initMenuElement()
 
 void GeometryRenderProcess::resize(const GLuint &width, const GLuint &height)
 {
+    RenderProcess::resize(width, height);
 
+    m_gBuffer.resize(width, height);
 }
 
 void GeometryRenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
+    glViewport(0, 0, m_gBuffer.width(), m_gBuffer.height());
     m_gBuffer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

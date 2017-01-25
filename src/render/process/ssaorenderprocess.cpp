@@ -33,8 +33,6 @@ void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
     m_SSAO_blur_buffer.init(width, height);
     m_SSAO_blur_buffer.attachTextures(SSAO_texture_datas);
 
-    //m_SSAO_buffer.resize(m_width/2, m_height/2);
-
     m_samples_locations = new GLint[m_num_samples];
     for (GLuint i = 0; i < m_num_samples; ++i)
         m_samples_locations[i] = glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str());
@@ -60,15 +58,16 @@ void SSAORenderProcess::initMenuElement()
 
     MenuElement::connect(SSAO_checkbox, SIGNAL(clicked()), this, SLOT(switchSSAO()));
 
+    m_menu_element = new MenuElement();
     m_menu_element->setLayout(SSAO_horizontal_layout);
 }
 
 void SSAORenderProcess::resize(const GLuint &width, const GLuint &height)
 {
-    /*RenderProcess::resize(width, height);
+    RenderProcess::resize(width, height);
 
     m_SSAO_buffer.resize(m_width, m_height);
-    m_SSAO_blur_buffer.resize(m_width, m_height);*/
+    m_SSAO_blur_buffer.resize(m_width, m_height);
 }
 
 void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])

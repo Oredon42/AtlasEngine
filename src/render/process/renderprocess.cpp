@@ -3,7 +3,8 @@
 
 RenderProcess::RenderProcess(const GLuint &num_inputs_textures) :
     m_activated(GL_TRUE),
-    m_in_links(0)
+    m_in_links(0),
+    m_menu_element(0)
 {
     if(num_inputs_textures > 0)
         m_in_links = new ProcessTextureLink[num_inputs_textures];
@@ -24,6 +25,8 @@ void RenderProcess::init(const GLuint &width, const GLuint &height)
 {
     m_width = width;
     m_height = height;
+
+    initMenuElement();
 }
 
 /*

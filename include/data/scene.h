@@ -39,7 +39,7 @@ public:
     inline void addModel(Model *model){m_models[model->getShaderTypeIndex()].push_back(model);}
 
     //  Send
-    void sendViewSpacePointLightDatas(const Shader &shader) const;
+    void sendViewSpaceLightDatas(const Shader &shader) const;
     inline void sendCameraToShader(const Shader &shader, const GLfloat &screen_width, const GLfloat &screen_height) const{m_cameras[m_current_camera]->sendDatas(shader, screen_width, screen_height);}
 
     //  Getters

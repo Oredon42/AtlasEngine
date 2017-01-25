@@ -24,7 +24,7 @@ public:
     virtual ~RenderProcess();
 
     virtual void init(const GLuint &width, const GLuint &height);
-    virtual void initMenuElement() = 0;
+    virtual void initMenuElement(){}
 
     inline virtual void resize(const GLuint &width, const GLuint &height){m_width = width; m_height = height;}
     virtual void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) = 0;
@@ -36,7 +36,7 @@ public:
     inline GLuint getNumOutTexture() const{return m_out_textures.size();}
     inline GLuint width() const{return m_width;}
     inline GLuint height() const{return m_height;}
-    inline MenuElement *getMenuElements() const{return m_menu_element;}
+    inline MenuElement *getMenuElement() const{return m_menu_element;}
     inline size_t numberPreviousProcesses() const{return m_previous_processes.size();}
     inline RenderProcess *getPreviousProcess(const GLuint &i) const{return m_previous_processes[i];}
 

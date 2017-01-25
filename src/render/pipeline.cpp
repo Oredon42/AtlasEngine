@@ -23,6 +23,9 @@ void Pipeline::resize(const GLuint &width, const GLuint &height)
 {
     m_width = width;
     m_height = height;
+
+    for(GLuint i = 0; i < m_processes.size(); ++i)
+        m_processes[i]->resize(m_width, m_height);
 }
 
 void Pipeline::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) const
@@ -77,5 +80,8 @@ void Pipeline::setLastProcess(RenderProcess *render_process)
         {
             m_processes.push_back(processes[i-1]);
             m_processes.back()->init(m_width, m_height);
+
+            if(m_processes.back()->getMenuElement() != 0)
+                m_menu_elements.push_back(m_processes.back()->getMenuElement());
         }
 }

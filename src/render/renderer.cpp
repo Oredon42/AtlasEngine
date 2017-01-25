@@ -19,12 +19,22 @@ Renderer::~Renderer()
     m_pipelines.clear();
 }
 
-void Renderer::init(const GLuint &width, const GLuint &height)
+void Renderer::init()
 {
-    setDimensions(width, height);
-
-    m_quad.setupBuffers();
     m_quad_shader.init("shaders/quad.vert", "shaders/quad.frag");
+    m_quad.setupBuffers();
+}
+
+void Renderer::resize(const GLuint &width, const GLuint &height)
+{
+    m_width = width;
+    m_height = height;
+}
+
+void Renderer::setResolution(const GLuint &width, const GLuint &height)
+{
+    for(size_t i = 0; i < m_pipelines.size(); ++i)
+        m_pipelines[i]->resize(width, height);
 }
 
 void Renderer::addPipeline(Pipeline *pipeline, const std::string &pipeline_name)
@@ -41,6 +51,7 @@ void Renderer::drawScene(const Scene &scene, const GLfloat &render_time, const G
 {
     m_current_pipeline->process(m_quad, scene, render_time, keys);
 
+    glViewport(0, 0, m_width, m_height);
     QOpenGLFramebufferObject::bindDefault();
     glClear(GL_COLOR_BUFFER_BIT);
     m_quad_shader.use();

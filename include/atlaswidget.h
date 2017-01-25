@@ -26,7 +26,6 @@ class AtlasWidget : public QOpenGLWidget
 public:
     AtlasWidget(QWidget * parent = 0);
     ~AtlasWidget();
-    void setPath(const std::string &path);
 
 protected:
     virtual void initializeGL();

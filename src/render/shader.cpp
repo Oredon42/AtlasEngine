@@ -118,11 +118,14 @@ void Shader::use() const
  * Compile vertex and fragment shaders with source code given
  * Link the shader program
  * */
-GLboolean Shader::compileSourceCode(const GLchar *v_shader_code, const GLchar *f_shader_code)
+GLboolean Shader::compileSourceCode(const std::string &v_shader_string, const std::string &f_shader_string)
 {
     GLuint vertex, fragment;
     GLint success;
     GLchar info_log[512];
+
+    const GLchar    *v_shader_code = v_shader_string.c_str(),
+                    *f_shader_code = f_shader_string.c_str();
 
     /*
      * Vertex shader compilation

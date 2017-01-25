@@ -27,6 +27,13 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
 
     setMouseTracking(true);
 
+    m_path = QApplication::applicationFilePath().toStdString();
+
+    m_path = m_path.substr(0, m_path.find_last_of('/'));
+#if defined(__APPLE__) || defined(__linux__)
+    m_path = m_path.substr(0, m_path.find_last_of('/'));
+#endif
+
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
     m_timer.start(41);
     m_time.start();
@@ -57,7 +64,7 @@ void AtlasWidget::initializeGL()
     std::cout << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
 
-    m_renderer.init(window()->width(), window()->height());
+    m_renderer.init();
 
     /*  MATERIALS MODIFICATION */
 
@@ -87,13 +94,15 @@ void AtlasWidget::initializeGL()
     /*  PIPELINES MODIFICATIONS */
 
     GeometryRenderProcess *geometry_render_process = new GeometryRenderProcess();
-    SSAORenderProcess *ssao_render_process = new SSAORenderProcess();
+    //SSAORenderProcess *ssao_render_process = new SSAORenderProcess();
     LightingRenderProcess *lighting_render_process = new LightingRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
     HDRRenderProcess *hdr_render_process = new HDRRenderProcess();
+    ShadowMapRenderProcess *shadow_map_render_process = new ShadowMapRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
 
-    connectProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
+    //connectProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
     connectProcesses(geometry_render_process, lighting_render_process, {0, 1, 2, 3}, {0, 1, 2, 3});
-    connectProcesses(ssao_render_process, lighting_render_process, {0}, {4});
+    //connectProcesses(ssao_render_process, lighting_render_process, {0}, {4});
+    connectProcesses(shadow_map_render_process, lighting_render_process, {0}, {4});
     connectProcesses(lighting_render_process, hdr_render_process, {0, 1, 2}, {0, 1, 2});
 
     Pipeline *default_pipeline = new Pipeline(window()->width(), window()->height());
@@ -110,10 +119,6 @@ void AtlasWidget::initializeGL()
 
     /*  END OF PIPELINES MODIFICATION */
 
-    //m_renderer.resize(800, 600);
-
-    //m_menu.init();
-
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT, GL_FILL);
@@ -121,7 +126,12 @@ void AtlasWidget::initializeGL()
 
 void AtlasWidget::resizeGL(int w, int h)
 {
-    m_renderer.setDimensions(w, h);
+    window()->setMaximumSize(QSize(w, h));
+    window()->setMinimumSize(QSize(w, h));
+    setMaximumSize(QSize(w, h));
+    setMinimumSize(QSize(w, h));
+
+    m_renderer.resize(w, h);
 
     m_mouse_last_x = w * 0.5;
     m_mouse_last_y = h * 0.5;
@@ -173,30 +183,27 @@ void AtlasWidget::keyPressEvent(QKeyEvent * e)
     case Qt::Key_F:
         if(m_fullscreen)
         {
-            m_renderer.setDimensions(800, 600);
-            parentWidget()->parentWidget()->setWindowState(Qt::WindowMaximized);
-            resize(800, 600);
-            setGeometry(0, 0, 800, 600);
+            resizeGL(400, 300);
+            window()->setWindowState(Qt::WindowMaximized);
         }
         else
         {
-            //parentWidget()->parentWidget()->setWindowState(Qt::WindowFullScreen);
-            GLuint width = QApplication::desktop()->width(),
-                   height = QApplication::desktop()->height();
+            window()->setWindowState(Qt::WindowFullScreen);
+            QRect rec = QApplication::desktop()->screenGeometry();
+            GLuint height = rec.height(),
+                   width = rec.width();
 
-            std::cout << width << " " << height << std::endl;
-            //m_renderer.setDimensions(width, height);
-            resize(width, height);
+            resizeGL(width, height);
         }
         m_fullscreen = !m_fullscreen;
         break;
 
     case Qt::Key_H:
-        //m_renderer.switchHDR();
+        m_renderer.setResolution(200, 150);
         break;
 
     case Qt::Key_B:
-        //m_renderer.switchBloom();
+        m_renderer.setResolution(1280, 800);
         break;
 
     case Qt::Key_N:
@@ -229,21 +236,13 @@ void AtlasWidget::mouseMoveEvent(QMouseEvent *e)
      QCursor::setPos(QPoint(m_mouse_last_x, m_mouse_last_y));
 }
 
-void AtlasWidget::setPath(const std::string &path)
-{
-    m_path = path;
-
-    m_path = m_path.substr(0, m_path.find_last_of('/'));
-#if defined(__APPLE__) || defined(__linux__)
-    m_path = m_path.substr(0, m_path.find_last_of('/'));
-#endif
-}
-
 void AtlasWidget::setCurrentPipeline(const std::string &pipeline_name)
 {
     m_renderer.setCurrentPipeline(pipeline_name);
 
     m_menu.setGraphicsMenuElements(m_renderer.getGraphicsMenuElements());
+
+    m_menu.init();
 }
 
 void AtlasWidget::unPause()
@@ -281,11 +280,11 @@ void AtlasWidget::createRenderScene()
     r1->setMaterial(m_material_library.getMaterial("yellow"), "Cone");
     r1->setMaterial(m_material_library.getMaterial("red"), "Sphere");
 
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f)));
+    /*m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f)));
     m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f,2.f,-2.f)));
     m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(-2.f)));
-    m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f))));
     m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 10.f, glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, -1.f, 0.f), glm::cos(glm::radians(30.f)), glm::cos(glm::radians(50.0f))));
+    */m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f))));
 
     m_current_scene->addSceneGraphRoot(r1);
 

@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 #if defined(__WIN32)
     std::replace(path.begin(), path.end(), '\\', '/');
 #endif
-    MainWindow w(path);
+    MainWindow w;
     w.show();
 
     return a.exec();

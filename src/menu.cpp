@@ -36,6 +36,11 @@ Menu::Menu(QWidget * parent, Qt::WindowFlags f) :
     setLayout(horizontal_layout);
 }
 
+void Menu::init()
+{
+
+}
+
 void Menu::setGraphicsMenu()
 {
     QVBoxLayout *vertical_layout = new QVBoxLayout;

@@ -4,7 +4,9 @@
 
 Framebuffer::Framebuffer() :
     m_textures(0),
-    m_renderbuffers(0)
+    m_renderbuffers(0),
+    m_num_textures(0),
+    m_num_renderbuffers(0)
 {
 
 }

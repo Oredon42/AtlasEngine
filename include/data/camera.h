@@ -29,9 +29,6 @@ public:
     void sendDatas(const Shader &shader, const GLfloat &screen_width, const GLfloat &screen_height);
 
     //  Getters
-    inline GLuint getViewPosLoc() const{return m_viewPosLoc;}
-    inline GLuint getModelLoc() const{return m_modelLoc;}
-    inline GLuint getViewLoc() const{return m_viewLoc;}
     inline GLfloat getFov() const{return m_fov;}
     inline GLfloat getSpeed() const{return m_speed;}
     inline glm::vec3 getPosition() const{return m_position;}
@@ -52,11 +49,6 @@ public:
     inline void setNear(const GLfloat &near){m_near = fmin(m_far, near);}
 
 private:
-    GLuint m_viewPosLoc;
-    GLuint m_modelLoc;
-    GLuint m_viewLoc;
-    GLuint m_projectionLoc;
-
     GLfloat m_current_offset_x;
     GLfloat m_current_offset_y;
     GLfloat m_saved_offset_x;

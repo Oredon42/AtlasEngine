@@ -9,7 +9,7 @@ HDRRenderProcess::HDRRenderProcess() :
     RenderProcess::RenderProcess(3),
     m_HDR(GL_TRUE),
     m_adaptation(GL_FALSE),
-    m_bloom(GL_TRUE),
+    m_bloom(GL_FALSE),
     m_chromatic_aberration(GL_FALSE),
     m_bloom_quality(8),
     m_buffer_index(0),
@@ -76,28 +76,21 @@ void HDRRenderProcess::init(const GLuint &width, const GLuint &height)
 
 void HDRRenderProcess::initMenuElement()
 {
-    QLabel *HDR_label = new QLabel("HDR");
     QLabel *bloom_label = new QLabel("Bloom");
     QLabel *adaptation_label = new QLabel("Eye adaptation");
     QLabel *chromatic_aberration_label = new QLabel("Chromatic Aberration");
 
-    QCheckBox *HDR_checkbox = new QCheckBox;
     QCheckBox *bloom_checkbox = new QCheckBox;
     QCheckBox *adaptation_checkbox = new QCheckBox;
     QCheckBox *chromatic_aberration_checkbox = new QCheckBox;
 
-    MenuElement::connect(HDR_checkbox, SIGNAL(clicked()), this, SLOT(switchHDR()));
     MenuElement::connect(bloom_checkbox, SIGNAL(clicked()), this, SLOT(switchbloom()));
     MenuElement::connect(adaptation_checkbox, SIGNAL(clicked()), this, SLOT(switchAdaptation()));
     MenuElement::connect(chromatic_aberration_checkbox, SIGNAL(clicked()), this, SLOT(switchChromaticAberration()));
 
-    QHBoxLayout *HDR_horizontal_layout = new QHBoxLayout;
     QHBoxLayout *bloom_horizontal_layout = new QHBoxLayout;
     QHBoxLayout *adaptation_horizontal_layout = new QHBoxLayout;
     QHBoxLayout *chromatic_aberration_layout = new QHBoxLayout;
-
-    HDR_horizontal_layout->addWidget(HDR_label);
-    HDR_horizontal_layout->addWidget(HDR_checkbox);
 
     bloom_horizontal_layout->addWidget(bloom_label);
     bloom_horizontal_layout->addWidget(bloom_checkbox);
@@ -108,22 +101,20 @@ void HDRRenderProcess::initMenuElement()
     chromatic_aberration_layout->addWidget(chromatic_aberration_label);
     chromatic_aberration_layout->addWidget(chromatic_aberration_checkbox);
 
-    QWidget *HDR_widget = new QWidget;
     QWidget *bloom_widget = new QWidget;
     QWidget *adaptation_widget = new QWidget;
     QWidget *chromatic_aberration_widget = new QWidget;
 
-    HDR_widget->setLayout(HDR_horizontal_layout);
     bloom_widget->setLayout(bloom_horizontal_layout);
     adaptation_widget->setLayout(adaptation_horizontal_layout);
     chromatic_aberration_widget->setLayout(chromatic_aberration_layout);
 
     QVBoxLayout *vertical_layout = new QVBoxLayout;
-    vertical_layout->addWidget(HDR_widget);
     vertical_layout->addWidget(bloom_widget);
     vertical_layout->addWidget(adaptation_widget);
     vertical_layout->addWidget(chromatic_aberration_widget);
 
+    m_menu_element = new MenuElement();
     m_menu_element->setLayout(vertical_layout);
 }
 
@@ -133,10 +124,6 @@ void HDRRenderProcess::resize(const GLuint &width, const GLuint &height)
 
     m_blur_buffers[0].resize(m_width, m_height);
     m_blur_buffers[1].resize(m_width, m_height);
-    m_brightness_ping_buffer.resize(m_width, m_height);
-    m_brightness_ping_buffer2.resize(m_width, m_height);
-    m_brightness_pong_buffer.resize(m_width, m_height);
-    m_brightness_pong_buffer2.resize(m_width, m_height);
     m_out_buffer.resize(m_width, m_height);
 }
 

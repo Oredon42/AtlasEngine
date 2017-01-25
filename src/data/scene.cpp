@@ -174,7 +174,7 @@ void Scene::buildKdTree()
     //m_kdtree_built = true;
 }
 
-void Scene::sendViewSpacePointLightDatas(const Shader &shader) const
+void Scene::sendViewSpaceLightDatas(const Shader &shader) const
 {
     for(GLuint i = 0; i < m_lights.size(); ++i)
         m_lights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
