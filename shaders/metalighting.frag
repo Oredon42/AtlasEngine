@@ -1,11 +1,10 @@
-
-//out vec4 FragColor;
-
 layout (location = 0) out vec3 FragColor;
-layout (location = 1) out vec4 BrightColor;
-layout (location = 2) out vec2 Brightness;
+layout (location = 1) out vec3 BrightColor;
+layout (location = 2) out float Brightness;
 
 in vec2 TexCoords;
+
+uniform mat4 light_space_matrix;
 
 uniform sampler2D gPositionDepth;
 uniform sampler2D gNormal;
@@ -21,6 +20,9 @@ struct DirLight
     float intensity;
     vec3 color;
     vec3 direction;
+    
+    mat4 light_space_matrix;
+    sampler2D depth_map;
 };
 uniform DirLight dirLights[DIRLIGHT];
 #endif
@@ -66,124 +68,149 @@ float smoothDistanceAtt(float squaredDistance , float invSqrAttRadius)
     return smoothFactor * smoothFactor;
 }
 
-vec3 F_Schlick(vec3 f0, float f90, float u)
+float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
-    return f0 + (f90 - f0) * pow(1.f - u, 5.f);
+  float a = roughness*roughness;
+  float a2 = a*a;
+  float NdotH = max(dot(N, H), 0.0);
+  float NdotH2 = NdotH*NdotH;
+  float nom = a2;
+  float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  denom = M_PI * denom * denom;
+  return nom / denom;
 }
 
-float chiGGX(float v)
+float GeometrySchlickGGX(float NdotV, float roughness)
 {
-    return v > 0.0f ? 1.0f : 0.0f;
+  float r = (roughness + 1.0);
+  float k = (r*r) / 8.0;
+  float nom = NdotV;
+  float denom = NdotV * (1.0 - k) + k;
+  return nom / denom;
 }
 
-float GGX_PartialGeometryTerm(vec3 v, vec3 n, vec3 h, float alpha)
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
-    float VdotH = clamp(dot(v, h), 0.0, 1.0);
-    float chi = chiGGX(VdotH / clamp(dot(v, n),0.0,1.0));
-    VdotH = VdotH * VdotH;
-    
-    float tan2 = (1-VdotH)/VdotH;
-    return (chi * 2) / (1 + sqrt(1+alpha*alpha*tan2));
+  float NdotV = max(dot(N, V), 0.0);
+  float NdotL = max(dot(N, L), 0.0);
+  float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+  float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+  return ggx1 * ggx2;
 }
 
-
-float D_GGX ( float NdotH , float m )
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
-    float m2 = m * m ;
-    float NdotH2 = NdotH * NdotH;
-    float f = NdotH2 * m2 + (1 - NdotH2);
-    return (chiGGX(NdotH) * m2) / (f * f * M_PI);
+return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-
-float Fr_DisneyDiffuse( float NdotV , float NdotL , float LdotH , float linearRoughness)
-{
-    float energyBias = linearRoughness * 0.5;
-    float energyFactor = (1.0f - linearRoughness) * 1.0 + linearRoughness * (1.0 / 1.51);
-    float fd90 = energyBias + 2.0 * LdotH * LdotH * linearRoughness;
-    vec3 f0 = vec3(1.0f);
-    float lightScatter = F_Schlick(f0, fd90, NdotL).r;
-    float viewScatter = F_Schlick(f0, fd90, NdotV).r;
-    
-    return lightScatter * viewScatter * energyFactor;
-}
-
+in mat4 viewspaceLight;
 #ifdef DIRLIGHT
-vec3 CalcDirLight(DirLight light, vec3 fragPos, vec3 V, vec3 N, float NdotV, vec3 F0, float roughness, float linearRoughness, vec3 color)
+vec3 CalcDirLight(DirLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float roughness, float metalness, vec3 color)
 {
     vec3 L = normalize(-light.direction);
     vec3 H = normalize(V + L);
-    float LdotH = max(dot(L, H), 0.0f);
-    float NdotH = max(dot(N, H), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
+    vec3 radiance = light.color;
+  
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
-    //Specular
-    vec3 F = F_Schlick(F0, 1, LdotH);
-    float Vis = GGX_PartialGeometryTerm(V, N, H, roughness) * GGX_PartialGeometryTerm(L, N, H, roughness);
-    float D = D_GGX(NdotH, roughness);
-    vec3 Fr =  D * F * Vis / (4*NdotV*NdotH + 0.05);
+    vec3 nominator = NDF * G * F;
+    float denominator = 4 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.001;
+    vec3 brdf = nominator / denominator;
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metalness;
+    float NdotL = max(dot(N, L), 0.0);
     
-    //Diffuse
-    float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
+    //  Shadow calculation
+    vec4 light_point = light.light_space_matrix * vec4(texture(gPositionDepth, TexCoords).rgb, 1.0);
+    vec3 projCoords = light_point.xyz / light_point.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(AO, projCoords.xy).r;
+    float currentDepth = texture(gPositionDepth, TexCoords).a;
+    currentDepth = projCoords.z;
+    float bias = max(0.05 * (1.0 - NdotL), 0.005);
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+    shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(light.depth_map, 0);
+    /*for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(light.depth_map, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }    
+    }
+    shadow /= 9.0;*/
     
-    return (color / M_PI * Fd + Fr) * NdotL * light.intensity * light.color;
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+    
+    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL;// * (1-shadow);
 }
 #endif
 #ifdef POINTLIGHT
 
-vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 V, vec3 N, float NdotV, vec3 F0, float roughness, float linearRoughness, vec3 color)
+vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float roughness, float metalness, vec3 color)
 {
     vec3 L = normalize(light.position - fragPos);
     vec3 H = normalize(V + L);
-    float LdotH = max(dot(L, H), 0.0f);
-    float NdotH = max(dot(N, H), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
+    float distance = distance(light.position, fragPos);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 radiance = light.color * attenuation;
+  
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
-    //Specular
-    vec3 F = F_Schlick(F0, 1, LdotH);
-    float Vis = GGX_PartialGeometryTerm(V, N, H, roughness) * GGX_PartialGeometryTerm(L, N, H, roughness);
-    float D = D_GGX(NdotH, roughness);
-    vec3 Fr =  D * F * Vis / (4*NdotV*NdotH + 0.05);
+    vec3 nominator = NDF * G * F;
+    float denominator = 4 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.001;
+    vec3 brdf = nominator / denominator;
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metalness;
+    float NdotL = max(dot(N, L), 0.0);
     
-    //Diffuse
-    float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
+    /*vec3 fragToLight = fragPos - light.position;
+    float closestDepth = texture(shadows, fragToLight).r;
+    closestDepth *= far_plane;
+    float currentDepth = length(fragToLight);
+    float bias = 0.5;
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;*/
     
-    //  Attenuation
-    float dist = distance(light.position, fragPos);
-    float attenuation = 1/(dist*dist);
-    
-    return (color / M_PI * Fd + Fr) * NdotL * light.intensity * attenuation;
+    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * attenuation;// * (1-shadow);
 }
 #endif
 
 #ifdef SPOTLIGHT
-vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 V, vec3 N, float NdotV, vec3 F0, float roughness, float linearRoughness, vec3 color)
+vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float roughness, float metalness, vec3 color)
 {
-    vec3 L = normalize(light.position - fragPos);
+    vec3 L = normalize(-light.direction);
     vec3 H = normalize(V + L);
-    float LdotH = max(dot(L, H), 0.0f);
-    float NdotH = max(dot(N, H), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
+    float distance = distance(light.position, fragPos);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 radiance = light.color * attenuation;
+  
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
-    //Specular
-    vec3 F = F_Schlick(F0, 1, LdotH);
-    float Vis = GGX_PartialGeometryTerm(V, N, H, roughness) * GGX_PartialGeometryTerm(L, N, H, roughness);
-    float D = D_GGX(NdotH, roughness);
-    vec3 Fr =  D * F * Vis / (4*NdotV*NdotH + 0.05);
-    
-    //Diffuse
-    float Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
-    
-    // Attenuation
-    float dist = distance(light.position, fragPos);
-    float attenuation = 1/(dist*dist);
-    
+    vec3 nominator = NDF * G * F;
+    float denominator = 4 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.001;
+    vec3 brdf = nominator / denominator;
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metalness;
+    float NdotL = max(dot(N, L), 0.0);
+
+    //	Cone intensity
     // Spotlight intensity
     float theta = dot(L, normalize(-light.direction));
     float epsilon = light.cut_off - light.outer_cut_off;
-    float intensity = clamp((theta - light.outer_cut_off) / epsilon, 0.0, 1.0);
+    float cone_intensity = clamp((theta - light.outer_cut_off) / epsilon, 0.0, 1.0);
     
-    return (color / M_PI * Fd + Fr) * NdotL * light.intensity * attenuation * intensity;
+    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * cone_intensity * attenuation;
 }
 #endif
 
@@ -217,27 +244,30 @@ void main()
     
 #ifdef POINTLIGHT
     for(int i = 0; i < POINTLIGHT; i++)
-        lighting += CalcPointLight(pointLights[i], FragPos, V, N, NdotV, F0, roughness, linearRoughness, color);
+        lighting += CalcPointLight(pointLights[i], FragPos, V, N, F0, roughness, metalness, color);
 #endif
 #ifdef DIRLIGHT
     for(int i = 0; i < DIRLIGHT; i++)
-        lighting += CalcDirLight(dirLights[i], FragPos, V, N, NdotV, F0, roughness, linearRoughness, color);
+        lighting += CalcDirLight(dirLights[i], FragPos, V, N, F0, roughness, metalness, color);
 #endif
 #ifdef SPOTLIGHT
     for(int i = 0; i < SPOTLIGHT; i++)
-        lighting += CalcSpotLight(spotLights[i], FragPos, V, N, NdotV, F0, roughness, linearRoughness, color);
+        lighting += CalcSpotLight(spotLights[i], FragPos, V, N, F0, roughness, metalness, color);
 #endif
-    lighting *= ambient;
+    //lighting *= ambient;
     
-    Brightness = vec2(0.0);
+    Brightness = 0.0;
     float brightness = max(dot(lighting, vec3(0.2126f, 0.7152f, 0.0722f)), 0);
     
-    BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+    BrightColor = vec3(0.0);
     
     if(brightness > 1.0)
-        BrightColor = vec4(lighting, 1.0);
+        BrightColor = lighting;
     
-    Brightness = vec2(brightness);
+    Brightness = brightness;
     
     FragColor = vec3(max(lighting, vec3(0)));
+    //FragColor = vec3(texture(dirLights[0].depth_map, TexCoords).a, 0, 0);
+    //FragColor = vec3(texture(AO, TexCoords).rgb);
+
 }
