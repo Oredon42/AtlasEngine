@@ -2,6 +2,7 @@
 #define ARMATURE_H
 
 #include <map>
+#include <vector>
 
 #include "openglincludes.h"
 
@@ -10,9 +11,9 @@
 #include "lib/glm/gtc/matrix_transform.hpp"
 #include "lib/glm/gtc/type_ptr.hpp"
 
-#include "lib/assimp/Importer.hpp"
-#include "lib/assimp/scene.h"
-#include "lib/assimp/postprocess.h"
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
 
 #define NUM_BONES_PER_VERTEX 4
 #define MAX_BONES 100

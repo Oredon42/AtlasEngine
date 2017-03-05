@@ -4,6 +4,8 @@
 #include "openglincludes.h"
 #include "texture.h"
 
+#include <vector>
+
 struct FramebufferTextureDatas
 {
     GLint internal_format;

@@ -1,5 +1,8 @@
 #include "include/data/geometry/proceduralmap.h"
 
+#include <random>
+#include <time.h>
+
 ProceduralMap::ProceduralMap(const GLuint &N, const GLuint &map_side, const GLfloat &height_factor)
 {
     //  Construction de la grille

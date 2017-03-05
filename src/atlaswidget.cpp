@@ -73,6 +73,7 @@ void AtlasWidget::initializeGL()
     m_material_library.addMaterial(new Material(glm::vec3(0.8f, 0.8f, 0.8f), 1.f, 0.f, 1.f, 1.f), "grey");
     m_material_library.addMaterial(new Material(glm::vec3(1.f, 0.f, 0.f), 1.f, 0.f, 1.f, 1.f), "red");
     m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 0.f), 0.2f, 0.f, 1.f, 1.f), "yellow");
+    m_material_library.addMaterial(new Material(glm::vec3(0.f, 1.f, 0.f), 1.f, 0.f, 1.f, 1.f), "green");
     m_material_library.addMaterial(new Material(glm::vec3(0.5f, 0.5f, 0.5f), 0.01f, 1.f, 1.f, 1.f), "glossy");
 
     /*  END OF MATERIALS MODIFICATION */
@@ -222,6 +223,7 @@ void AtlasWidget::keyReleaseEvent(QKeyEvent * e)
     /*if(e->key() == Qt::Key_Escape)
         QCoreApplication::instance()->quit();
     else if(e->key() >= 0 && e->key() < 1024)*/
+    if(e->key() >= 0 && e->key() < 1024)
         m_keys[e->key()] = false;
 }
 
@@ -272,23 +274,26 @@ void AtlasWidget::createRenderScene()
 
     SceneGraphRoot *r1 = new SceneGraphRoot("root", m_path);
 
-    m_file_loader.load("/obj/testscenes/hdr.obj", r1, m_material_library);
+    m_file_loader.load("/obj/testscenes/cornell.obj", r1, m_material_library);
 
-    r1->setMaterial(m_material_library.getMaterial("white"), "Plane");
-    r1->setMaterial(m_material_library.getMaterial("glossy"), "Suzanne");
-    r1->setMaterial(m_material_library.getMaterial("red"), "Cube");
-    r1->setMaterial(m_material_library.getMaterial("yellow"), "Cone");
-    r1->setMaterial(m_material_library.getMaterial("red"), "Sphere");
+    r1->setMaterial(m_material_library.getMaterial("red"), "LeftWall");
+    r1->setMaterial(m_material_library.getMaterial("green"), "RightWall");
+    r1->setMaterial(m_material_library.getMaterial("white"), "Floor");
+    r1->setMaterial(m_material_library.getMaterial("white"), "Ceiling");
+    r1->setMaterial(m_material_library.getMaterial("white"), "BackWall");
+    r1->setMaterial(m_material_library.getMaterial("white"), "TallBox");
+    r1->setMaterial(m_material_library.getMaterial("white"), "ShortBox");
 
-    /*m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(2.f,2.f,-2.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(-2.f)));
-    m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 10.f, glm::vec3(0.f, 2.f, 0.f), glm::vec3(0.f, -1.f, 0.f), glm::cos(glm::radians(30.f)), glm::cos(glm::radians(50.0f))));
-    */m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f))));
+    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1000.f, glm::vec3(0.f, 18.f, 0.f)));
+    m_current_scene->addPointLight(new PointLight(glm::normalize(glm::vec3(17.f, 12.f, 4.f)), 1000.f, glm::vec3(0.f, 18.f, 0.f)));
+    //m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 1000.f, glm::vec3(0.f, 18.f, 0.f), glm::vec3(0.f, -1.f, 0.f), glm::cos(glm::radians(30.f)), glm::cos(glm::radians(50.0f))));
+    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(1.f))));
 
     m_current_scene->addSceneGraphRoot(r1);
 
     m_current_scene->addCamera(new Camera());
+
+    //m_current_scene->scale(glm::vec3(10.f), "root");
 }
 
 

@@ -4,10 +4,19 @@ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 project(AtlasEngine)
 
 cmake_minimum_required(VERSION 2.8)
+
+# Checking submodules
+if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/openmesh")
+  message(FATAL_ERROR "The OpenMesh submodule directory is missing, you have to clone the project with --recursive")
+endif()
+
+if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp")
+  message(FATAL_ERROR "The Assimp submodule directory is missing, you have to clone the project with --recursive")
+endif()
+
+# Get sources and headers
 set(SOURCE_DIR src)
 set(INCLUDE_DIR include)
-
-#file(GLOB_RECURSE INCLUDE ${INCLUDE_DIR}/*)
 
 file(GLOB_RECURSE SOURCES ${SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/*.h)
@@ -21,7 +30,12 @@ list(REMOVE_DUPLICATES INCLUDE_DIRS)
 
 include_directories(${INCLUDE_DIRS})
 
-#aux_source_directory(${SOURCE_DIR} SRC_LIST)
+# Add submodules
+add_subdirectory(lib/openmesh)
+include_directories(lib/openmesh/src)
+add_subdirectory(lib/assimp)
+include_directories(lib/assimp/include)
+add_subdirectory(lib/glm)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
@@ -74,31 +88,39 @@ elseif(UNIX)
 
         target_link_libraries(${PROJECT_NAME} ${Qt4_LIBRARIES} ${OPENGL_LIBRARIES} libassimp.so)
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS "-std=c++11 -g -ggdb -O0 -Wall -Wextra")
-    #OpenGL inclusion
-    find_package(OpenGL)
-    include_directories(${OPENGL_INCLUDE_DIR})
+        add_definitions(-D_USE_MATH_DEFINES)
 
-    #Qt5 inclusion
-    find_package(Qt5Core)
-    find_package(Qt5Gui)
-    find_package(Qt5Widgets)
-    find_package(Qt5OpenGL)
-    include_directories(${Qt5Widgets_INCLUDE_DIRS})
-    add_definitions(${Qt5Widgets_DEFINITIONS})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+        set(CMAKE_CXX_FLAGS "")
+    	#OpenGL inclusion
+    	find_package(OpenGL)
+    	include_directories(${OPENGL_INCLUDE_DIR})
 
-    #ASSIMP inclusion
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp)
+    	#Qt5 inclusion
+    	find_package(Qt5Core)
+    	find_package(Qt5Gui)
+    	find_package(Qt5Widgets)
+    	find_package(Qt5OpenGL)
+    	include_directories(${Qt5Widgets_INCLUDE_DIRS})
+    	add_definitions(${Qt5Widgets_DEFINITIONS})
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
-    #GLEW inclusion
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/glew)
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/glew)
+    	#GLEW inclusion
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/glew)
 
-    add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/glew
+            ${PROJECT_BINARY_DIR}/lib/openmesh
+            ${PROJECT_BINARY_DIR}/lib/assimp)
 
-    qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
+    	add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-    target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES} libassimp.dll glew32.dll)
+    	qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
+
+        target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES}
+            ${PROJECT_BINARY_DIR}/lib/glew/glew32.lib
+            ${PROJECT_BINARY_DIR}/lib/openmesh/src/OpenMesh/Core/OpenMeshCored.lib
+            ${PROJECT_BINARY_DIR}/lib/openmesh/src/OpenMesh/Tools/OpenMeshToolsd.lib
+            ${PROJECT_BINARY_DIR}/lib/assimp/code/assimp-vc140-mtd.lib )
+
+        configure_file(${PROJECT_BINARY_DIR}/lib/glew/glew32.dll ${PROJECT_BINARY_DIR}/glew32.dll COPYONLY)
+        configure_file(${PROJECT_BINARY_DIR}/lib/assimp/code/assimp-vc140-mtd.dll ${PROJECT_BINARY_DIR}/assimp-vc140-mtd.dll COPYONLY)
 endif()

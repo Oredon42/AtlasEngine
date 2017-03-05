@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "lib/assimp/Importer.hpp"
-#include "lib/assimp/scene.h"
-#include "lib/assimp/postprocess.h"
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
 
 #define GLM_FORCE_RADIANS
 #include "lib/glm/glm.hpp"

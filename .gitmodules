@@ -1,0 +1,6 @@
+[submodule "OpenMesh"]
+	path = external/openmesh
+	url = https://www.graphics.rwth-aachen.de:9000/OpenMesh/OpenMesh.git
+[submodule "assimp"]
+	path = external/assimp
+	url = https://github.com/assimp/assimp.git

@@ -1,9 +1,12 @@
-#include <random>
 #include "include/render/process/ssaorenderprocess.h"
 #include "include/data/quad.h"
 #include "include/data/scene.h"
 
-#include <QtWidgets>
+#include <random>
+//#include <QtWidgets>
+#include <QLabel>
+#include <QCheckBox>
+#include <QHBoxLayout>
 
 SSAORenderProcess::SSAORenderProcess() :
     RenderProcess::RenderProcess(1),
