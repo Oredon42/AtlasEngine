@@ -17,15 +17,15 @@ Scene::Scene(const std::string &path, GLfloat &render_time) :
 
 Scene::~Scene()
 {
-    for(GLuint i = 0; i < (GLuint)(m_roots.size()); ++i)
+    for(size_t i = 0; i < m_roots.size(); ++i)
         delete m_roots[i];
     m_roots.clear();
 
-    for(GLuint i = 0; i < (GLuint)(m_cameras.size()); ++i)
+    for(size_t i = 0; i < m_cameras.size(); ++i)
         delete m_cameras[i];
     m_cameras.clear();
 
-    for(GLuint i = 0; i < (GLuint)(m_lights.size()); ++i)
+    for(size_t i = 0; i < m_lights.size(); ++i)
         delete m_lights[i];
     m_lights.clear();
 
@@ -53,17 +53,17 @@ void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GL
 
     //  Loop on every shader type
     //  Loop and draw every mesh that uses this shader
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
     {
         if(m_models[i].size() > 0)
         {
             glUseProgram(shaders[i].getProgram());
             current_camera->sendDatas(shaders[i], window_width, window_height);
 
-            for(GLuint j = 0; j < m_lights.size(); ++j)
+            for(size_t j = 0; j < m_lights.size(); ++j)
                 m_lights[j]->sendDatas(shaders[i]);
 
-            for(GLuint j = 0; j < m_models[i].size(); ++j)
+            for(size_t j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->draw(shaders[i], render_time);
         }
     }
@@ -100,17 +100,17 @@ void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfl
 
     //  Loop on every shader type
     //  Loop and draw every mesh that uses this shader
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
     {
         if(m_models[i].size() > 0)
         {
             shader.use();
             current_camera->sendDatas(shader, window_width, window_height);
 
-            for(GLuint j = 0; j < m_lights.size(); ++j)
+            for(size_t j = 0; j < m_lights.size(); ++j)
                 m_lights[j]->sendDatas(shader);
 
-            for(GLuint j = 0; j < m_models[i].size(); ++j)
+            for(size_t j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->draw(shader, render_time);
         }
     }
@@ -118,7 +118,7 @@ void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfl
 
 void Scene::buildModelList()
 {
-    for(GLuint i = 0; i < m_roots.size(); ++i)
+    for(size_t i = 0; i < m_roots.size(); ++i)
         m_roots[i]->extractModels(m_models);
 }
 
@@ -126,20 +126,20 @@ void Scene::buildKdTree()
 {
     std::vector<Triangle *> T;
 
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
     {
-        for(GLuint j = 0, m = 0; j < m_models[i].size(); ++j)
+        for(size_t j = 0, m = 0; j < m_models[i].size(); ++j)
         {
             Model* actual_model = m_models[i][j];
 
             //  Pour tous les meshes du model
-            for(GLuint k = 0; k < actual_model->numberOfMeshes(); ++k)
+            for(size_t k = 0; k < actual_model->numberOfMeshes(); ++k)
             {
                 Mesh* actual_mesh = actual_model->getMesh(k);
-                GLuint number_of_triangles = actual_mesh->numIndices();
+                size_t number_of_triangles = actual_mesh->numIndices();
 
                 //  Pour tous les triangles du mesh
-                for(GLuint l = 0; l < number_of_triangles; l += 3, ++m)
+                for(size_t l = 0; l < number_of_triangles; l += 3, ++m)
                 {
                     Triangle *t = actual_mesh->getTriangle(k, k+1, k+2);
                     t->mesh = j;
@@ -176,7 +176,7 @@ void Scene::buildKdTree()
 
 void Scene::sendViewSpaceLightDatas(const Shader &shader) const
 {
-    for(GLuint i = 0; i < m_lights.size(); ++i)
+    for(size_t i = 0; i < m_lights.size(); ++i)
         m_lights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
 }
 

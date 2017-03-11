@@ -335,8 +335,8 @@ GLboolean Ray::intersectKdTree(const KdTree &K, Intersection &intersection, Tria
             }
 
             //  Intersection des triangles de la feuille
-            GLuint T_size = n->numTriangles();
-            for(GLuint i = 0; i < T_size; ++i)
+            size_t T_size = n->numTriangles();
+            for(size_t i = 0; i < T_size; ++i)
             {
                 Triangle t_tmp = *(n->getTriangle(i));
                 Intersection intersection_tmp;
@@ -427,8 +427,8 @@ GLboolean Ray::doesIntersectKdTree(const KdTree &K)
             }
 
             //  Intersection des triangles de la feuille
-            GLuint T_size = n->numTriangles();
-            for(GLuint i = 0; i < T_size; ++i)
+            size_t T_size = n->numTriangles();
+            for(size_t i = 0; i < T_size; ++i)
             {
                 Triangle t_tmp = *(n->getTriangle(i));
                 Intersection intersection_tmp;

@@ -23,7 +23,7 @@ Model::Model(Mesh *mesh, Material *material) :
 
 Model::~Model()
 {
-    for(GLuint i = 0; i < m_meshes.size(); ++i)
+    for(size_t i = 0; i < m_meshes.size(); ++i)
         delete m_meshes[i];
 
     m_meshes.clear();
@@ -37,7 +37,7 @@ void Model::draw(const Shader &shader, const GLfloat &render_time) const
 
     m_material->sendDatas(shader);
 
-    for(GLuint i = 0; i < m_meshes.size(); ++i)
+    for(size_t i = 0; i < m_meshes.size(); ++i)
     {
         if(m_armature != 0)
             m_armature->update(shader, m_current_animation, render_time);
@@ -48,7 +48,7 @@ void Model::draw(const Shader &shader, const GLfloat &render_time) const
 void Model::attachArmature(Armature *armature)
 {
     m_armature = armature;
-    for(GLuint i = 0; i < m_meshes.size(); ++i)
+    for(size_t i = 0; i < m_meshes.size(); ++i)
         m_meshes[i]->attachArmature(m_armature->getVertexBoneData());
 }
 

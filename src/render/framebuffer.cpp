@@ -31,13 +31,13 @@ void Framebuffer::resize(const GLuint &width, const GLuint &height)
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 
-    for(GLuint i = 0; i < m_num_textures; ++i)
+    for(size_t i = 0; i < m_num_textures; ++i)
     {
         m_textures[i]->init(m_texture_datas[i].internal_format, m_width, m_height, m_texture_datas[i].format, m_texture_datas[i].type, NULL, m_texture_datas[i].clamp, m_texture_datas[i].filter_max, m_texture_datas[i].filter_min);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textures[i]->getId(), 0);
     }
 
-    for(GLuint i = 0; i < m_num_renderbuffers; ++i)
+    for(size_t i = 0; i < m_num_renderbuffers; ++i)
     {
         glBindRenderbuffer(GL_RENDERBUFFER, m_renderbuffers[i]);
         glRenderbufferStorage(GL_RENDERBUFFER, m_renderbuffer_datas[i].internal_format, m_width, m_height);
@@ -65,7 +65,7 @@ void Framebuffer::attachTextures(const std::vector<FramebufferTextureDatas> &tex
 
         glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
 
-        for(GLuint i = 0, color_index = 0; i < m_num_textures; ++i)
+        for(size_t i = 0, color_index = 0; i < m_num_textures; ++i)
         {
             GLuint width, height;
             if(custom_widths == 0 || custom_heights == 0)
@@ -120,7 +120,7 @@ void Framebuffer::attachRenderBuffers(const std::vector<FramebufferRenderbufferD
         glBindFramebuffer(GL_FRAMEBUFFER, m_buffer);
         glGenRenderbuffers(m_num_renderbuffers, m_renderbuffers);
 
-        for(GLuint i = 0; i < m_num_renderbuffers; ++i)
+        for(size_t i = 0; i < m_num_renderbuffers; ++i)
         {
             GLuint width, height;
             if(custom_widths == 0 || custom_heights == 0)

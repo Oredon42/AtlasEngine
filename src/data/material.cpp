@@ -63,14 +63,14 @@ std::vector<Texture *> Material::loadMaterialTextures(const aiMaterial *ai_mater
     std::vector<Texture *> textures;
 
     //  For each texture
-    for(GLuint i = 0; i < ai_material->GetTextureCount(type); i++)
+    for(unsigned int i = 0; i < ai_material->GetTextureCount(type); ++i)
     {
         aiString ai_texture_path;
         ai_material->GetTexture(type, i, &ai_texture_path);
         GLboolean skip = GL_FALSE;
 
         //  Check if texture is not already loaded
-        for(GLuint j = 0; j < textures_loaded.size(); ++j)
+        for(size_t j = 0; j < textures_loaded.size(); ++j)
         {
             if(textures_loaded[j]->getPath() == ai_texture_path.C_Str())
             {
@@ -120,7 +120,7 @@ void Material::sendDatas(const Shader &shader) const
         GLuint specularNr = 1;
         GLuint normalNr = 1;
 
-        for(GLuint i = 0; i < m_textures.size(); ++i)
+        for(size_t i = 0; i < m_textures.size(); ++i)
         {
             glActiveTexture(GL_TEXTURE0 + i);
             std::stringstream ss;
@@ -156,7 +156,7 @@ void Material::copy(const Material &material)
 
     m_textures.clear();
 
-    for(GLuint i = 0; i < material.m_textures.size(); ++i)
+    for(size_t i = 0; i < material.m_textures.size(); ++i)
         m_textures.push_back(material.m_textures[i]);
 
     m_shader_type = material.m_shader_type;

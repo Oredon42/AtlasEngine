@@ -70,8 +70,8 @@ private:
     std::vector<Texture *> m_textures;
     GLuint *m_renderbuffers;
 
-    GLuint m_num_textures;
-    GLuint m_num_renderbuffers;
+    size_t m_num_textures;
+    size_t m_num_renderbuffers;
 
     std::vector<FramebufferTextureDatas> m_texture_datas;
     std::vector<FramebufferRenderbufferDatas> m_renderbuffer_datas;

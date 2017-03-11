@@ -13,7 +13,7 @@ Pipeline::Pipeline(const GLuint &width, const GLuint &height) :
 
 Pipeline::~Pipeline()
 {
-    for(GLuint i = 0; i < m_processes.size(); ++i)
+    for(size_t i = 0; i < m_processes.size(); ++i)
         delete m_processes[i];
 
     m_processes.clear();
@@ -24,13 +24,13 @@ void Pipeline::resize(const GLuint &width, const GLuint &height)
     m_width = width;
     m_height = height;
 
-    for(GLuint i = 0; i < m_processes.size(); ++i)
+    for(size_t i = 0; i < m_processes.size(); ++i)
         m_processes[i]->resize(m_width, m_height);
 }
 
 void Pipeline::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) const
 {
-    for(GLuint i = 0; i < m_processes.size(); ++i)
+    for(size_t i = 0; i < m_processes.size(); ++i)
         m_processes[i]->process(quad, scene, render_time, keys);
 }
 
@@ -75,7 +75,7 @@ void Pipeline::setLastProcess(RenderProcess *render_process)
     }
 
     //  Fill m_processes in the right order
-    for(GLuint i = processes.size(); i > 0; --i)
+    for(size_t i = processes.size(); i > 0; --i)
         if(process_valid[i-1])
         {
             m_processes.push_back(processes[i-1]);

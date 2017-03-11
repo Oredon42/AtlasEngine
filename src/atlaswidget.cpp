@@ -38,13 +38,13 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
     m_timer.start(41);
     m_time.start();
 
-    for(GLuint i = 0; i < 1024; ++i)
+    for(int i = 0; i < 1024; ++i)
         m_keys[i] = false;
 }
 
 AtlasWidget::~AtlasWidget()
 {
-    for(GLuint i = 0; i < m_scenes.size(); ++i)
+    for(size_t i = 0; i < m_scenes.size(); ++i)
         delete m_scenes[i];
 
     m_scenes.clear();
@@ -81,7 +81,7 @@ void AtlasWidget::initializeGL()
 
     /*  SCENES MODIFICATION */
 
-    //createGeometryScene();
+    createGeometryScene();
     createRenderScene();
 
     /*  END OF SCENES MODIFICATION */
@@ -302,23 +302,23 @@ void AtlasWidget::createGeometryScene()
     addScene();
 
     SceneGraphRoot *r1 = new SceneGraphRoot("root", m_path);
-    m_file_loader.load("/obj/testscenes/subdiv.obj", r1, m_material_library);
+    m_file_loader.load("/obj/testscenes/suzanne.obj", r1, m_material_library);
     SceneGraphNode *n1 = r1->getChild(0);
     n1->getModel(0, 0)->setMaterial(m_material_library.getMaterial("default"));
 
     SceneGraphNode *n12 = new SceneGraphNode("n12", m_path);
     n1->addChild(n12);
-    n12->addModel(new Model(m_geometry_process.getSubdividedMesh(n1->getModel(0, 0)->getMesh(0), 1), m_material_library.getMaterial("default")));
+    //n12->addModel(new Model(m_geometry_process.getSubdividedMesh(n1->getModel(0, 0)->getMesh(0), 1), m_material_library.getMaterial("default")));
     //n12->addModel(new Model(m_geometry_process.getDecimatedMesh(n1->getModel(0, 0)->getMesh(0), 0.9f), m_material_library.getMaterial("default")));
     n12->translate(glm::vec3(0, 0, 5));
 
     m_current_scene->addSceneGraphRoot(r1);
 
-    m_current_scene->scale(glm::vec3(0.05f), "root");
+    m_current_scene->scale(glm::vec3(1.f), "root");
 
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(5.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 10.f, glm::vec3(5.f,5.f,-5.f)));
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1.f, glm::vec3(-5.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1000.f, glm::vec3(12.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1000.f, glm::vec3(12.f,12.f,-12.f)));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1000.f, glm::vec3(-12.f)));
     //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f, 0.f, 0.f), 10.f, glm::normalize(glm::vec3(-1.f))));
 
     m_current_scene->addCamera(new Camera());

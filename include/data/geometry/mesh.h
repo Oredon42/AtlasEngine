@@ -97,8 +97,8 @@ public:
     void computeAABB();
 
     //  Getters
-    inline GLuint numIndices() const{return m_indices.size();}
-    inline GLuint numVertices() const{return m_vertices.size();}
+    inline size_t numIndices() const{return m_indices.size();}
+    inline size_t numVertices() const{return m_vertices.size();}
     inline GLuint getIndex(const GLuint &i) const{return m_indices[i];}
     inline Vertex getVertex(const GLuint &i) const{return m_vertices[i];}
     inline Triangle *getTriangle(const GLuint &i1, const GLuint &i2, const GLuint &i3){return new Triangle(&m_vertices[i1], &m_vertices[i2], &m_vertices[i3]);}

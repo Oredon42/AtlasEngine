@@ -67,9 +67,9 @@ SceneGraphNode::SceneGraphNode(SceneGraphNode *parent, const std::string &name, 
 SceneGraphNode::~SceneGraphNode()
 {
     //  Mesh array suppression
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
     {
-        for(GLuint j = 0; j < (GLuint)(m_models[i].size()); ++j)
+        for(size_t j = 0; j < m_models[i].size(); ++j)
             delete m_models[i][j];
         m_models[i].clear();
     }
@@ -77,7 +77,7 @@ SceneGraphNode::~SceneGraphNode()
     m_models->clear();
 
     //  Children array suppression
-    for(GLuint i = 0; i < m_children.size(); ++i)
+    for(size_t i = 0; i < m_children.size(); ++i)
         delete m_children[i];
 
     m_children.clear();
@@ -96,12 +96,12 @@ void SceneGraphNode::setMaterial(Material* material, const std::string &name)
 {
     if(m_name == name)
     {
-        for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-            for(GLuint j = 0; j < m_models[i].size(); ++j)
+        for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
+            for(size_t j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->setMaterial(material);
     }
     else
-        for(GLuint i = 0; i < m_children.size(); ++i)
+        for(size_t i = 0; i < m_children.size(); ++i)
             m_children[i]->setMaterial(material, name);
 }
 
@@ -114,7 +114,7 @@ SceneGraphNode *SceneGraphNode::getNode(const std::string &name)
     else
     {
         SceneGraphNode *node = 0;
-        for(GLuint i = 0; i < m_children.size(); ++i)
+        for(size_t i = 0; i < m_children.size(); ++i)
         {
             node = m_children[i]->getNode(name);
             if(node != 0)
@@ -128,7 +128,7 @@ void SceneGraphNode::spreadTransform()
 {
     calculateTransform();
 
-    for(GLuint i = 0; i < m_children.size(); ++i)
+    for(size_t i = 0; i < m_children.size(); ++i)
         m_children[i]->spreadTransform();
 };
 
@@ -147,18 +147,18 @@ void SceneGraphNode::calculateTransform()
 
     m_transform *= m_parent->getTransform();
 
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-        for(GLuint j = 0; j < m_models[i].size(); ++j)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
+        for(size_t j = 0; j < m_models[i].size(); ++j)
             m_models[i][j]->setTransform(m_transform);
 }
 
 void SceneGraphNode::extractModels(std::vector<Model *> models[NB_SHADER_TYPES])
 {
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-        for(GLuint j = 0; j < m_models[i].size(); ++j)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
+        for(size_t j = 0; j < m_models[i].size(); ++j)
             models[i].push_back(m_models[i][j]);
 
-    for(GLuint i = 0; i < m_children.size(); ++i)
+    for(size_t i = 0; i < m_children.size(); ++i)
         m_children[i]->extractModels(models);
 }
 
@@ -175,7 +175,7 @@ SceneGraphRoot::SceneGraphRoot(const std::string &name, const std::string &path,
 SceneGraphRoot::~SceneGraphRoot()
 {
     //  Animations suppression
-    for(GLuint i = 0; i < m_animations.size(); ++i)
+    for(size_t i = 0; i < m_animations.size(); ++i)
         delete m_animations[i];
 
     m_animations.clear();
@@ -226,7 +226,7 @@ void SceneGraphRoot::calculateTransform()
     m_transform = glm::translate(m_transform, m_position);
     m_transform = glm::scale(m_transform, m_scale);
 
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-        for(GLuint j = 0; j < m_models[i].size(); ++j)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
+        for(size_t j = 0; j < m_models[i].size(); ++j)
             m_models[i][j]->setTransform(m_transform);
 }

@@ -22,13 +22,13 @@ void AnimationLoader::load(const aiScene *ai_scene, const Scene *scene)
      * than traverse tree once and iterate over animations
      * as it is more current to have 1 animation per file)
      * */
-    for(GLuint animation_index = 0; animation_index < ai_scene->mNumAnimations; ++animation_index)
+    for(unsigned int animation_index = 0; animation_index < ai_scene->mNumAnimations; ++animation_index)
     {
         //  Get animation parameters
         GLfloat total_time = ai_scene->mAnimations[animation_index]->mDuration;
         GLfloat ticks_per_seconds = ai_scene->mAnimations[animation_index]->mTicksPerSecond != 1?ai_scene->mAnimations[0]->mTicksPerSecond : 24.0f;
         //  Total time of the animation in ticks
-        GLuint total_time_in_ticks = total_time * ticks_per_seconds;
+        GLuint total_time_in_ticks = (GLuint)(total_time * ticks_per_seconds);
         GLfloat seconds_per_tick = 1.f / ticks_per_seconds;
 
         aiAnimation *ai_animation = ai_scene->mAnimations[animation_index];
@@ -96,7 +96,7 @@ void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const Sc
     }*/
 
     //  Loop over children bones
-    for(GLuint i = 0 ; i < ai_node->mNumChildren ; ++i)
+    for(unsigned int i = 0 ; i < ai_node->mNumChildren ; ++i)
        processAnimation(ai_animation, scene, animation_name, ticks_per_second, current_tick, current_time, total_time_in_ticks, ai_node->mChildren[i]);
 }
 
@@ -106,7 +106,7 @@ void AnimationLoader::processAnimation(const aiAnimation *ai_animation, const Sc
 const aiNodeAnim *AnimationLoader::findNodeAnim(const aiAnimation *ai_animation, const std::string &node_name)
 {
     //  Loop over animation channels
-    for(GLuint i = 0 ; i < ai_animation->mNumChannels ; ++i)
+    for(unsigned int i = 0 ; i < ai_animation->mNumChannels ; ++i)
     {
         const aiNodeAnim* ai_node_anim = ai_animation->mChannels[i];
 

@@ -67,7 +67,7 @@ struct VertexBoneData
      * */
     void AddBoneData(const GLuint &boneID, const GLfloat &weight)
     {
-        for(GLuint i = 0 ; i < NUM_BONES_PER_VERTEX; ++i)
+        for(size_t i = 0 ; i < NUM_BONES_PER_VERTEX; ++i)
         {
             //  1st empty data in bone array
             if(weights[i] == 0.0)

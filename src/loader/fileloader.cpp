@@ -83,7 +83,7 @@ void FileLoader::loadLights(const aiScene *ai_scene, Scene *scene)
 {
     if(ai_scene->HasLights())
     {
-        for(GLuint i = 0; i < ai_scene->mNumLights; ++i)
+        for(unsigned int i = 0; i < ai_scene->mNumLights; ++i)
         {
             const aiLight *current_light = ai_scene->mLights[i];
             switch(current_light->mType)
@@ -116,7 +116,7 @@ void FileLoader::loadCameras(const aiScene *ai_scene, Scene *scene)
 {    
     if(ai_scene->HasCameras())
     {
-        for(GLuint i = 0; i < ai_scene->mNumCameras; ++i)
+        for(unsigned int i = 0; i < ai_scene->mNumCameras; ++i)
             scene->addCamera(new Camera(glm::vec3(ai_scene->mCameras[i]->mPosition.x, ai_scene->mCameras[i]->mPosition.y, ai_scene->mCameras[i]->mPosition.z),
                                         glm::vec3(ai_scene->mCameras[i]->mLookAt.x, ai_scene->mCameras[i]->mLookAt.y, ai_scene->mCameras[i]->mLookAt.z),
                                         glm::vec3(ai_scene->mCameras[i]->mUp.x, ai_scene->mCameras[i]->mUp.y, ai_scene->mCameras[i]->mUp.z),
@@ -127,7 +127,7 @@ void FileLoader::loadCameras(const aiScene *ai_scene, Scene *scene)
 
 void FileLoader::loadMaterials(const aiScene *ai_scene, MaterialLibrary &material_library, const std::string &path)
 {
-    for(GLuint i = 0; i < ai_scene->mNumMaterials; ++i)
+    for(unsigned int i = 0; i < ai_scene->mNumMaterials; ++i)
     {
         aiMaterial* ai_material = ai_scene->mMaterials[i];
 

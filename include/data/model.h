@@ -46,7 +46,7 @@ public:
     GLboolean hasBone(const std::string &bone_name) const;
     Mesh *getMesh(const GLuint &index) const{return m_meshes[index];}
     Material *getMaterial() const{return m_material;}
-    inline GLuint numberOfMeshes() const{return m_meshes.size();}
+    inline size_t numberOfMeshes() const{return m_meshes.size();}
 
     //  Setters
     inline void setTransform(const glm::mat4 &transform){m_transform = transform;}

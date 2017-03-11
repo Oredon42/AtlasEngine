@@ -27,7 +27,7 @@ public:
     inline KdTreeNode *getRight() const{return m_right;}
     inline GLboolean isLeaf() const{return m_isleaf;}
     inline Triangle *getTriangle(const GLuint &i) const{return m_triangles[i];}
-    inline GLboolean numTriangles() const{return m_triangles.size();}
+    inline size_t numTriangles() const{return m_triangles.size();}
 
     //  Setter
     inline void setBox(const AABB &box){m_box = box;}

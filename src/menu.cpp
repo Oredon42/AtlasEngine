@@ -58,7 +58,7 @@ void Menu::setGraphicsMenu()
     QFrame *buttons_frame = new QFrame;
     buttons_frame->setLayout(horizontal_buttons_layout);
 
-    for(GLuint i = 0; i < m_graphics_elements.size(); ++i)
+    for(size_t i = 0; i < m_graphics_elements.size(); ++i)
         vertical_layout->addWidget(m_graphics_elements[i]);
     vertical_layout->addWidget(buttons_frame);
     QWidget *graphics_widget = new QWidget;

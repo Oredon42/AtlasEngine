@@ -37,7 +37,7 @@ void MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene, SceneGrap
     scene_graph_node->transform(assimpToGlmMat4(ai_node->mTransformation));
 
     //  Loop on every aiMesh
-    for(GLuint i = 0; i < ai_node->mNumMeshes; ++i)
+    for(unsigned int i = 0; i < ai_node->mNumMeshes; ++i)
     {
         aiMesh *ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[i]];
         Model *model = processMesh(ai_mesh, ai_scene, scene_graph_node->getPath(), material_library);
@@ -45,7 +45,7 @@ void MeshLoader::processNode(aiNode *ai_node, const aiScene *ai_scene, SceneGrap
     }
 
     //  Loop on every child
-    for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
+    for(unsigned int i = 0; i < ai_node->mNumChildren; ++i)
     {
         //  If child node has meshes (do not process light or bone nodes)
         if(ai_node->mChildren[i]->mNumMeshes > 0)
@@ -104,7 +104,7 @@ void MeshLoader::processGeometry(const aiMesh *ai_mesh, std::vector<Vertex> &ver
     /*
      * Vertices
      * */
-    for(GLuint i = 0; i < ai_mesh->mNumVertices; i++)
+    for(unsigned int i = 0; i < ai_mesh->mNumVertices; i++)
     {
         Vertex vertex;
         vertex.Position = glm::vec3(ai_mesh->mVertices[i].x, ai_mesh->mVertices[i].y, ai_mesh->mVertices[i].z);
@@ -126,10 +126,10 @@ void MeshLoader::processGeometry(const aiMesh *ai_mesh, std::vector<Vertex> &ver
     /*
      * Indexes
      * */
-    for(GLuint i = 0; i < ai_mesh->mNumFaces; ++i)
+    for(unsigned int i = 0; i < ai_mesh->mNumFaces; ++i)
     {
         aiFace face = ai_mesh->mFaces[i];
-        for(GLuint j = 0; j < face.mNumIndices; ++j)
+        for(unsigned int j = 0; j < face.mNumIndices; ++j)
             indices.push_back(face.mIndices[j]);
     }
 }

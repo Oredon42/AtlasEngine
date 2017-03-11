@@ -56,9 +56,9 @@ public:
     inline GLuint numberOfModels(const GLuint &shader_index) const{return m_models[shader_index].size();}
 
     //  Others
-    inline void translate(const glm::vec3 &t, const std::string &node_name){for(GLuint i = 0; i < m_roots.size(); ++i)m_roots[i]->translate(t, node_name);}
-    inline void rotate(const glm::vec3 &r, const std::string &node_name){for(GLuint i = 0; i < m_roots.size(); ++i)m_roots[i]->rotate(glm::radians(r), node_name);}
-    inline void scale(const glm::vec3 &s, const std::string &node_name){for(GLuint i = 0; i < m_roots.size(); ++i)m_roots[i]->scale(s, node_name);}
+    inline void translate(const glm::vec3 &t, const std::string &node_name){for(size_t i = 0; i < m_roots.size(); ++i)m_roots[i]->translate(t, node_name);}
+    inline void rotate(const glm::vec3 &r, const std::string &node_name){for(size_t i = 0; i < m_roots.size(); ++i)m_roots[i]->rotate(glm::radians(r), node_name);}
+    inline void scale(const glm::vec3 &s, const std::string &node_name){for(size_t i = 0; i < m_roots.size(); ++i)m_roots[i]->scale(s, node_name);}
 
     inline void updateCamera(const GLfloat &xoffset, const GLfloat &yoffset){m_cameras[m_current_camera]->setOffset(xoffset, yoffset);}
 

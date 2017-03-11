@@ -31,7 +31,7 @@ void ArmatureLoader::fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, 
     vertex_bone_data = new VertexBoneData[ai_mesh->mNumVertices];
 
     //  For each bone of the ai_mesh
-    for(GLuint i = 0 ; i < ai_mesh->mNumBones ; ++i)
+    for(unsigned int i = 0 ; i < ai_mesh->mNumBones ; ++i)
     {
         GLuint bone_index = 0;
         std::string bone_name(ai_mesh->mBones[i]->mName.C_Str());
@@ -55,7 +55,7 @@ void ArmatureLoader::fillBoneInfos(std::map<std::string, GLuint> &bone_mapping, 
         bone_tree[bone_index].bone_offset = assimpToGlmMat4(ai_mesh->mBones[i]->mOffsetMatrix);
 
         //  Store bone weights inside vertex bone data
-        for(GLuint j = 0 ; j < ai_mesh->mBones[i]->mNumWeights ; ++j)
+        for(unsigned int j = 0 ; j < ai_mesh->mBones[i]->mNumWeights ; ++j)
         {
             GLuint vertexID = ai_mesh->mBones[i]->mWeights[j].mVertexId;
             GLfloat weight = ai_mesh->mBones[i]->mWeights[j].mWeight;
@@ -75,7 +75,7 @@ void ArmatureLoader::buildBoneTree(const aiNode *ai_node, Bone *bone_tree, const
     //  if has bone
     if(bone_mapping.find(ai_node->mName.C_Str()) != bone_mapping.end())
     {
-        for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
+        for(unsigned int i = 0; i < ai_node->mNumChildren; ++i)
         {
             std::string child_name = ai_node->mChildren[i]->mName.C_Str();
 
@@ -94,7 +94,7 @@ void ArmatureLoader::buildBoneTree(const aiNode *ai_node, Bone *bone_tree, const
         }
     }
     else
-        for(GLuint i = 0; i < ai_node->mNumChildren; ++i)
+        for(unsigned int i = 0; i < ai_node->mNumChildren; ++i)
             buildBoneTree(ai_node->mChildren[i], bone_tree, bone_mapping);
 }
 

@@ -126,7 +126,7 @@ struct MaterialLibrary
     {
         std::vector<Texture *> out_textures;
         //  For each texture
-        for(GLuint i = 0; i < ai_material->GetTextureCount(type); i++)
+        for(GLuint i = 0; i < ai_material->GetTextureCount(type); ++i)
         {
             aiString ai_texture_path;
             ai_material->GetTexture(type, i, &ai_texture_path);

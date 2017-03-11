@@ -41,7 +41,7 @@ void GeometryRenderProcess::init(const GLuint &width, const GLuint &height)
     m_gBuffer.attachRenderBuffers(gRenderbuffer_datas);
 
     // Setup shaders
-    for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
         m_shaders[i].initGeometry(m_shader_types[i]);
 
     m_out_textures.push_back(m_gBuffer.getTexture(0));

@@ -13,7 +13,7 @@ Renderer::Renderer() :
 
 Renderer::~Renderer()
 {
-    for(GLuint i = 0; i < m_pipelines.size(); ++i)
+    for(size_t i = 0; i < m_pipelines.size(); ++i)
         delete m_pipelines[i];
 
     m_pipelines.clear();
