@@ -4,9 +4,6 @@
 
 Scene::Scene(const std::string &path, GLfloat &render_time) :
     m_path(path),
-    m_nb_pointlights(0),
-    m_nb_dirlights(0),
-    m_nb_spotlights(0),
     m_skybox(0),
     m_background_color(glm::vec3(0.f, 0.f, 0.f)),
     m_current_camera(0),
@@ -25,21 +22,29 @@ Scene::~Scene()
         delete m_cameras[i];
     m_cameras.clear();
 
-    for(size_t i = 0; i < m_lights.size(); ++i)
-        delete m_lights[i];
-    m_lights.clear();
+    for(size_t i = 0; i < m_dirlights.size(); ++i)
+        delete m_dirlights[i];
+    m_dirlights.clear();
+
+    for(size_t i = 0; i < m_pointlights.size(); ++i)
+        delete m_pointlights[i];
+    m_pointlights.clear();
+
+    for(size_t i = 0; i < m_spotlights.size(); ++i)
+        delete m_spotlights[i];
+    m_spotlights.clear();
 
     if(m_skybox != 0)
         delete m_skybox;
 }
 
 /*
- * Draw the scene using deferred rendering
+ * Draw the scene
  * with the shaders of the renderer
  * each Model will be drawn using
  * its Material shader
  * */
-void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
+void Scene::draw(Shaders &shaders, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
 {
     Camera *current_camera = m_cameras[m_current_camera];
     current_camera->orientate();
@@ -60,8 +65,14 @@ void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GL
             glUseProgram(shaders[i].getProgram());
             current_camera->sendDatas(shaders[i], window_width, window_height);
 
-            for(size_t j = 0; j < m_lights.size(); ++j)
-                m_lights[j]->sendDatas(shaders[i]);
+            for(size_t j = 0; j < m_dirlights.size(); ++j)
+                m_dirlights[j]->sendDatas(shaders[i]);
+
+            for(size_t j = 0; j < m_pointlights.size(); ++j)
+                m_pointlights[j]->sendDatas(shaders[i]);
+
+            for(size_t j = 0; j < m_spotlights.size(); ++j)
+                m_spotlights[j]->sendDatas(shaders[i]);
 
             for(size_t j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->draw(shaders[i], render_time);
@@ -83,10 +94,10 @@ void Scene::draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GL
 }
 
 /*
- * Draw the scene using deferred rendering
+ * Draw the scene
  * with one shader
  * */
-void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
+void Scene::draw(Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
 {
     Camera *current_camera = m_cameras[m_current_camera];
     current_camera->orientate();
@@ -107,8 +118,39 @@ void Scene::draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfl
             shader.use();
             current_camera->sendDatas(shader, window_width, window_height);
 
-            for(size_t j = 0; j < m_lights.size(); ++j)
-                m_lights[j]->sendDatas(shader);
+            for(size_t j = 0; j < m_dirlights.size(); ++j)
+                m_dirlights[j]->sendDatas(shader);
+
+            for(size_t j = 0; j < m_pointlights.size(); ++j)
+                m_pointlights[j]->sendDatas(shader);
+
+            for(size_t j = 0; j < m_spotlights.size(); ++j)
+                m_spotlights[j]->sendDatas(shader);
+
+            for(size_t j = 0; j < m_models[i].size(); ++j)
+                m_models[i][j]->draw(shader, render_time);
+        }
+    }
+}
+
+/*
+ * Draw the scene
+ * with one shader
+ * */
+void Scene::drawNoLight(Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const
+{
+    Camera *current_camera = m_cameras[m_current_camera];
+    current_camera->orientate();
+    current_camera->move(keys, render_time);
+
+    //  Loop on every shader type
+    //  Loop and draw every mesh that uses this shader
+    for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
+    {
+        if(m_models[i].size() > 0)
+        {
+            shader.use();
+            current_camera->sendDatas(shader, window_width, window_height);
 
             for(size_t j = 0; j < m_models[i].size(); ++j)
                 m_models[i][j]->draw(shader, render_time);
@@ -174,10 +216,28 @@ void Scene::buildKdTree()
     //m_kdtree_built = true;
 }
 
+void Scene::sendLightDatas(Shader &shader) const
+{
+    for(size_t i = 0; i < m_dirlights.size(); ++i)
+        m_dirlights[i]->sendDatas(shader);
+
+    for(size_t i = 0; i < m_pointlights.size(); ++i)
+        m_pointlights[i]->sendDatas(shader);
+
+    for(size_t i = 0; i < m_spotlights.size(); ++i)
+        m_spotlights[i]->sendDatas(shader);
+}
+
 void Scene::sendViewSpaceLightDatas(const Shader &shader) const
 {
-    for(size_t i = 0; i < m_lights.size(); ++i)
-        m_lights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
+    for(size_t i = 0; i < m_dirlights.size(); ++i)
+        m_dirlights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
+
+    for(size_t i = 0; i < m_pointlights.size(); ++i)
+        m_pointlights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
+
+    for(size_t i = 0; i < m_spotlights.size(); ++i)
+        m_spotlights[i]->sendViewDatas(shader, m_cameras[m_current_camera]->getView());
 }
 
 SceneGraphNode *Scene::addSceneGraphNode(const std::string name, Model *model)

@@ -3,7 +3,7 @@
 #include "include/data/scene.h"
 
 WireframeRenderProcess::WireframeRenderProcess() :
-    RenderProcess::RenderProcess(1)
+    RenderProcess(1)
 {
 
 }

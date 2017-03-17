@@ -1,35 +1,37 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
+#include <vector>
+
 #include "openglincludes.h"
 #include "texture.h"
 
-#include <vector>
-
 struct FramebufferTextureDatas
 {
-    GLint internal_format;
-    GLenum format;
-    GLenum type;
-    GLint clamp;
-    GLuint filter_min;
-    GLuint filter_max;
-    GLfloat border_color[4];
-    GLboolean is_depth;
+    GLint internal_format;      //  GL_R8, GL_RGB16F ...
+    GLenum format;              //  GL_RED, GL_RGB ...
+    GLenum type;                //  GL_UNSIGNED_BYTE, GL_FLOAT ...
+    GLint clamp;                //  GL_CLAMP_TO_BORDER ... (or GL_FALSE)
+    GLuint filter_min;          //  GL_NEAREST ...
+    GLuint filter_max;          //  GL_NEAREST ...
+    GLfloat border_color[4];    //  Default = {0, 0, 0, 0}
+    GLboolean is_depth;         //  Depth map?
+    GLenum target;              //  GL_TEXTURE_2D ...
 
-    FramebufferTextureDatas(const GLint &i_f, const GLenum &f, const GLenum &t, GLint c = GL_FALSE, GLuint f_min = GL_NEAREST, GLuint f_max = GL_NEAREST, glm::vec4 b_c = glm::vec4(0.f), GLboolean i_d = GL_FALSE) :
-        internal_format(i_f),
-        format(f),
-        type(t),
-        clamp(c),
-        filter_min(f_min),
-        filter_max(f_max),
-        is_depth(i_d)
+    FramebufferTextureDatas(const GLint &internal_format_, const GLenum &format_, const GLenum &type_, GLint clamp_ = GL_FALSE, GLuint filter_min_ = GL_NEAREST, GLuint filter_max_ = GL_NEAREST, const GLfloat border_color_[4] = default_border_color, GLboolean is_depth_ = GL_FALSE, GLenum target_ = GL_TEXTURE_2D) :
+        internal_format(internal_format_),
+        format(format_),
+        type(type_),
+        clamp(clamp_),
+        filter_min(filter_min_),
+        filter_max(filter_max_),
+        is_depth(is_depth_),
+        target(target_)
     {
-        border_color[0] = b_c.x;
-        border_color[1] = b_c.y;
-        border_color[2] = b_c.z;
-        border_color[3] = b_c.w;
+        border_color[0] = border_color_[0];
+        border_color[1] = border_color_[1];
+        border_color[2] = border_color_[2];
+        border_color[3] = border_color_[3];
     }
 };
 
@@ -58,6 +60,7 @@ public:
     void attachRenderBuffers(const std::vector<FramebufferRenderbufferDatas> &renderbuffer_datas, GLuint *custom_widths = 0, GLuint *custom_heights = 0);
 
     inline void bind(GLenum target = GL_FRAMEBUFFER)const {glBindFramebuffer(target, m_buffer);}
+    inline void release(GLenum target = GL_FRAMEBUFFER) const{glBindFramebuffer(target, 0);}
 
     //  Getters
     inline GLuint width() const{return m_width;}
@@ -70,8 +73,8 @@ private:
     std::vector<Texture *> m_textures;
     GLuint *m_renderbuffers;
 
-    size_t m_num_textures;
-    size_t m_num_renderbuffers;
+    GLuint m_num_textures;
+    GLuint m_num_renderbuffers;
 
     std::vector<FramebufferTextureDatas> m_texture_datas;
     std::vector<FramebufferRenderbufferDatas> m_renderbuffer_datas;

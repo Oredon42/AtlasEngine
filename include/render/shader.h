@@ -73,31 +73,28 @@ class Shader
 {
 public:
     Shader();
-    Shader(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
+    Shader(const std::string &vertexPath, const std::string &fragmentPath, const std::string &geometryPath = "", std::string path = "");
 
-    void init(const std::string &vertexPath, const std::string &fragmentPath, std::string path = "");
-    void initForward(const ShaderType &shader_type, const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
-    void initGeometry(const ShaderType &shader_type);
-    void initLighting(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
+    void init(const std::string &vertexPath, const std::string &fragmentPath, const std::string &geometryPath = "", std::string path = "");
+    void initGeometryPass(const ShaderType &shader_type);
+    void initLightingPass(const GLuint &nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights);
     inline void initDefine(const std::string &index, const Define &define){m_defines.insert({index, define});}
 
     void reload();
-    void use() const;
-
+    void use();
+    inline void activateNextTexture() {glActiveTexture(GL_TEXTURE0 + m_nb_textures_activated++);} // Use this to not worry about which texture to activate
 
     //  Getters
     inline GLuint getProgram() const{return m_program;}
+    inline GLuint getActiveTexture() const{return m_nb_textures_activated - 1;}
 
     //  Setters
-    inline void setNbDirLights(const GLuint &nb_dirlights){m_nb_dirlights = nb_dirlights;}
     inline void setNbPointLights(const GLuint &nb_pointlights){m_nb_pointlights = nb_pointlights;}
-    inline void setNbSpotLights(const GLuint &nb_spotlights){m_nb_spotlights = nb_spotlights;}
     inline void setDefined(const std::string &index, const GLboolean &defined){m_defines.at(index).defined = defined;}
 
 private:
-    GLboolean compileSourceCode(const std::string &v_shader_string, const std::string &f_shader_string);
-    GLboolean loadSourceFromFiles(std::string &vertex_code, std::string &fragment_code);
-    void generateForwardCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
+    GLboolean compileSourceCode(const std::string &v_shader_string, const std::string &f_shader_string, const std::string &g_shader_string = "");
+    GLboolean loadSourceFromFiles(std::string &vertex_code, std::string &fragment_code, std::string &geometry_code);
     void generateGeometryCode(const ShaderType &shader_type, std::string &vertex_code, std::string &fragment_code);
     void generateLightingCode(std::string &vertex_code, std::string &fragment_code);
 
@@ -105,6 +102,7 @@ private:
 
     std::string m_vertex_saved_path;
     std::string m_fragment_saved_path;
+    std::string m_geometry_saved_path;
 
     GLuint m_nb_dirlights;
     GLuint m_nb_pointlights;
@@ -113,6 +111,8 @@ private:
     GLboolean m_initialised;
 
     std::unordered_map<std::string,Define> m_defines;
+
+    GLuint m_nb_textures_activated;
 };
 
 struct Shaders

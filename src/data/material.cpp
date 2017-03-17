@@ -109,7 +109,7 @@ Texture *Material::textureFromFile(const std::string &directory, const GLchar *p
     return texture;
 }
 
-void Material::sendDatas(const Shader &shader) const
+void Material::sendDatas(Shader &shader) const
 {
     if(m_textures.size() == 0)
         //  No texture
@@ -122,7 +122,6 @@ void Material::sendDatas(const Shader &shader) const
 
         for(size_t i = 0; i < m_textures.size(); ++i)
         {
-            glActiveTexture(GL_TEXTURE0 + i);
             std::stringstream ss;
             std::string number;
             std::string name = m_textures[i]->getShadingType();
@@ -134,7 +133,8 @@ void Material::sendDatas(const Shader &shader) const
                 ss << normalNr++;
 
             number = ss.str();
-            glUniform1i(glGetUniformLocation(shader.getProgram(), ("material." + name + number).c_str()), i);
+            shader.activateNextTexture();
+            glUniform1i(glGetUniformLocation(shader.getProgram(), ("material." + name + number).c_str()), shader.getActiveTexture());
             glBindTexture(GL_TEXTURE_2D, m_textures[i]->getId());
         }
     }

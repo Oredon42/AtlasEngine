@@ -19,7 +19,8 @@ public:
     void init(const glm::vec3 &color, const GLfloat &intensity, const glm::vec3 &position);
 
     virtual void sendViewDatas(const Shader &shader, const glm::mat4 &view) const;
-    virtual void sendDatas(const Shader &shader) const;
+    virtual void sendDatas(Shader &shader) const;
+    virtual void sendShadowDatas(Shader &shader) const;
 
     //  Getters
     inline glm::vec3 getPosition() const{return m_position;}
@@ -33,6 +34,8 @@ protected:
     GLfloat m_constant;
     GLfloat m_linear;
     GLfloat m_quadratic;
+
+    glm::mat4 m_shadow_transforms[6];
 };
 
 #endif // POINTLIGHT_H

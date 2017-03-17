@@ -77,6 +77,8 @@ GLboolean FileLoader::load(const std::string path, SceneGraphNode *scene_graph_n
         m_meshloader.load(ai_scene, scene_graph_node, material_library, m_process_armatures);
     //if(m_process_animations)
     //    m_animationloader.load(ai_scene, scene);
+
+    return GL_TRUE;
 }
 
 void FileLoader::loadLights(const aiScene *ai_scene, Scene *scene)

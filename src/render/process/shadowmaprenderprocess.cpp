@@ -3,28 +3,18 @@
 #include "include/data/quad.h"
 
 ShadowMapRenderProcess::ShadowMapRenderProcess(const GLuint nb_dirlights, const GLuint &nb_pointlights, const GLuint &nb_spotlights) :
-    RenderProcess::RenderProcess(1),
-    m_shadow_width(1024),
-    m_shadow_height(1024),
-    m_near_plane(1.f),
-    m_far_plane(10.f)
+    RenderProcess(1)
 {
 
 }
 
 void ShadowMapRenderProcess::init(const GLuint &width, const GLuint &height)
 {
-    RenderProcess::init(m_shadow_width, m_shadow_height);
+    //  DirLights + SpotLights
+    m_dirlights_depth_shader.init("shaders/2D_texture_depth.vert", "shaders/2D_texture_depth.frag");
 
-    m_dirlights_depth_maps_buffer.init(m_shadow_width, m_shadow_height);
-
-    std::vector<FramebufferTextureDatas> depth_map_texture_datas;
-    depth_map_texture_datas.push_back(FramebufferTextureDatas(GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_NEAREST, GL_NEAREST, {1.f, 1.f, 1.f, 1.f}, GL_TRUE));
-    m_dirlights_depth_maps_buffer.attachTextures(depth_map_texture_datas);
-
-    m_shader.init("shaders/depth.vert", "shaders/depth.frag");
-
-    m_out_textures.push_back(m_dirlights_depth_maps_buffer.getTexture(0));
+    //  PointLights
+    m_pointlights_depth_shader.init("shaders/cubemap_depth.vert", "shaders/cubemap_depth.frag", "shaders/cubemap_depth.geom");
 }
 
 void ShadowMapRenderProcess::initMenuElement()
@@ -39,21 +29,48 @@ void ShadowMapRenderProcess::resize(const GLuint &width, const GLuint &height)
 
 void ShadowMapRenderProcess::process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
-    glm::mat4 lightProjection, lightView;
-    glm::mat4 lightSpaceMatrix;
-    GLfloat near_plane = 1.0f, far_plane = 20.0f;
-    lightProjection = glm::ortho(-7.0f, 7.0f, -7.0f, 7.0f, near_plane, far_plane);
-    //lightProjection = glm::perspective(45.0f, (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // Note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene.
-    lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-    lightSpaceMatrix = lightProjection * lightView;
+    //  DirLights
+    for(size_t i = 0; i < scene.numberOfDirLights(); ++i)
+    {
+        DirLight *current_dirlight = scene.getDirLight(i);
+        glViewport(0, 0, current_dirlight->getDepthMapWidth(), current_dirlight->getDepthMapHeight());
+        current_dirlight->bindDepthMapBuffer();
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-    m_shader.use();
-    glUniformMatrix4fv(glGetUniformLocation(m_shader.getProgram(), "light_space_matrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+        m_dirlights_depth_shader.use();
+        current_dirlight->sendShadowDatas(m_dirlights_depth_shader);
+        scene.drawNoLight(m_dirlights_depth_shader, keys, render_time, current_dirlight->getDepthMapWidth(), current_dirlight->getDepthMapHeight());
 
-    glViewport(0, 0, m_shadow_width, m_shadow_height);
-    m_dirlights_depth_maps_buffer.bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    scene.draw(m_shader, keys, render_time, m_shadow_width, m_shadow_height);
+        current_dirlight->releaseDepthMapBuffer();
+    }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //  PointLights
+    for(size_t i = 0; i < scene.numberOfPointLights(); ++i)
+    {
+        PointLight *current_pointlight = scene.getPointLight(i);
+        glViewport(0, 0, current_pointlight->getDepthMapWidth(), current_pointlight->getDepthMapHeight());
+        current_pointlight->bindDepthMapBuffer();
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        m_pointlights_depth_shader.use();
+        current_pointlight->sendShadowDatas(m_pointlights_depth_shader);
+        scene.drawNoLight(m_pointlights_depth_shader, keys, render_time, current_pointlight->getDepthMapWidth(), current_pointlight->getDepthMapHeight());
+
+        current_pointlight->releaseDepthMapBuffer();
+    }
+
+    //  SpotLights
+    for(size_t i = 0; i < scene.numberOfSpotLights(); ++i)
+    {
+        SpotLight *current_spotlight = scene.getSpotLight(i);
+        glViewport(0, 0, current_spotlight->getDepthMapWidth(), current_spotlight->getDepthMapHeight());
+        current_spotlight->bindDepthMapBuffer();
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        m_dirlights_depth_shader.use();
+        current_spotlight->sendShadowDatas(m_dirlights_depth_shader);
+        scene.drawNoLight(m_dirlights_depth_shader, keys, render_time, current_spotlight->getDepthMapWidth(), current_spotlight->getDepthMapHeight());
+
+        current_spotlight->releaseDepthMapBuffer();
+    }
 }

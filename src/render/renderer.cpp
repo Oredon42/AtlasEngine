@@ -47,7 +47,7 @@ void Renderer::addPipeline(Pipeline *pipeline, const std::string &pipeline_name)
 /*
  * Render a scene using deferred rendering
  * */
-void Renderer::drawScene(const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) const
+void Renderer::drawScene(const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
 {
     m_current_pipeline->process(m_quad, scene, render_time, keys);
 
@@ -55,7 +55,7 @@ void Renderer::drawScene(const Scene &scene, const GLfloat &render_time, const G
     QOpenGLFramebufferObject::bindDefault();
     glClear(GL_COLOR_BUFFER_BIT);
     m_quad_shader.use();
-    glActiveTexture(GL_TEXTURE0);
+    m_quad_shader.activateNextTexture();
     m_current_pipeline->getOutTexture()->bind();
     m_quad.draw();
 }

@@ -29,7 +29,7 @@ public:
 
     void addPipeline(Pipeline *pipeline, const std::string &pipeline_name);
 
-    void drawScene(const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) const;
+    void drawScene(const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]);
 
     void reloadShaders();
 

@@ -13,6 +13,12 @@ class Scene;
 
 class RenderProcess
 {
+    /*
+     * Link to previous processes
+     * gives the index of the previous process
+     * and the index of the 'output texture'
+     * linked to this process
+     * */
     struct ProcessTextureLink
     {
         GLuint process_index;
@@ -20,6 +26,18 @@ class RenderProcess
     };
 
 public:
+    //  CLASS METHOD
+    /*
+     * Connect indices_size textures of 2 processes
+     * each r1 out texture at indexes r1_texture_indices
+     * will be connected to
+     * r2 in textures at r2_texture_indices
+     * */
+    static GLboolean connectProcesses(RenderProcess *r1, RenderProcess *r2, const std::initializer_list<GLuint> &r1_texture_indices, const std::initializer_list<GLuint> &r2_texture_indices);
+
+
+    // METHODS
+
     RenderProcess(const GLuint &num_inputs_textures);
     virtual ~RenderProcess();
 
@@ -61,14 +79,5 @@ protected:
 
     MenuElement *m_menu_element;
 };
-
-
-/*
- * Connect indices_size textures of 2 processes
- * each r1 out texture at indexes r1_texture_indices
- * will be connected to
- * r2 in textures at r2_texture_indices
- * */
-GLboolean connectProcesses(RenderProcess *r1, RenderProcess *r2, const std::initializer_list<GLuint> &r1_texture_indices, const std::initializer_list<GLuint> &r2_texture_indices);
 
 #endif // PROCESS_H

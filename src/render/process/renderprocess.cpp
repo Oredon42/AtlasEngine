@@ -30,13 +30,16 @@ void RenderProcess::init(const GLuint &width, const GLuint &height)
 }
 
 /*
- * r1 outputs will be connected to r2 outputs
+ * r1 outputs will be connected to r2 inputs
  *
  * r1_texture_indices contains the indices of
  * the outputs of r1 that will be connected to
  * the inputs of r2 at the indices r2_texture_indices
+ *
+ * textures indices can be sent as an initializer list,
+ * for example: {0, 1, 2}
  * */
-GLboolean connectProcesses(RenderProcess *r1, RenderProcess *r2, const std::initializer_list<GLuint> &r1_texture_indices, const std::initializer_list<GLuint> &r2_texture_indices)
+GLboolean RenderProcess::connectProcesses(RenderProcess *r1, RenderProcess *r2, const std::initializer_list<GLuint> &r1_texture_indices, const std::initializer_list<GLuint> &r2_texture_indices)
 {
     if(r1_texture_indices.size() > 0 && r1_texture_indices.size() == r2_texture_indices.size())
     {

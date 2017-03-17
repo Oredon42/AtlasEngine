@@ -36,7 +36,7 @@ public:
     Model(Mesh *mesh, Material *material);
     virtual ~Model();
 
-    virtual void draw(const Shader &shader, const GLfloat &render_time) const;
+    virtual void draw(Shader &shader, const GLfloat &render_time) const;
 
     void attachArmature(Armature *armature);
     void detachArmature();

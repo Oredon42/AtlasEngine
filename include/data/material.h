@@ -26,7 +26,7 @@ public:
     std::vector<Texture *> loadMaterialTextures(const aiMaterial *ai_material, const aiTextureType &type, const std::string &type_name, const std::string &path, std::vector<Texture *> &textures_loaded);
     Texture *textureFromFile(const std::string &directory, const GLchar *path, const std::string &shading_type) const;
 
-    void sendDatas(const Shader &shader) const;
+    void sendDatas(Shader &shader) const;
 
     //  Getters
     inline GLboolean hasNormalMap() const{return m_has_normal_map;}

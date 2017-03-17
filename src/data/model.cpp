@@ -31,7 +31,7 @@ Model::~Model()
     delete m_armature;
 }
 
-void Model::draw(const Shader &shader, const GLfloat &render_time) const
+void Model::draw(Shader &shader, const GLfloat &render_time) const
 {
     glUniformMatrix4fv(glGetUniformLocation(shader.getProgram(), "model"), 1, GL_FALSE, glm::value_ptr(m_transform));
 

@@ -26,19 +26,21 @@ public:
     Scene(const std::string &path, GLfloat &render_time);
     ~Scene();
 
-    void draw(const Shaders &shaders, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const;
-    void draw(const Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const;
+    void draw(Shaders &shaders, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const;
+    void draw(Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const;
+    void drawNoLight(Shader &shader, const GLboolean (&keys)[1024], const GLfloat &render_time, const GLuint &window_width, const GLuint &window_height) const;
 
     //  Add
     SceneGraphNode *addSceneGraphNode(const std::string name, Model *model);
     inline void addSceneGraphRoot(SceneGraphRoot *s){m_roots.push_back(s);}
-    inline void addPointLight(PointLight *light){light->setIndex(m_nb_pointlights++);m_lights.push_back(light);}
-    inline void addDirLight(DirLight *light){m_lights.push_back(light);light->setIndex(m_nb_dirlights++);}
-    inline void addSpotLight(SpotLight *light){m_lights.push_back(light);light->setIndex(m_nb_spotlights++);}
+    inline void addDirLight(DirLight *dirlight){dirlight->setIndex(m_dirlights.size());m_dirlights.push_back(dirlight);}
+    inline void addPointLight(PointLight *pointlight){pointlight->setIndex(m_pointlights.size());m_pointlights.push_back(pointlight);}
+    inline void addSpotLight(SpotLight *spotlight){spotlight->setIndex(m_spotlights.size());m_spotlights.push_back(spotlight);}
     inline void addCamera(Camera *c){m_cameras.push_back(c);}
     inline void addModel(Model *model){m_models[model->getShaderTypeIndex()].push_back(model);}
 
     //  Send
+    void sendLightDatas(Shader &shader) const;
     void sendViewSpaceLightDatas(const Shader &shader) const;
     inline void sendCameraToShader(const Shader &shader, const GLfloat &screen_width, const GLfloat &screen_height) const{m_cameras[m_current_camera]->sendDatas(shader, screen_width, screen_height);}
 
@@ -48,12 +50,14 @@ public:
     inline std::string getPath() const{return m_path;}
     inline Camera *getCurrentCamera() const{return m_cameras[m_current_camera];}
     inline KdTree getKdTree() const{return m_kdtree;}
-    inline Light *getLight(const GLuint &i) const{return m_lights[i];}
+    inline DirLight *getDirLight(const GLuint &i) const{return m_dirlights[i];}
+    inline PointLight *getPointLight(const GLuint &i) const{return m_pointlights[i];}
+    inline SpotLight *getSpotLight(const GLuint &i) const{return m_spotlights[i];}
 
-    inline GLuint numberOfPointLights() const{return m_nb_pointlights;}
-    inline GLuint numberOfDirights() const{return m_nb_dirlights;}
-    inline GLuint numberOfSpotLights() const{return m_nb_spotlights;}
-    inline GLuint numberOfModels(const GLuint &shader_index) const{return m_models[shader_index].size();}
+    inline size_t numberOfPointLights() const{return m_pointlights.size();}
+    inline size_t numberOfDirLights() const{return m_dirlights.size();}
+    inline size_t numberOfSpotLights() const{return m_spotlights.size();}
+    inline size_t numberOfModels(const GLuint &shader_index) const{return m_models[shader_index].size();}
 
     //  Others
     inline void translate(const glm::vec3 &t, const std::string &node_name){for(size_t i = 0; i < m_roots.size(); ++i)m_roots[i]->translate(t, node_name);}
@@ -69,14 +73,12 @@ public:
 
 protected:
     std::string m_path;
-    std::vector<Light *> m_lights;
+    std::vector<DirLight *> m_dirlights;
+    std::vector<PointLight *> m_pointlights;
+    std::vector<SpotLight *> m_spotlights;
     std::vector<Camera *> m_cameras;
     std::vector<SceneGraphRoot *> m_roots;
     std::vector<Model *> m_models[NB_SHADER_TYPES];
-
-    GLuint m_nb_pointlights;
-    GLuint m_nb_dirlights;
-    GLuint m_nb_spotlights;
 
     Skybox *m_skybox;
     glm::vec3 m_background_color;

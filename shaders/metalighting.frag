@@ -10,7 +10,9 @@ uniform sampler2D gPositionDepth;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gMaterial;
-uniform sampler2D AO;
+uniform samplerCube shadows;
+
+uniform float far_plane;
 
 uniform float M_PI = 3.1415926535897932384626433832795;
 
@@ -38,6 +40,10 @@ struct PointLight
     
     float intensity;
     vec3 color;
+
+    float depth_map_near;
+    float depth_map_far;
+    samplerCube depth_map;
 };
 uniform PointLight pointLights[POINTLIGHT];
 #endif
@@ -57,6 +63,10 @@ struct SpotLight
     
     float cut_off;
     float outer_cut_off;
+
+    mat4 light_space_matrix;
+    sampler2D depth_map;
+
 };
 uniform SpotLight spotLights[SPOTLIGHT];
 #endif
@@ -127,14 +137,14 @@ vec3 CalcDirLight(DirLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float r
     vec4 light_point = light.light_space_matrix * vec4(texture(gPositionDepth, TexCoords).rgb, 1.0);
     vec3 projCoords = light_point.xyz / light_point.w;
     projCoords = projCoords * 0.5 + 0.5;
-    float closestDepth = texture(AO, projCoords.xy).r;
+    float closestDepth = texture(light.depth_map, projCoords.xy).r;
     float currentDepth = texture(gPositionDepth, TexCoords).a;
     currentDepth = projCoords.z;
     float bias = max(0.05 * (1.0 - NdotL), 0.005);
     float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
     shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(light.depth_map, 0);
-    /*for(int x = -1; x <= 1; ++x)
+    for(int x = -1; x <= 1; ++x)
     {
         for(int y = -1; y <= 1; ++y)
         {
@@ -142,12 +152,12 @@ vec3 CalcDirLight(DirLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float r
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }    
     }
-    shadow /= 9.0;*/
+    shadow /= 9.0;
     
     if(projCoords.z > 1.0)
         shadow = 0.0;
-    
-    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL;// * (1-shadow);
+
+    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * (1-shadow);
 }
 #endif
 #ifdef POINTLIGHT
@@ -172,21 +182,21 @@ vec3 CalcPointLight(PointLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, flo
     kD *= 1.0 - metalness;
     float NdotL = max(dot(N, L), 0.0);
     
-    /*vec3 fragToLight = fragPos - light.position;
-    float closestDepth = texture(shadows, fragToLight).r;
-    closestDepth *= far_plane;
+    vec3 fragToLight = fragPos - light.position;
+    float closestDepth = texture(light.depth_map, fragToLight).r;
+    closestDepth *= light.depth_map_far;
     float currentDepth = length(fragToLight);
     float bias = 0.5;
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;*/
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
     
-    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * attenuation;// * (1-shadow);
+    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * (1-shadow);
 }
 #endif
 
 #ifdef SPOTLIGHT
 vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float roughness, float metalness, vec3 color)
 {
-    vec3 L = normalize(-light.direction);
+    vec3 L = normalize(light.position - fragPos);
     vec3 H = normalize(V + L);
     float distance = distance(light.position, fragPos);
     float attenuation = 1.0 / (distance * distance);
@@ -209,8 +219,32 @@ vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 V, vec3 N, vec3 F0, float
     float theta = dot(L, normalize(-light.direction));
     float epsilon = light.cut_off - light.outer_cut_off;
     float cone_intensity = clamp((theta - light.outer_cut_off) / epsilon, 0.0, 1.0);
+
+//  Shadow calculation
+    vec4 light_point = light.light_space_matrix * vec4(texture(gPositionDepth, TexCoords).rgb, 1.0);
+    vec3 projCoords = light_point.xyz / light_point.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(light.depth_map, projCoords.xy).r;
+    float currentDepth = texture(gPositionDepth, TexCoords).a;
+    currentDepth = projCoords.z;
+    float bias = max(0.05 * (1.0 - NdotL), 0.005);
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+    shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(light.depth_map, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(light.depth_map, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }    
+    }
+    shadow /= 9.0;
     
-    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * cone_intensity * attenuation;
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+
+    return (kD * color / M_PI + brdf) * radiance * light.intensity * NdotL * cone_intensity * attenuation * (1-shadow);
 }
 #endif
 
@@ -222,7 +256,7 @@ void main()
     float depth = texture(gPositionDepth, TexCoords).a;
     vec3 FragPos = vec3(texture(gPositionDepth, TexCoords).rgb);
     vec3 N = texture(gNormal, TexCoords).rgb;
-    vec3 V = normalize(-FragPos);
+    vec3 V = normalize(viewPos - FragPos);
     
     float roughness = texture(gMaterial, TexCoords).r;
     float linearRoughness = pow(roughness, 4);
@@ -232,14 +266,14 @@ void main()
     vec3 color = texture(gAlbedoSpec, TexCoords).rgb;
     //color = pow(color, vec3(gamma));
     
-    float AmbientOcclusion = texture(AO, TexCoords).r;
+    //float AmbientOcclusion = texture(AO, TexCoords).r;
     
     vec3 F0 = vec3(0.16 * ior * ior);
     F0 = (1.0f - metalness) * F0 + metalness * color;
     
     float NdotV = abs(dot(N , V)) + 1e-5f;
     
-    vec3 ambient = vec3(0.3 * AmbientOcclusion);
+    //vec3 ambient = vec3(0.3 * AmbientOcclusion);
     vec3 lighting = vec3(0);
     
 #ifdef POINTLIGHT
@@ -267,7 +301,7 @@ void main()
     Brightness = brightness;
     
     FragColor = vec3(max(lighting, vec3(0)));
-    //FragColor = vec3(texture(dirLights[0].depth_map, TexCoords).a, 0, 0);
+    //FragColor = vec3(texture(pointLights[0].depth_map, FragPos - pointLights[0].position).r, 0, 0);
     //FragColor = vec3(texture(AO, TexCoords).rgb);
 
 }

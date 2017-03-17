@@ -81,11 +81,11 @@ void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfl
 
     m_SSAO_shader.use();
 
-    glActiveTexture(GL_TEXTURE0);
+    m_SSAO_shader.activateNextTexture();
     bindPreviousTexture(0);
-    glActiveTexture(GL_TEXTURE1);
+    m_SSAO_shader.activateNextTexture();
     bindPreviousTexture(1);
-    glActiveTexture(GL_TEXTURE2);
+    m_SSAO_shader.activateNextTexture();
     m_noise_texture.bind();
 
     for (GLuint i = 0; i < m_num_samples; ++i)
@@ -101,7 +101,7 @@ void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfl
 
     m_SSAO_blur_shader.use();
 
-    glActiveTexture(GL_TEXTURE0);
+    m_SSAO_blur_shader.activateNextTexture();
     m_SSAO_buffer.getTexture(0)->bind();
     quad.draw();
 

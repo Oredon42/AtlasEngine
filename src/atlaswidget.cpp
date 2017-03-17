@@ -81,7 +81,7 @@ void AtlasWidget::initializeGL()
 
     /*  SCENES MODIFICATION */
 
-    createGeometryScene();
+    //createGeometryScene();
     createRenderScene();
 
     /*  END OF SCENES MODIFICATION */
@@ -96,15 +96,15 @@ void AtlasWidget::initializeGL()
 
     GeometryRenderProcess *geometry_render_process = new GeometryRenderProcess();
     //SSAORenderProcess *ssao_render_process = new SSAORenderProcess();
-    LightingRenderProcess *lighting_render_process = new LightingRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
+    LightingRenderProcess *lighting_render_process = new LightingRenderProcess(m_current_scene->numberOfDirLights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
     HDRRenderProcess *hdr_render_process = new HDRRenderProcess();
-    ShadowMapRenderProcess *shadow_map_render_process = new ShadowMapRenderProcess(m_current_scene->numberOfDirights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
+    ShadowMapRenderProcess *shadow_map_render_process = new ShadowMapRenderProcess(m_current_scene->numberOfDirLights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
 
-    //connectProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
-    connectProcesses(geometry_render_process, lighting_render_process, {0, 1, 2, 3}, {0, 1, 2, 3});
-    //connectProcesses(ssao_render_process, lighting_render_process, {0}, {4});
-    connectProcesses(shadow_map_render_process, lighting_render_process, {0}, {4});
-    connectProcesses(lighting_render_process, hdr_render_process, {0, 1, 2}, {0, 1, 2});
+    //RenderProcess::connectProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
+    RenderProcess::connectProcesses(geometry_render_process, lighting_render_process, {0, 1, 2, 3}, {0, 1, 2, 3});
+    //RenderProcess::connectProcesses(ssao_render_process, lighting_render_process, {0}, {4});
+    RenderProcess::connectProcesses(shadow_map_render_process, lighting_render_process, {0}, {4});
+    RenderProcess::connectProcesses(lighting_render_process, hdr_render_process, {0, 1, 2}, {0, 1, 2});
 
     Pipeline *default_pipeline = new Pipeline(window()->width(), window()->height());
 
@@ -249,9 +249,9 @@ void AtlasWidget::setCurrentPipeline(const std::string &pipeline_name)
 
 void AtlasWidget::unPause()
 {
-    if(m_paused == true)
+    if(m_paused == GL_TRUE)
     {
-        m_paused = false;
+        m_paused = GL_FALSE;
 
         QApplication::setOverrideCursor(Qt::BlankCursor);
     }
@@ -284,10 +284,10 @@ void AtlasWidget::createRenderScene()
     r1->setMaterial(m_material_library.getMaterial("white"), "TallBox");
     r1->setMaterial(m_material_library.getMaterial("white"), "ShortBox");
 
-    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 1000.f, glm::vec3(0.f, 18.f, 0.f)));
-    m_current_scene->addPointLight(new PointLight(glm::normalize(glm::vec3(17.f, 12.f, 4.f)), 1000.f, glm::vec3(0.f, 18.f, 0.f)));
-    //m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 1000.f, glm::vec3(0.f, 18.f, 0.f), glm::vec3(0.f, -1.f, 0.f), glm::cos(glm::radians(30.f)), glm::cos(glm::radians(50.0f))));
-    //m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(1.f))));
+    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 100.f, glm::vec3(5.f, 15.f, 5.f)));
+    m_current_scene->addPointLight(new PointLight(glm::normalize(glm::vec3(17.f, 12.f, 4.f)), 100.f, glm::vec3(0.f, 18.f, 0.f)));
+    m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 1000.f, glm::vec3(-3.f, 18.f, -3.f), glm::normalize(glm::vec3(1.f, -1.f, 0.5f)), 30.f, 40.0f));
+    m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 1.f, glm::normalize(glm::vec3(-1.f, -1.f, 1.f))));
 
     m_current_scene->addSceneGraphRoot(r1);
 
