@@ -11,7 +11,6 @@
 #include "include/render/process/lightingrenderprocess.h"
 #include "include/render/process/hdrrenderprocess.h"
 #include "include/render/process/ssaorenderprocess.h"
-#include "include/render/process/shadowmaprenderprocess.h"
 #include "include/render/process/wireframerenderprocess.h"
 
 AtlasWidget::AtlasWidget(QWidget * parent) :
@@ -95,16 +94,14 @@ void AtlasWidget::initializeGL()
     /*  PIPELINES MODIFICATIONS */
 
     GeometryRenderProcess *geometry_render_process = new GeometryRenderProcess();
-    //SSAORenderProcess *ssao_render_process = new SSAORenderProcess();
+    SSAORenderProcess *ssao_render_process = new SSAORenderProcess();
     LightingRenderProcess *lighting_render_process = new LightingRenderProcess(m_current_scene->numberOfDirLights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
     HDRRenderProcess *hdr_render_process = new HDRRenderProcess();
-    ShadowMapRenderProcess *shadow_map_render_process = new ShadowMapRenderProcess(m_current_scene->numberOfDirLights(), m_current_scene->numberOfPointLights(), m_current_scene->numberOfSpotLights());
 
-    //RenderProcess::connectProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
-    RenderProcess::connectProcesses(geometry_render_process, lighting_render_process, {0, 1, 2, 3}, {0, 1, 2, 3});
-    //RenderProcess::connectProcesses(ssao_render_process, lighting_render_process, {0}, {4});
-    RenderProcess::connectProcesses(shadow_map_render_process, lighting_render_process, {0}, {4});
-    RenderProcess::connectProcesses(lighting_render_process, hdr_render_process, {0, 1, 2}, {0, 1, 2});
+    RenderProcess::linkProcesses(geometry_render_process, ssao_render_process, {0, 1}, {0, 1});
+    RenderProcess::linkProcesses(geometry_render_process, lighting_render_process, {0, 1, 2, 3}, {0, 1, 2, 3});
+    RenderProcess::linkProcesses(ssao_render_process, lighting_render_process, {0}, {4});
+    RenderProcess::linkProcesses(lighting_render_process, hdr_render_process, {0, 1, 2}, {0, 1, 2});
 
     Pipeline *default_pipeline = new Pipeline(window()->width(), window()->height());
 
@@ -121,7 +118,7 @@ void AtlasWidget::initializeGL()
     /*  END OF PIPELINES MODIFICATION */
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT, GL_FILL);
 }
 

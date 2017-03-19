@@ -1,6 +1,7 @@
 #include "include/data/lighting/spotlight.h"
 #include "include/render/shader.h"
 
+
 SpotLight::SpotLight(const glm::vec3 &color, const GLfloat &intensity, const glm::vec3 &position, const glm::vec3 &direction, const GLfloat &cut_off, const GLfloat &outer_cut_off) :
     Light(color, intensity),
     m_position(position),

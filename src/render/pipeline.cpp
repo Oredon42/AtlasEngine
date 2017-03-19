@@ -47,9 +47,9 @@ void Pipeline::process(const Quad &quad, const Scene &scene, const GLfloat &rend
  * */
 void Pipeline::setLastProcess(RenderProcess *render_process)
 {
-    /* Current process is at its correct place in the list
-     * will change if any process which is "read" after current
-     * process is previous to it
+    /* Processes are put in the order they will
+     * have to be performed to render
+     * i.e. according to their links
      * */
     std::vector<GLboolean> process_valid;
 
@@ -63,6 +63,7 @@ void Pipeline::setLastProcess(RenderProcess *render_process)
         RenderProcess *current_process = processes_queue.front();
         processes_queue.pop();
 
+        //  The process has already been inserted
         for(size_t i = 0; i < processes.size(); ++i)
             if(processes[i] == current_process)
                 process_valid[i] = GL_FALSE;
@@ -70,11 +71,14 @@ void Pipeline::setLastProcess(RenderProcess *render_process)
         processes.push_back(current_process);
         process_valid.push_back(GL_TRUE);
 
-        for(size_t i = 0; i < current_process->numberPreviousProcesses(); ++i)
-            processes_queue.push(current_process->getPreviousProcess(i));
+        for(size_t i = 0; i < current_process->numberIn(); ++i)
+            if(!current_process->inLinkIsNull(i))
+                processes_queue.push(current_process->getInputProcess(i));
     }
 
-    //  Fill m_processes in the right order
+    /* Fill m_processes in the right order
+     * Also build the final graphics menu
+     * */
     for(size_t i = processes.size(); i > 0; --i)
         if(process_valid[i-1])
         {

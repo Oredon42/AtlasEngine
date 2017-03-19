@@ -1,6 +1,7 @@
 #include "include/data/lighting/pointlight.h"
 #include "include/render/shader.h"
 
+
 PointLight::PointLight(const glm::vec3 &color, const GLfloat &intensity, const glm::vec3 &position) :
     Light(color, intensity),
     m_position(position),

@@ -3,7 +3,7 @@
 #include "include/data/scene.h"
 
 WireframeRenderProcess::WireframeRenderProcess() :
-    RenderProcess(1)
+    RenderProcess(0, 1)
 {
 
 }
@@ -24,7 +24,7 @@ void WireframeRenderProcess::init(const GLuint &width, const GLuint &height)
     m_out_buffer.attachTextures(texture_datas);
     m_out_buffer.attachRenderBuffers(renderbuffer_datas);
 
-    m_out_textures.push_back(m_out_buffer.getTexture(0));
+    m_out_textures[0] = m_out_buffer.getTexture(0);
 }
 
 void WireframeRenderProcess::initMenuElement()

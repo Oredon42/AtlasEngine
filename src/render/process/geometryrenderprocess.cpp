@@ -2,7 +2,7 @@
 #include "include/data/scene.h"
 
 GeometryRenderProcess::GeometryRenderProcess() :
-    RenderProcess(0)
+    RenderProcess(0, 4)
 {
 
 }
@@ -44,10 +44,10 @@ void GeometryRenderProcess::init(const GLuint &width, const GLuint &height)
     for(size_t i = 0; i < NB_SHADER_TYPES; ++i)
         m_shaders[i].initGeometryPass(m_shader_types[i]);
 
-    m_out_textures.push_back(m_gBuffer.getTexture(0));
-    m_out_textures.push_back(m_gBuffer.getTexture(1));
-    m_out_textures.push_back(m_gBuffer.getTexture(2));
-    m_out_textures.push_back(m_gBuffer.getTexture(3));
+    m_out_textures[0] = m_gBuffer.getTexture(0);
+    m_out_textures[1] = m_gBuffer.getTexture(1);
+    m_out_textures[2] = m_gBuffer.getTexture(2);
+    m_out_textures[3] = m_gBuffer.getTexture(3);
 }
 
 void GeometryRenderProcess::initMenuElement()

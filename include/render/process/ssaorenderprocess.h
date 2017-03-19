@@ -52,6 +52,8 @@ private:
 
     GLuint m_num_samples;
     GLint *m_samples_locations;
+    GLint m_view_location;
+    GLint m_transposed_inverse_view_location;
     GLint m_projection_location;
     GLint m_window_size_location;
 };

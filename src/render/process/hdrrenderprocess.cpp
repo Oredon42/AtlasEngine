@@ -11,7 +11,7 @@
 
 
 HDRRenderProcess::HDRRenderProcess() :
-    RenderProcess(3),
+    RenderProcess(3, 1),
     m_HDR(GL_TRUE),
     m_adaptation(GL_FALSE),
     m_bloom(GL_FALSE),
@@ -74,7 +74,7 @@ void HDRRenderProcess::init(const GLuint &width, const GLuint &height)
     m_brightness_ping_buffer2.attachTextures(adaptation_texture_datas);
     m_brightness_pong_buffer2.attachTextures(adaptation_texture_datas);
 
-    m_out_textures.push_back(m_out_buffer.getTexture(0));
+    m_out_textures[0] = m_out_buffer.getTexture(0);
 
     m_avg_lum_location = glGetUniformLocation(m_HDR_shader.getProgram(), "L_avg");
 }
@@ -167,7 +167,7 @@ void HDRRenderProcess::processAdaptation(const Quad &quad, const GLfloat &render
     m_downscaling_shader.use();
     m_downscaling_shader.activateNextTexture();
     bindPreviousTexture(2);
-    glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), m_previous_processes[0]->width(), m_previous_processes[0]->height());
+    glUniform2f(glGetUniformLocation(m_downscaling_shader.getProgram(), "size"), m_in_links[0]->out_render_process_pointer->width(), m_in_links[0]->out_render_process_pointer->height());
     quad.draw();
 
 

@@ -14,31 +14,29 @@ class Scene;
 class RenderProcess
 {
     /*
-     * Link to previous processes
-     * gives the index of the previous process
-     * and the index of the 'output texture'
-     * linked to this process
+     * Link between 2 processes in order to send out
+     * texture of a process to another as inputs
+     * the link is between a IN and a OUT process
+     * IN process output textures are linked to OUT
+     * process inputs textures
      * */
-    struct ProcessTextureLink
+    struct RenderProcessLink
     {
-        GLuint process_index;
-        GLuint texture_index;
+        RenderProcess *in_render_process_pointer;   //  Pointer to IN process
+        GLchar in_texture_index;                    //  Index of the IN texture in the IN process textures array
+
+        RenderProcess *out_render_process_pointer;  //  Pointer to OUT process
+        GLchar out_texture_index;                   //  Index of the OUT texture in the OUT process textures array
     };
 
 public:
     //  CLASS METHOD
-    /*
-     * Connect indices_size textures of 2 processes
-     * each r1 out texture at indexes r1_texture_indices
-     * will be connected to
-     * r2 in textures at r2_texture_indices
-     * */
-    static GLboolean connectProcesses(RenderProcess *r1, RenderProcess *r2, const std::initializer_list<GLuint> &r1_texture_indices, const std::initializer_list<GLuint> &r2_texture_indices);
+    static GLboolean linkProcesses(RenderProcess *r1, RenderProcess *r2, const std::initializer_list<GLchar> &r1_texture_indices, const std::initializer_list<GLchar> &r2_texture_indices);
 
 
     // METHODS
 
-    RenderProcess(const GLuint &num_inputs_textures);
+    RenderProcess(const GLchar &num_inputs, const GLchar &num_outputs);
     virtual ~RenderProcess();
 
     virtual void init(const GLuint &width, const GLuint &height);
@@ -47,35 +45,33 @@ public:
     inline virtual void resize(const GLuint &width, const GLuint &height){m_width = width; m_height = height;}
     virtual void process(const Quad &quad, const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024]) = 0;
 
-    inline void addPreviousProcess(RenderProcess *render_process){m_previous_processes.push_back(render_process);}
-
     //  Getters
     inline Texture *getOutTexture(const GLuint &i) const{return m_out_textures[i];}
     inline GLuint getNumOutTexture() const{return m_out_textures.size();}
     inline GLuint width() const{return m_width;}
     inline GLuint height() const{return m_height;}
     inline MenuElement *getMenuElement() const{return m_menu_element;}
-    inline size_t numberPreviousProcesses() const{return m_previous_processes.size();}
-    inline RenderProcess *getPreviousProcess(const GLuint &i) const{return m_previous_processes[i];}
+    inline GLchar numberIn() const{return m_in_links.size();}
+    inline GLchar numberOut() const{return m_out_links.size();}
+    inline RenderProcess *getInputProcess(const GLuint &i) const{return m_in_links[i]->in_render_process_pointer;}
+    inline GLboolean inLinkIsNull(const GLchar &index) const{return m_in_links[index] == NULL;}
 
     //  Setters
     inline virtual void setActivated(const GLboolean &activated){m_activated = activated;}
-    inline void setInLink(const GLuint &link_index, const GLuint &render_process_index, const GLuint &tex_index){m_in_links[tex_index].process_index = render_process_index; m_in_links[tex_index].texture_index = link_index;}
+    inline void setInLink(RenderProcessLink *link, const GLchar &link_index){m_in_links[link_index] = link;}
+    inline void addOutLink(RenderProcessLink *link, const GLchar &link_index){m_out_links[link_index].push_back(link);}
 
 protected:
-    inline void bindPreviousTexture(const GLuint &i) const{m_previous_processes[m_in_links[i].process_index]->getOutTexture(m_in_links[i].texture_index)->bind();}
+    inline void bindPreviousTexture(const GLuint &index) const{m_in_links[index]->in_render_process_pointer->getOutTexture(m_in_links[index]->in_texture_index)->bind();}
 
     GLuint m_width;
     GLuint m_height;
 
-    size_t m_out_number;
-
     GLboolean m_activated;
 
+    std::vector<RenderProcessLink *> m_in_links;                //  A process receive 1 input for each texture
+    std::vector<std::vector<RenderProcessLink *> > m_out_links; //  A process can send its outputs to several processes
     std::vector<Texture *> m_out_textures;
-
-    ProcessTextureLink *m_in_links;
-    std::vector<RenderProcess *> m_previous_processes;
 
     MenuElement *m_menu_element;
 };

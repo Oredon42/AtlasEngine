@@ -9,7 +9,7 @@
 #include <QHBoxLayout>
 
 SSAORenderProcess::SSAORenderProcess() :
-    RenderProcess::RenderProcess(1),
+    RenderProcess(2, 1),
     m_SSAO(GL_FALSE),
     m_num_samples(64)
 {    
@@ -40,12 +40,14 @@ void SSAORenderProcess::init(const GLuint &width, const GLuint &height)
     for (GLuint i = 0; i < m_num_samples; ++i)
         m_samples_locations[i] = glGetUniformLocation(m_SSAO_shader.getProgram(), ("samples[" + std::to_string(i) + "]").c_str());
 
+    m_view_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "view");
+    m_transposed_inverse_view_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "transposed_inverse_view");
     m_projection_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "projection");
     m_window_size_location = glGetUniformLocation(m_SSAO_shader.getProgram(), "window_size");
 
     generateNoise();
 
-    m_out_textures.push_back(m_SSAO_blur_buffer.getTexture(0));
+    m_out_textures[0] = m_SSAO_blur_buffer.getTexture(0);
 }
 
 void SSAORenderProcess::initMenuElement()
@@ -90,6 +92,8 @@ void SSAORenderProcess::process(const Quad &quad, const Scene &scene, const GLfl
 
     for (GLuint i = 0; i < m_num_samples; ++i)
         glUniform3fv(m_samples_locations[i], 1, &m_SSAO_kernel[i][0]);
+    glUniformMatrix4fv(m_view_location, 1, GL_FALSE, glm::value_ptr(scene.getCurrentCamera()->getView()));
+    glUniformMatrix3fv(m_transposed_inverse_view_location, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(scene.getCurrentCamera()->getView())))));
     glUniformMatrix4fv(m_projection_location, 1, GL_FALSE, glm::value_ptr(scene.getCurrentCamera()->getProjection()));
     glUniform2f(m_window_size_location, m_SSAO_buffer.width(), m_SSAO_buffer.height());
     quad.draw();

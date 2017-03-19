@@ -27,7 +27,6 @@ public:
 
 private:
     glm::vec3 m_direction;
-
     glm::mat4 m_light_space_matrix;
 };
 
