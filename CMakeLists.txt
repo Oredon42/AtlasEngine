@@ -68,7 +68,10 @@ if(APPLE)
 
 	qt5_use_modules(${PROJECT_NAME} Core Gui Widgets OpenGL)
 
-        target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES} libassimpd.dylib libOpenMeshCore.dylib)
+        target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${OPENGL_LIBRARIES}
+            ${PROJECT_BINARY_DIR}/lib/openmesh/src/OpenMesh/Core/OpenMeshCored.dylib
+            ${PROJECT_BINARY_DIR}/lib/openmesh/src/OpenMesh/Tools/OpenMeshToolsd.dylib
+            ${PROJECT_BINARY_DIR}/lib/assimp/code/libassimpd.dylib)
 elseif(UNIX)
         set(CMAKE_CXX_FLAGS "-std=c++11 -g -ggdb -O0 -Wall -Wextra")
         find_package(OpenGL REQUIRED)
