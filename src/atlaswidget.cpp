@@ -1,23 +1,32 @@
+#include "src/core/atlaswidget.h"
+#include "src/core/render/renderer.h"
+#include "src/core/data/model.h"
+
+#include "src/core/render/process/geometryrenderprocess.h"
+#include "src/core/render/process/lightingrenderprocess.h"
+#include "src/core/render/process/hdrrenderprocess.h"
+#include "src/core/render/process/ssaorenderprocess.h"
+#include "src/core/render/process/wireframerenderprocess.h"
+
+#ifndef GLM_FORCE_RADIANS
+#define GLM_FORCE_RADIANS
+#endif
+#include "lib/glm/glm.hpp"
+#include "lib/glm/gtc/matrix_transform.hpp"
+#include "lib/glm/gtc/type_ptr.hpp"
+
 #include <fstream>
 #include <QFileDialog>
 #include <QApplication>
 #include <QDesktopWidget>
-
-#include "include/atlaswidget.h"
-#include "include/render/renderer.h"
-#include "include/data/model.h"
-
-#include "include/render/process/geometryrenderprocess.h"
-#include "include/render/process/lightingrenderprocess.h"
-#include "include/render/process/hdrrenderprocess.h"
-#include "include/render/process/ssaorenderprocess.h"
-#include "include/render/process/wireframerenderprocess.h"
+#include <QtGui/QKeyEvent>
+#include <QtCore/QCoreApplication>
+#include <QtCore/qmath.h>
 
 AtlasWidget::AtlasWidget(QWidget * parent) :
     QOpenGLWidget(parent),
-    m_menu(this, Qt::FramelessWindowHint),
     m_paused(false),
-    m_last_frame(0.0),
+    m_last_frame(0.f),
     m_fullscreen(false),
     m_current_scene(0),
     m_current_scene_index(-1)
@@ -29,9 +38,6 @@ AtlasWidget::AtlasWidget(QWidget * parent) :
     m_path = QApplication::applicationFilePath().toStdString();
 
     m_path = m_path.substr(0, m_path.find_last_of('/'));
-#if defined(__APPLE__) || defined(__linux__)
-    m_path = m_path.substr(0, m_path.find_last_of('/'));
-#endif
 
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
     m_timer.start(41);
@@ -67,13 +73,12 @@ void AtlasWidget::initializeGL()
 
     /*  MATERIALS MODIFICATION */
 
-    m_material_library.addMaterial(new Material(glm::vec3(1.f), 0.2f, 1.f, 1.f, 1.f), "default");
-    m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 1.f), 1.f, 0.f, 1.f, 1.f), "white");
+    /*m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 1.f), 1.f, 0.f, 1.f, 1.f), "white");
     m_material_library.addMaterial(new Material(glm::vec3(0.8f, 0.8f, 0.8f), 1.f, 0.f, 1.f, 1.f), "grey");
     m_material_library.addMaterial(new Material(glm::vec3(1.f, 0.f, 0.f), 1.f, 0.f, 1.f, 1.f), "red");
     m_material_library.addMaterial(new Material(glm::vec3(1.f, 1.f, 0.f), 0.2f, 0.f, 1.f, 1.f), "yellow");
     m_material_library.addMaterial(new Material(glm::vec3(0.f, 1.f, 0.f), 1.f, 0.f, 1.f, 1.f), "green");
-    m_material_library.addMaterial(new Material(glm::vec3(0.5f, 0.5f, 0.5f), 0.01f, 1.f, 1.f, 1.f), "glossy");
+    m_material_library.addMaterial(new Material(glm::vec3(0.5f, 0.5f, 0.5f), 0.01f, 1.f, 1.f, 1.f), "glossy");*/
 
     /*  END OF MATERIALS MODIFICATION */
 
@@ -238,10 +243,6 @@ void AtlasWidget::mouseMoveEvent(QMouseEvent *e)
 void AtlasWidget::setCurrentPipeline(const std::string &pipeline_name)
 {
     m_renderer.setCurrentPipeline(pipeline_name);
-
-    m_menu.setGraphicsMenuElements(m_renderer.getGraphicsMenuElements());
-
-    m_menu.init();
 }
 
 void AtlasWidget::unPause()
@@ -256,13 +257,12 @@ void AtlasWidget::unPause()
 
 void AtlasWidget::pause()
 {
-    if(m_paused == false)
+    /*if(m_paused == false)
     {
         m_paused = true;
 
         QApplication::setOverrideCursor(Qt::ArrowCursor);
-        m_menu.exec();
-    }
+    }*/
 }
 
 void AtlasWidget::createRenderScene()
@@ -271,26 +271,30 @@ void AtlasWidget::createRenderScene()
 
     SceneGraphRoot *r1 = new SceneGraphRoot("root", m_path);
 
-    m_file_loader.load("/obj/testscenes/cornell.obj", r1, m_material_library);
+    //m_file_loader.load("/../obj/cornell.obj", r1, m_material_library);
+    //m_file_loader.load("/../obj/dabrovic-sponza/sponza.obj", r1, m_material_library);
+    //m_file_loader.load("/../obj/Astroboy/astroBoy_walk_Maya2.dae", r1, m_material_library, aeMissArmature | aeMissAnimation);
+    //m_file_loader.load("/../obj/Sponza/sponza2.dae", r1, m_material_library);
+    //m_file_loader.load("/../obj/sponza_obj/sponza2.obj", r1, m_material_library);
 
-    r1->setMaterial(m_material_library.getMaterial("red"), "LeftWall");
+    /*r1->setMaterial(m_material_library.getMaterial("red"), "LeftWall");
     r1->setMaterial(m_material_library.getMaterial("green"), "RightWall");
     r1->setMaterial(m_material_library.getMaterial("white"), "Floor");
     r1->setMaterial(m_material_library.getMaterial("white"), "Ceiling");
     r1->setMaterial(m_material_library.getMaterial("white"), "BackWall");
     r1->setMaterial(m_material_library.getMaterial("white"), "TallBox");
-    r1->setMaterial(m_material_library.getMaterial("white"), "ShortBox");
+    r1->setMaterial(m_material_library.getMaterial("white"), "ShortBox");*/
 
-    m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 100.f, glm::vec3(5.f, 15.f, 5.f)));
-    m_current_scene->addPointLight(new PointLight(glm::normalize(glm::vec3(17.f, 12.f, 4.f)), 100.f, glm::vec3(0.f, 18.f, 0.f)));
-    m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 1000.f, glm::vec3(-3.f, 18.f, -3.f), glm::normalize(glm::vec3(1.f, -1.f, 0.5f)), 30.f, 40.0f));
-    m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 1.f, glm::normalize(glm::vec3(-1.f, -1.f, 1.f))));
+    //m_current_scene->addPointLight(new PointLight(glm::vec3(1.f), 100.f, glm::vec3(5.f, 15.f, 5.f)));
+    //m_current_scene->addPointLight(new PointLight(glm::normalize(glm::vec3(17.f, 12.f, 4.f)), 100.f, glm::vec3(0.f, 18.f, 0.f)));
+    //m_current_scene->addSpotLight(new SpotLight(glm::vec3(1.f), 100.f, glm::vec3(-3.f, 18.f, -3.f), glm::normalize(glm::vec3(1.f, -1.f, 0.5f)), 30.f, 40.0f));
+    m_current_scene->addDirLight(new DirLight(glm::vec3(1.f), 10.f, glm::normalize(glm::vec3(-1.f, -1.f, 1.f))));
 
     m_current_scene->addSceneGraphRoot(r1);
 
     m_current_scene->addCamera(new Camera());
 
-    //m_current_scene->scale(glm::vec3(10.f), "root");
+    m_current_scene->scale(glm::vec3(0.1f), "root");
 }
 
 
@@ -299,9 +303,9 @@ void AtlasWidget::createGeometryScene()
     addScene();
 
     SceneGraphRoot *r1 = new SceneGraphRoot("root", m_path);
-    m_file_loader.load("/obj/testscenes/suzanne.obj", r1, m_material_library);
+    //m_file_loader.load("scenes/suzanne.obj", r1, m_material_library);
     SceneGraphNode *n1 = r1->getChild(0);
-    n1->getModel(0, 0)->setMaterial(m_material_library.getMaterial("default"));
+    //n1->getModel(0, 0)->setMaterial(m_material_library.getMaterial("default"));
 
     SceneGraphNode *n12 = new SceneGraphNode("n12", m_path);
     n1->addChild(n12);

@@ -1,73 +1,119 @@
-#include "include/render/renderer.h"
-#include "include/data/scene.h"
-#include "include/data/lighting/pointlight.h"
+#include "renderer.h"
+
+#include "scene.h"
+#include "shader.h"
+#include "pipeline.h"
+#include "renderingquad.h"
 
 #include <QOpenGLFramebufferObject>
 
 Renderer::Renderer() :
-    m_quad(1.f),
-    m_current_pipeline(0)
+    m_iWidth(256),
+    m_iHeight(256),
+    m_pRenderingQuad(nullptr),
+    m_pRenderingQuadShader(nullptr),
+    m_pCurrentPipeline(nullptr),
+    m_pCurrentScene(nullptr)
 {
 
 }
 
 Renderer::~Renderer()
 {
-    for(size_t i = 0; i < m_pipelines.size(); ++i)
-        delete m_pipelines[i];
+    for(std::unordered_map<std::string, Pipeline *>::iterator it = m_pPipelinesMap.begin(); it != m_pPipelinesMap.end(); ++it)
+    {
+        delete it->second;
+    }
+    m_pPipelinesMap.clear();
 
-    m_pipelines.clear();
+    if(m_pRenderingQuad != nullptr)
+    {
+        delete m_pRenderingQuad;
+    }
+
+    if(m_pRenderingQuadShader != nullptr)
+    {
+        delete m_pRenderingQuadShader;
+    }
 }
 
 void Renderer::init()
 {
-    m_quad_shader.init("shaders/quad.vert", "shaders/quad.frag");
-    m_quad.setupBuffers();
+    if(m_pRenderingQuad == nullptr)
+    {
+        m_pRenderingQuad = new RenderingQuad(1.f);
+    }
+
+    if(m_pRenderingQuadShader == nullptr)
+    {
+        m_pRenderingQuadShader = new Shader("shaders/quad.vert", "shaders/quad.frag");
+    }
+    m_pRenderingQuadShader->resetActiveTexture();
 }
 
-void Renderer::resize(const GLuint &width, const GLuint &height)
+void Renderer::process(const float &fRenderTime) const
 {
-    m_width = width;
-    m_height = height;
-}
+    if(m_pCurrentPipeline != nullptr)
+    {
+        //  Process pipeline
+        m_pCurrentPipeline->process(m_pRenderingQuad, fRenderTime);
 
-void Renderer::setResolution(const GLuint &width, const GLuint &height)
-{
-    for(size_t i = 0; i < m_pipelines.size(); ++i)
-        m_pipelines[i]->resize(width, height);
-}
-
-void Renderer::addPipeline(Pipeline *pipeline, const std::string &pipeline_name)
-{
-    m_pipelines.push_back(pipeline);
-    if(m_pipelines_map.find(pipeline_name) == m_pipelines_map.end())
-        m_pipelines_map[pipeline_name] = pipeline;
-}
-
-/*
- * Render a scene using deferred rendering
- * */
-void Renderer::drawScene(const Scene &scene, const GLfloat &render_time, const GLboolean (&keys)[1024])
-{
-    m_current_pipeline->process(m_quad, scene, render_time, keys);
-
-    glViewport(0, 0, m_width, m_height);
-    QOpenGLFramebufferObject::bindDefault();
-    glClear(GL_COLOR_BUFFER_BIT);
-    m_quad_shader.use();
-    m_quad_shader.activateNextTexture();
-    m_current_pipeline->getOutTexture()->bind();
-    m_quad.draw();
+        //  Render final output
+        glViewport(0, 0, m_iWidth, m_iHeight);
+        QOpenGLFramebufferObject::bindDefault();
+        glClear(GL_COLOR_BUFFER_BIT);
+        m_pRenderingQuadShader->use();
+        glActiveTexture(m_pRenderingQuadShader->getActiveTexture());
+        m_pCurrentPipeline->getLastTexture()->bind();
+        m_pRenderingQuad->draw();
+    }
 }
 
 void Renderer::reloadShaders()
 {
-    //for(GLuint i = 0; i < NB_SHADER_TYPES; ++i)
-    //    m_shader_geometry_pass[i].reload();
+    m_pRenderingQuadShader->reload();
+    m_pCurrentPipeline->reloadShaders();
 }
 
-void Renderer::setCurrentPipeline(std::string pipeline_name)
+void Renderer::addPipeline(const std::string &strKey, Pipeline *pPipeline)
 {
-    if(m_pipelines_map.find(pipeline_name) != m_pipelines_map.end())
-        m_current_pipeline = m_pipelines_map[pipeline_name];
+    if(m_pPipelinesMap.find(strKey) == m_pPipelinesMap.end())
+    {
+        m_pPipelinesMap[strKey] = pPipeline;
+        m_pPipelinesMap[strKey]->setResolution(m_iWidth, m_iHeight);
+    }
+}
+
+void Renderer::setCurrentScene(Scene *pScene)
+{
+    m_pCurrentScene = pScene;
+
+    if(m_pCurrentPipeline != nullptr)
+    {
+        m_pCurrentPipeline->preprocessScene(m_pCurrentScene);
+    }
+}
+
+void Renderer::setCurrentPipeline(const std::string &strKey)
+{
+    if(m_pPipelinesMap.find(strKey) != m_pPipelinesMap.end())
+    {
+        m_pCurrentPipeline = m_pPipelinesMap[strKey];
+
+        if(m_pCurrentScene != nullptr)
+        {
+            m_pCurrentPipeline->preprocessScene(m_pCurrentScene);
+        }
+    }
+}
+
+void Renderer::setResolution(const GLsizei &iWidth, const GLsizei &iHeight)
+{
+    m_iWidth = iWidth;
+    m_iHeight = iHeight;
+
+    for(std::unordered_map<std::string, Pipeline *>::iterator it = m_pPipelinesMap.begin(); it != m_pPipelinesMap.end(); ++it)
+    {
+        it->second->setResolution(iWidth, iHeight);
+    }
 }

@@ -3,9 +3,18 @@ layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gAlbedoSpec;
 layout (location = 3) out vec3 gMaterial;
 
-in vec3 FragPos;
-in vec3 Normal;
-in vec2 TexCoords;
+in VS_OUT
+{
+    vec4 frag_pos;
+#if defined(TEXTURE) || defined(NORMAL) || defined(SPECULAR)
+    vec2 tex_coords;
+#endif
+#ifdef NORMAL
+    mat3 TBN;
+#else
+    vec3 normal;
+#endif
+} fs_in;
 
 struct Material
 {
@@ -33,7 +42,7 @@ uniform Material material;
 vec3 getDiffuse()
 {
 #ifdef TEXTURE
-    return vec3(texture(material.texture_diffuse1, TexCoords));
+    return vec3(texture(material.texture_diffuse1, fs_in.tex_coords));
 #else
     return material.color;
 #endif
@@ -41,7 +50,7 @@ vec3 getDiffuse()
 vec3 getSpecular()
 {
 #ifdef SPECULAR
-    return vec3(texture(material.texture_specular1, TexCoords));
+    return vec3(texture(material.texture_specular1, fs_in.tex_coords));
 #else
     return material.specular;
 #endif
@@ -49,9 +58,9 @@ vec3 getSpecular()
 vec3 getNormal()
 {
 #ifdef NORMAL
-    return normalize(vec3(texture(material.texture_normal1, TexCoords)) * 2.0 - 1.0);
+    return fs_in.TBN * vec3(texture(material.texture_normal1, fs_in.tex_coords)) * 2.0 - 1.0;
 #else
-    return Normal;
+    return fs_in.normal;
 #endif
 }
 float getRoughness()
@@ -67,23 +76,10 @@ float getRefraction()
     return material.refraction;
 }
 
-
-uniform vec3 viewPos;
-
-const float NEAR = 1.f; // projection matrix's near plane
-const float FAR = 100.0f; // projection matrix's far plane
-
-float LinearizeDepth(float depth)
-{
-    float z = depth * 2.0 - 1.0; // Back to NDC
-    return (2.0 * NEAR * FAR) / (FAR + NEAR - z * (FAR - NEAR));
-}
-
 void main()
 {
-    gPositionDepth.xyz = FragPos;
-    gPositionDepth.a = LinearizeDepth(gl_FragCoord.z);
-    gNormal = normalize(getNormal());
+    gPositionDepth = fs_in.frag_pos;
+    gNormal = getNormal();
     gAlbedoSpec.rgb = getDiffuse();
     gAlbedoSpec.a = getSpecular().x;
     gMaterial = vec3(material.roughness, material.refraction, material.metalness);
