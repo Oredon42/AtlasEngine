@@ -1,9 +1,6 @@
 [submodule "lib/assimp"]
 	path = lib/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "lib/glew"]
-	path = lib/glew
-	url = https://github.com/nigels-com/glew.git
 [submodule "lib/glm"]
 	path = lib/glm
 	url = https://github.com/g-truc/glm.git
@@ -13,4 +10,3 @@
 [submodule "lib/sfml"]
 	path = lib/sfml
 	url = https://github.com/SFML/SFML.git
-
